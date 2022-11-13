@@ -3,10 +3,12 @@
 extern kernel_main
 
 ; Declare constants for the multiboot header.
-MBALIGN  equ  1 << 0              ; Align loaded modules on page boundaries
-MEMINFO  equ  1 << 1              ; Provide memory map
-FLAGS    equ  MBALIGN | MEMINFO   ; This is the Multiboot 'flag' field
-MAGIC    equ  0x1BADB002          ; 'Magic number' lets bootloader find the header
+MBALIGN  equ   1 << 0              ; Align loaded modules on page boundaries
+MEMINFO  equ   1 << 1              ; Provide memory map
+;FLAGS    equ   MBALIGN | MEMINFO   ; This is the Multiboot 'flag' field
+FLAGS    equ   0x00000007
+;MAGIC    equ   0x1BADB002          ; 'Magic number' lets bootloader find the header
+MAGIC    equ   0xE85250D6
 CHECKSUM equ -(MAGIC + FLAGS)     ; Checksum of above, to prove we are multiboot
 
 
@@ -21,6 +23,17 @@ align 4
     dd MAGIC
     dd FLAGS
     dd CHECKSUM
+
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+
+    dd 0
+    dd 1024
+    dd 768
+    dd 32
 
 
 ; It is up to the kernel to provide a stack. So we need to set the stack pointer register (esp).
@@ -67,6 +80,9 @@ _start:
     ; be loaded here. Paging should be enabled here.
 
     ; Enter the high-level kernel.
+
+    ; Push ebx which contains a pointer to Multiboot information structure
+    push ebx
 
     call kernel_main
 

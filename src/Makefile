@@ -10,8 +10,8 @@ LFILE = linker.ld
 ISO = blueberryos.iso
 BIN = blueberryos.bin
 
-SRC_C = $(wildcard *.c)
-SRC_ASM = $(wildcard *.asm)
+SRC_C = $(shell find . -name "*.c")
+SRC_ASM = $(shell find . -name "*.asm")
 
 OBJ_C = $(SRC_C:.c=.o)
 OBJ_ASM = $(SRC_ASM:.asm=.o)
@@ -52,6 +52,6 @@ iso: all
 	grub-mkrescue -o $(ISO) isodir
 
 run: iso
-	qemu-system-i386 -cdrom $(OS)
+	qemu-system-i386 -cdrom $(ISO)
 
 

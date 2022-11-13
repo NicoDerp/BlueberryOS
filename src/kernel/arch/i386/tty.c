@@ -3,36 +3,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Check if you are targeting the wrong operating system */
-#if defined(__linux__)
-#error "You are not using a cross-compiler, you will most certaintly run into trouble."
-#endif
+#include <kernel/tty.h>
 
-
-/* Check if the compiler isn't made for 32-bit ix86-elf targets */
-#if !defined(__i386__)
-#error "The kernel needs to be compiled with an ix86-elf compiler"
-#endif
-
-/* Color constants */
-enum vga_color {
-    VGA_COLOR_BLACK = 0,
-    VGA_COLOR_BLUE = 1,
-    VGA_COLOR_GREEN = 2,
-    VGA_COLOR_CYAN = 3,
-    VGA_COLOR_RED = 4,
-    VGA_COLOR_MAGENTA = 5,
-    VGA_COLOR_BROWN = 6,
-    VGA_COLOR_LIGHT_GRAY = 7,
-    VGA_COLOR_DARK_GRAY = 8,
-    VGA_COLOR_LIGHT_BLUE = 9,
-    VGA_COLOR_LIGHT_GREEN = 10,
-    VGA_COLOR_LIGHT_CYAN = 11,
-    VGA_COLOR_LIGHT_RED = 12,
-    VGA_COLOR_LIGHT_MAGENTA = 13,
-    VGA_COLOR_LIGHT_BROWN = 14,
-    VGA_COLOR_WHITE = 15,
-};
+#include "vga.h"
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
@@ -42,16 +15,6 @@ size_t terminal_column;
 
 uint16_t* terminal_buffer;
 uint8_t terminal_color;
-
-// switch other way
-static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) {
-    return fg | bg << 4;
-}
-
-// Switch other way
-static inline uint16_t vga_entry(unsigned char c, uint8_t color) {
-    return (uint16_t) c | (uint16_t) color << 8;
-}
 
 
 void terminal_initialize(void) {
@@ -71,15 +34,6 @@ void terminal_initialize(void) {
             terminal_buffer[index] = vga_entry(' ', terminal_color);
         }
     }
-}
-
-size_t strlen(const char* string) {
-    size_t len = 0;
-    while (string[len] != 0) {
-        len++;
-    }
-
-    return len;
 }
 
 void terminal_writechar(const char c) {
@@ -106,14 +60,4 @@ void terminal_write(const char* string, size_t size) {
 void terminal_writestring(const char* string) {
     terminal_write(string, strlen(string));
 }
-
-void kernel_main(void) {
-
-    /* Initialize terminal interface */
-    terminal_initialize();
-
-    /* Terminal test */
-    terminal_writestring("Hallo paps");
-}
-
 
