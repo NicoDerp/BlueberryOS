@@ -12,20 +12,22 @@
 #error "The kernel needs to be compiled with an ix86-elf compiler"
 #endif
 
+//void kernel_main(const multiboot_header* mutliboot_structure) {
 void kernel_main(const multiboot_header* mutliboot_structure) {
 
+    /*
     for (int y = 0; y < 100; y++) {
         for (int x = 0; x < 100; x+=3) {
             unsigned char* location = (unsigned char*) 0xA0000 + 768 * y + x;
             *location = 2;
         }
-    }
+    }*/
 
     /* Initialize terminal interface */
-    //terminal_initialize();
+    terminal_initialize();
 
     /* Terminal test */
-    //terminal_writestring("Hallo paps");
+    terminal_writestring("Hallo paps");
 }
 
 
