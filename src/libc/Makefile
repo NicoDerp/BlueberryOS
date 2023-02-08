@@ -5,7 +5,7 @@ SYSROOT = /home/nico/Projects/blueberryos/src/sysroot
 ARCH ?= i386
 ARCHDIR = arch/$(ARCH)
 
-CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/local
+CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/
 CFLAGS = -ffreestanding -O2 -Wall -Wextra -g #-std=gnu99
 CPPFLAGS = -D__is_libc -Iinclude
 
