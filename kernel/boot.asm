@@ -1,9 +1,9 @@
 
 ; Declare some constants for the multiboot header
-ALIGN    equ 1 << 0
+MBALIGN  equ 1 << 0
 MEMINFO  equ 1 << 1
 MBFLAGS  equ MBALIGN | MEMINFO
-MAGIN    equ 0x1BADB002
+MAGIC    equ 0x1BADB002
 CHECKSUM equ -(MAGIC + MBFLAGS)
 
 
@@ -43,8 +43,9 @@ _start:
     call kernel_main
 
     cli
-hang:
+.hang:
     hlt
-    jmp hang
+    jmp .hang
 .end:
+
 

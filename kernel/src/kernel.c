@@ -1,5 +1,5 @@
 
-#include <kernel/tty.h>
+#include <tty.h>
 
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
@@ -13,7 +13,7 @@
 #endif
 
 //void kernel_main(const multiboot_header* mutliboot_structure) {
-void kernel_main(const multiboot_header* mutliboot_structure) {
+void kernel_main() {
 
     /*
     for (int y = 0; y < 100; y++) {
@@ -27,7 +27,7 @@ void kernel_main(const multiboot_header* mutliboot_structure) {
     terminal_initialize();
 
     /* Terminal test */
-    terminal_writestring("Hallo paps");
+    terminal_writestring("abc\n22abc\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGod\nmoo");
 }
 
 
