@@ -2,12 +2,17 @@
 
 # Default
 SYSROOT = /home/nico/Projects/blueberryos/src/sysroot
+CFLAGS ?= -O2 -g
+LFLAGS ?= -O2
+LIBS ?=
 
+# Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
-CC = i686-elf-gcc
-CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Iinclude #-D__is_kernel
-LFLAGS = -ffreestanding -O2 -nostdlib -lgcc
+CC = i686-elf-gcc -isystem=/usr/include
+CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
+LFLAGS := $(LFLAGS) -ffreestanding
 #LIBS = -nostdlib -lk -lgcc
+LIBS = -nostdlib -lgcc
 
 ASM = nasm
 ASMFLAGS = -felf32
@@ -18,7 +23,7 @@ BIN = blueberryos.bin
 
 
 SRC_C = src/kernel.c src/tty.c
-SRC_ASM = boot.asm
+SRC_ASM = src/boot.asm
 
 OBJ_C = $(SRC_C:.c=.o)
 OBJ_ASM = $(SRC_ASM:.asm=.o)
@@ -31,7 +36,7 @@ all: $(ISO)
 
 # Compiling C
 %.o: %.c
-	$(CC) -c $^ -o $@ $(CFLAGS)
+	$(CC) -MD -c $^ -o $@ $(CFLAGS)
 
 # Compiling assembly
 %.o: %.asm
@@ -39,7 +44,7 @@ all: $(ISO)
 
 # Linking
 $(BIN): $(OBJ)
-	$(CC) -T linker.ld -o $(BIN) $(LFLAGS) $^
+	$(CC) -T linker.ld -o $(BIN) $(LFLAGS) $(LIBS) $^
 
 # Making iso
 $(ISO): $(BIN)
