@@ -1,5 +1,5 @@
 
-#include <tty.h>
+#include <kernel/tty.h>
 
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
