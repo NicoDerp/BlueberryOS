@@ -12,7 +12,7 @@ INCLUDEDIR = $(PREFIX)/include/kernel
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
 
 # Work-around because compiler wasn't configured with --with-sysroot
-CC = i686-elf-gcc -isystem=/usr/include
+CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/include
 CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
 LFLAGS := $(LFLAGS) -ffreestanding
 #LIBS = -nostdlib -lk -lgcc
