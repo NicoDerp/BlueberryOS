@@ -5,11 +5,11 @@ CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
 
-DESTDIR?=/home/nico/Projects/blueberryos/sysroot
-PREFIX?=/usr/local
-EXEC_PREFIX?=$(PREFIX)
-INCLUDEDIR?=$(PREFIX)/include
-LIBDIR?=$(EXEC_PREFIX)/lib
+DESTDIR = /home/nico/Projects/blueberryos/sysroot
+PREFIX = /usr/local
+EXEC_PREFIX = $(PREFIX)
+INCLUDEDIR = $(PREFIX)/include
+LIBDIR = $(EXEC_PREFIX)/lib
 
 # Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)

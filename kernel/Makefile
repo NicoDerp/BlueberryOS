@@ -1,13 +1,17 @@
 
-
 # Default
-SYSROOT = /home/nico/Projects/blueberryos/src/sysroot
+SYSROOT = /home/nico/Projects/blueberryos/sysroot
 CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
+DESTDIR = $(SYSROOT)
+PREFIX = /usr/local
+INCLUDEDIR = $(PREFIX)/include/kernel
 
 # Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
+
+# Work-around because compiler wasn't configured with --with-sysroot
 CC = i686-elf-gcc -isystem=/usr/include
 CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
 LFLAGS := $(LFLAGS) -ffreestanding
@@ -30,8 +34,6 @@ OBJ_ASM = $(SRC_ASM:.asm=.o)
 
 OBJ = $(OBJ_C) $(OBJ_ASM)
 
-all: $(ISO)
-
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
 # Compiling C
@@ -53,7 +55,10 @@ $(ISO): $(BIN)
 	cp grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o $(ISO) isodir
 
-.PHONY: clean rebuild check run
+.PHONY: all clean rebuild check run install
+.SUFFIXES: .o .c .asm
+
+all: $(ISO)
 
 clean:
 	rm -rf $(ISO) $(BIN) $(OBJ) isodir
@@ -69,6 +74,10 @@ check: all
 
 run: $(ISO)
 	qemu-system-i386 -cdrom $(ISO)
+
+install:
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
+	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 -include $(OBJS:.o=.d)
 
