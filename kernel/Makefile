@@ -6,7 +6,7 @@ LFLAGS ?= -O2
 LIBS ?=
 DESTDIR = $(SYSROOT)
 PREFIX = /usr/local
-INCLUDEDIR = $(PREFIX)/include/kernel
+INCLUDEDIR = $(PREFIX)/include
 
 # Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
