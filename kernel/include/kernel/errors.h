@@ -2,7 +2,7 @@
 #ifndef KERNEL_ERRORS_H
 #define KERNEL_ERRORS_H
 
-extern abort();
+extern void kabort();
 
 void kerror(const char* msg);
 

@@ -1,5 +1,6 @@
 
 #include <kernel/tty.h>
+#include <kernel/gdt.h>
 
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
@@ -27,7 +28,15 @@ void kernel_main() {
     terminal_initialize();
 
     /* Terminal test */
-    terminal_writestring("abc\n22abc\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGod\nmoo");
+    terminal_writestring("Starting BlueberryOS\n");
+
+
+    terminal_writestring("Setting up GDT ... ");
+    gdt_initialize();
+    terminal_writestring("[OK]\n");
+
+    terminal_writestring("\n\nWelcome to BlueberryOS!\n");
+
 }
 
 

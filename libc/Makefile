@@ -5,6 +5,7 @@ CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
 
+SYSROOT = /home/nico/Projects/blueberryos/sysroot
 DESTDIR = /home/nico/Projects/blueberryos/sysroot
 PREFIX = /usr/local
 EXEC_PREFIX = $(PREFIX)
@@ -13,8 +14,10 @@ LIBDIR = $(EXEC_PREFIX)/lib
 
 # Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
-CC = i686-elf-gcc -isystem=/usr/include
-CFLAGS := $(CFLAGS) -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
+#CC = i686-elf-gcc -isystem=/usr/include
+CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/include
+CFLAGS := $(CFLAGS) -ffreestanding -Wall -Wextra -Iinclude -D__is_libc
+ASM_CFLAGS = -D__is_libc
 LFLAGS := $(LFLAGS) -ffreestanding
 #LIBS = -nostdlib -lk -lgcc
 LIBS := $(LIBS) -nostdlib -lgcc
@@ -23,6 +26,8 @@ LIBK_CFLAGS_ASM := -D__is_libk
 
 ASM = nasm
 ASMFLAGS = -felf32
+
+AR = i686-elf-ar
 
 SRC_C = src/kernel.c src/tty.c
 
@@ -48,23 +53,29 @@ BINARIES = libk.a
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
-# Compiling C
+.PHONY: all clean install install-headers install-libs
+.SUFFIXES: .o .libk.o .c .asm
+
+all: $(BINARIES)
+
+libc.a: $(OBJS)
+	$(AR) rcs $@ $(OBJS)
+ 
+libk.a: $(LIBK_OBJS)
+	$(AR) rcs $@ $(LIBK_OBJS)
+
 .c.o:
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS)
 
-# Compiling assembly
 .asm.o:
-	$(ASM) $(ASMFLAGS) $< -o $@
+	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
 .c.libk.o:
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBK_CFLAGS)
 
 .asm.libk.o:
-	$(ASM) $(ASMFLAGS) $< -o $@	$(LIBK_FLAGS_ASM)
+	$(ASM) $(ASMFLAGS) $< -o $@	$(LIBK_CFLAGS_ASM)
 
-.PHONY: all clean install install-headers install-libs
-
-all: $(ISO)
 
 clean:
 	rm -rf $(BINARIES) *.a
@@ -75,7 +86,7 @@ install: install-headers install-libs
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -R --preserve-timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
+	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-libs:
 	mkdir -p $(DESTDIR)$(LIBDIR)

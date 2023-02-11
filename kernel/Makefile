@@ -27,7 +27,7 @@ BIN = blueberryos.bin
 
 
 SRC_C = src/kernel.c src/tty.c src/gdt.c src/errors.c
-SRC_ASM = src/boot.asm src/lgdt.asm src/aerrors.asm
+SRC_ASM = src/boot.asm src/agdt.asm src/aerrors.asm
 
 OBJ_C = $(SRC_C:.c=.o)
 OBJ_ASM = $(SRC_ASM:.asm=.o)

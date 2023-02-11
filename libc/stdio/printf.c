@@ -5,8 +5,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__is_libk)
 
-void printf(const char* restrict format, ...) {
+#include <kernel/tty.h>
+
+static inline void print(const char* data, size_t length) {
+    terminal_write(data, length);
+}
+
+#else
+
+// TODO implement stdio and write system call
+
+#error "System calls aren't implemented yet"
+
+#endif
+
+int printf(const char* restrict format, ...) {
     va_list parameters;
     va_start(parameters, format);
 
@@ -17,7 +32,7 @@ void printf(const char* restrict format, ...) {
             format++;
             if (*format == 'c') {
                 char c = (char) va_arg(parameters, int);
-                terminal_writechar(c);
+                putchar(c);
                 written++;
             }
             else if (*format == 's') {

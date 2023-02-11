@@ -1,7 +1,7 @@
 
-global abort
+global kabort
 
-abort:
+kabort:
     cli
 .loop:
     hlt
