@@ -64,7 +64,7 @@ $(ISO): $(BIN)
 all: $(ISO)
 
 clean:
-	rm -rf $(ISO) $(BIN) $(OBJ) isodir
+	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir
 
 rebuild: clean all
 

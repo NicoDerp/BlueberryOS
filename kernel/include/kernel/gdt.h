@@ -12,7 +12,6 @@ struct GDT {
     uint8_t flags;
 };
 
-
 void gdt_initialize();
 
 

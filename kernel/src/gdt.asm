@@ -5,7 +5,7 @@ gdtr:
     dd 0 ; base storage
     
 
-; void load_gdt(uint16_t limit, uint32_t base);
+; void load_gdt(uint8 entry[8]);
 global load_gdt
 load_gdt:
     mov ax, [esp + 4]
