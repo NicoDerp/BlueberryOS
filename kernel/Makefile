@@ -7,16 +7,19 @@ LIBS ?=
 DESTDIR = $(SYSROOT)
 PREFIX = /usr/local
 INCLUDEDIR = $(PREFIX)/include
+LIBDIR = $(PREFIX)/lib
 
 # Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
 
 # Work-around because compiler wasn't configured with --with-sysroot
-CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/include
+#CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/include
+CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem /usr/include
 CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
-LFLAGS := $(LFLAGS) -ffreestanding
-#LIBS = -nostdlib -lk -lgcc
-LIBS = -nostdlib -lgcc
+ASM_CFLAGS = -D__is_kernel
+LFLAGS := $(LFLAGS)
+LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lk -lgcc
+#LIBS := $(LIBS) -nostdlib -lgcc
 
 ASM = nasm
 ASMFLAGS = -felf32
@@ -27,26 +30,26 @@ BIN = blueberryos.bin
 
 
 SRC_C = src/kernel.c src/tty.c src/gdt.c src/errors.c
-SRC_ASM = src/boot.asm src/agdt.asm src/aerrors.asm
+SRC_ASM = src/boot.asm src/gdt.asm src/errors.asm
 
-OBJ_C = $(SRC_C:.c=.o)
-OBJ_ASM = $(SRC_ASM:.asm=.o)
+OBJ_C = $(SRC_C:.c=.c.o)
+OBJ_ASM = $(SRC_ASM:.asm=.asm.o)
 
 OBJ = $(OBJ_C) $(OBJ_ASM)
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
 # Compiling C
-%.o: %.c
+%.c.o: %.c
 	$(CC) -MD -c $^ -o $@ $(CFLAGS)
 
 # Compiling assembly
-%.o: %.asm
-	$(ASM) $(ASMFLAGS) $< -o $@
+%.asm.o: %.asm
+	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
 # Linking
 $(BIN): $(OBJ)
-	$(CC) -T linker.ld -o $(BIN) $(LFLAGS) $(LIBS) $^
+	$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $^ $(LIBS)
 
 # Making iso
 $(ISO): $(BIN)

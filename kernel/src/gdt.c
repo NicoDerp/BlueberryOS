@@ -9,7 +9,7 @@ extern void load_gdt(uint8_t* entry);
 void gdt_entry(uint8_t* target, struct GDT source);
 
 
-void gdt_intialize() {
+void gdt_initialize() {
 
     struct GDT gdt;
     uint8_t entry[8];

@@ -6,7 +6,7 @@ gdtr:
     
 
 ; void load_gdt(uint16_t limit, uint32_t base);
-global initialize_gdt
+global load_gdt
 load_gdt:
     mov ax, [esp + 4]
     mov [gdtr], ax

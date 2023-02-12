@@ -6,7 +6,7 @@ LFLAGS ?= -O2
 LIBS ?=
 
 SYSROOT = /home/nico/Projects/blueberryos/sysroot
-DESTDIR = /home/nico/Projects/blueberryos/sysroot
+DESTDIR = $(SYSROOT)
 PREFIX = /usr/local
 EXEC_PREFIX = $(PREFIX)
 INCLUDEDIR = $(PREFIX)/include
@@ -15,8 +15,8 @@ LIBDIR = $(EXEC_PREFIX)/lib
 # Necessary
 #CC = i686-elf-gcc --sysroot=$(SYSROOT)
 #CC = i686-elf-gcc -isystem=/usr/include
-CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem /usr/include
-#CC = i686-elf-gcc -isysroot $(SYSROOT)$(PREFIX)
+#CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem /usr/include
+CC = i686-elf-gcc -isystem $(SYSROOT)$(INCLUDEDIR)
 CFLAGS := $(CFLAGS) -ffreestanding -Wall -Wextra -Iinclude -D__is_libc
 ASM_CFLAGS = -D__is_libc
 LFLAGS := $(LFLAGS) -ffreestanding
