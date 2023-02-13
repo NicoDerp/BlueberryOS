@@ -11,13 +11,22 @@ load_idt:
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
+    pushad
+    cld
+    push %1
+    push 1
     call exception_handler
+    popad
     iret 
 %endmacro
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
+    pushad
+    push %1
+    push 0
     call exception_handler
+    popad
     iret
 %endmacro
 

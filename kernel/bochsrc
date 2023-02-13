@@ -1,0 +1,14 @@
+log: bochsout.log
+
+memory: guest=24, host=24
+
+# Guest clock speed in terms of emulated instructions per virtual second
+cpu: count=1, ips=50000000, reset_on_triple_fault=1
+
+# Dynamic processor features.
+cpuid: mmx=1, sep=1, aes=0, movbe=0, xsave=0
+
+# CD-ROM image
+ata0-slave:  type=cdrom, path="blueberryos.iso", status=inserted
+boot: cdrom
+

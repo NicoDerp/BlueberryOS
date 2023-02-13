@@ -12,7 +12,7 @@ struct GDT {
     uint8_t flags;
 };
 
-void gdt_initialize();
+void gdt_initialize(void);
 
 
 #endif /* KERNEL_GDT_H */

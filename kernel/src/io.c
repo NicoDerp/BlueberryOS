@@ -2,12 +2,12 @@
 #include <kernel/io.h>
 
 
-inline void outb(uint16_t port, uint8_t val)
+void io_outb(uint16_t port, uint8_t val)
 {
     asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
 }
 
-inline uint8_t inb(uint16_t port)
+uint8_t io_inb(uint16_t port)
 {
     uint8_t ret;
     asm volatile("inb %1, %0"
@@ -16,8 +16,12 @@ inline uint8_t inb(uint16_t port)
     return ret;
 }
 
-inline void io_wait(void)
+void io_wait(void)
 {
-    outb(0x80, 0);
+    io_outb(0x80, 0);
+}
+
+void io_enable(void) {
+    asm volatile("sti");
 }
 

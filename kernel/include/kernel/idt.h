@@ -30,7 +30,7 @@ typedef struct {
 } __attribute__((packed)) idtr_t;
 
 
-void idt_initialize();
+void idt_initialize(void);
 
 
 #endif /* KERNEL_IDT_H */

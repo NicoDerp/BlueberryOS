@@ -63,7 +63,7 @@ void gdt_initialize() {
     load_gdt(entry);
     */
 
-    load_gdt(sizeof(gdt), gdt);
+    load_gdt(sizeof(gdt), &gdt[0]);
     reload_segments();
 
 }

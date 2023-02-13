@@ -41,7 +41,11 @@ void kernel_main() {
     terminal_writestring("[OK]\n");
 
     terminal_writestring("\n\nWelcome to BlueberryOS!\n");
-    
+
+    for (;;) {
+        asm("hlt");
+    }
+
 }
 
 
