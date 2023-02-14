@@ -36,9 +36,11 @@ void kernel_main() {
     gdt_initialize();
     terminal_writestring("[OK]\n");
 
+    /*
     terminal_writestring("Setting up IDT ... ");
     idt_initialize();
     terminal_writestring("[OK]\n");
+    */
 
     terminal_writestring("\n\nWelcome to BlueberryOS!\n");
 

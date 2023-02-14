@@ -11,6 +11,8 @@ extern "C" {
 __attribute__((__noreturn__))
 void abort(void);
 
+char* itoa(int, char*, int);
+
 #ifdef __cplusplus
 }
 #endif

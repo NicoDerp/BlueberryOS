@@ -1,6 +1,7 @@
 
 #include <kernel/gdt.h>
 #include <kernel/errors.h>
+#include <stdio.h>
 
 
 //extern void load_gdt(uint16_t limit, uint32_t base);
@@ -63,8 +64,10 @@ void gdt_initialize() {
     load_gdt(entry);
     */
 
-    load_gdt(sizeof(gdt), &gdt[0]);
-    reload_segments();
+    printf("Running %d, %d\n", sizeof(gdt), &gdt[0]);
+
+    //load_gdt(sizeof(gdt), &gdt[0]);
+    //reload_segments();
 
 }
 

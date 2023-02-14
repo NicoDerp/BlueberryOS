@@ -37,6 +37,7 @@ FREEOBJS =\
 	stdio/putchar.o \
 	stdio/puts.o \
 	stdlib/abort.o \
+	stdlib/itoa.o \
 	string/memcmp.o \
 	string/memcpy.o \
 	string/memmove.o \

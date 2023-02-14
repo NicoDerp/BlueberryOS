@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -11,6 +12,10 @@
 
 static inline void print(const char* data, size_t length) {
     terminal_write(data, length);
+}
+
+static inline void printstring(const char* data) {
+    terminal_writestring(data);
 }
 
 #else
@@ -33,13 +38,22 @@ int printf(const char* restrict format, ...) {
             if (*format == 'c') {
                 char c = (char) va_arg(parameters, int);
                 putchar(c);
+                format++;
+                written++;
+            }
+            else if (*format == 'd') {
+                int i = (int) va_arg(parameters, int);
+                char buf[64];
+                itoa(i, buf, 10);
+                printstring(buf);
+                format++;
                 written++;
             }
             else if (*format == 's') {
                 const char* s = va_arg(parameters, const char*);
                 size_t len = strlen(s);
-                terminal_write(s, len);
-                format += len;
+                print(s, len);
+                format++;
                 written += len;
             }
         }
@@ -48,7 +62,7 @@ int printf(const char* restrict format, ...) {
             while (format[count] != '%' && format[count] != 0) {
                 count++;
             }
-            terminal_write(format, count);
+            print(format, count);
             format += count;
             written += count;
         }

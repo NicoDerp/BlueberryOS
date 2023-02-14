@@ -1,10 +1,14 @@
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-extern void test(int a, int b, int c, int d, int e, int f, int g);
 
 int main(void) {
-    test(5, 4, 7, 1, 2, 3, 5);
+    char buf[64];
+    int a = 120;
+    itoa(a, buf, 10);
+    printf("AA: %s\n", buf);
     return 0;
 }
 
