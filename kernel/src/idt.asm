@@ -1,5 +1,5 @@
 
-extern exception_handler
+extern interrupt_handler
 
 
 ; void load_idt(idtr_t idtr);
@@ -13,9 +13,9 @@ extern exception_handler
 isr_stub_%+%1:
     pushad
     ;cld
-    ;push %1
-    ;push 1
-    call exception_handler
+    push 1
+    push %1
+    call interrupt_handler
     popad
     iret 
 %endmacro
@@ -23,9 +23,9 @@ isr_stub_%+%1:
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
     pushad
-    ;push %1
-    ;push 0
-    call exception_handler
+    push 0
+    push %1
+    call interrupt_handler
     popad
     iret
 %endmacro

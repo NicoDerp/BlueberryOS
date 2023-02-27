@@ -1,5 +1,8 @@
 
 #include <kernel/tty.h>
+
+#include <stdio.h>
+
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
 
@@ -30,7 +33,6 @@ void kernel_main() {
 
     /* Terminal test */
     terminal_writestring("Starting BlueberryOS\n");
-
 
     terminal_writestring("Setting up GDT ... ");
     gdt_initialize();

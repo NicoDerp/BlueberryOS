@@ -8,8 +8,7 @@
 // Function prototypes
 void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags);
 //__attribute__((noreturn)) void exception_handler(void);
-//void exception_handler(uint8_t, uint8_t);
-void exception_handler();
+void interrupt_handler(uint8_t, uint8_t);
 extern void load_idt(idtr_t);
 
 
@@ -24,12 +23,31 @@ extern void* isr_stub_table[];
 
 //static bool vectors[32];
 
-// Default exception handler
-//void exception_handler(uint8_t a, uint8_t b) {
-void exception_handler() {
-    printf("\nShiiish\n");
-    //printf("%d, %d\n", a, b);
-    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+
+const char* format_interrupt(uint8_t id) {
+    if (id == INT_DOUBLE_FAULT) {
+        return "DOUBLE_FAULT";
+    } else {
+        return "NOT IMPLEMENTED";
+    }
+}
+
+
+void interrupt_handler(uint8_t interrupt_id, uint8_t is_err) {
+    printf("\nInterrupt handler:\n");
+
+    const char* formatted = format_interrupt(interrupt_id);
+
+    printf(" - Interrupt: %s\n", formatted);
+    printf(" - Interrupt id: '%d'\n", interrupt_id);
+    printf(" - Is error: '%d'\n", is_err);
+    printf("");
+
+    if (is_err) {
+        printf(" - Error!\n");
+        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    }
+
 }
 
 

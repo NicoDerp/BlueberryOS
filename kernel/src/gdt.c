@@ -11,7 +11,7 @@ extern void reload_segments();
 void gdt_entry(uint8_t* target, struct GDT source);
 
 
-uint8_t gdt[8 * 5]; // TODO 8 * 6 with TSS
+uint8_t gdt[5 * 8]; // TODO 6 * 8 with TSS
 
 
 void gdt_initialize() {
