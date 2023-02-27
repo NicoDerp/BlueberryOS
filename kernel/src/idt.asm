@@ -3,18 +3,18 @@ extern exception_handler
 
 
 ; void load_idt(idtr_t idtr);
-global load_idt
-load_idt:
-    lidt [esp + 6] ; Load IDT at stack-pointer - sizeof(idtr_t)
-    sti
-    ret
+;global load_idt
+;load_idt:
+;    lidt [esp + 6] ; Load IDT at stack-pointer - sizeof(idtr_t)
+;    sti
+;    ret
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
     pushad
-    cld
-    push %1
-    push 1
+    ;cld
+    ;push %1
+    ;push 1
     call exception_handler
     popad
     iret 
@@ -23,8 +23,8 @@ isr_stub_%+%1:
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
     pushad
-    push %1
-    push 0
+    ;push %1
+    ;push 0
     call exception_handler
     popad
     iret

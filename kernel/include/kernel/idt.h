@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 
+#define IDT_DESCRIPTORS 32
 #define IDT_MAX_DESCRIPTORS 256
 
 #define PIC1		0x20		/* IO base address for master PIC */

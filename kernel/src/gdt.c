@@ -17,11 +17,10 @@ uint8_t gdt[8 * 5]; // TODO 8 * 6 with TSS
 void gdt_initialize() {
 
     struct GDT source;
-    //uint8_t entry[8];
 
     /* Null Descriptor */
     source.base = 0;
-    source.limit = 0x00000000;
+    source.limit = 0x00000;
     source.access_byte = 0x00;
     source.flags = 0x0;
     gdt_entry(gdt + 0x00, source);
@@ -54,8 +53,8 @@ void gdt_initialize() {
     source.flags = 0xC;
     gdt_entry(gdt + 0x20, source);
 
+    /* Task State Segment */
     /*
-    * Task State Segment *
     source.base = &tss;
     source.limit = sizeof(struct TSS);
     source.access_byte = 0x89;
@@ -64,10 +63,10 @@ void gdt_initialize() {
     load_gdt(entry);
     */
 
-    printf("Running %d, %d\n", sizeof(gdt), &gdt[0]);
+    //printf("Running %d, %d\n", sizeof(gdt), &gdt[0]);
 
-    //load_gdt(sizeof(gdt), &gdt[0]);
-    //reload_segments();
+    load_gdt(sizeof(gdt), &gdt[0]);
+    reload_segments();
 
 }
 

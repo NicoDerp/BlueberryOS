@@ -58,7 +58,7 @@ $(ISO): $(BIN)
 	cp grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o $(ISO) isodir
 
-.PHONY: all clean rebuild check run install
+.PHONY: all clean rebuild check run run-bochs install
 .SUFFIXES: .o .c .asm
 
 all: $(ISO)
@@ -77,6 +77,9 @@ check: all
 
 run: $(ISO)
 	qemu-system-i386 -cdrom $(ISO)
+
+run-bochs: $(ISO)
+	bochs
 
 install:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
