@@ -13,17 +13,19 @@ char* itoa(int value, char* sp, int base) {
         value = -value;
     }
 
-    while (value != 0) {
+    do {
         char c = value % base + '0';
         value /= base;
 
         if (i == 0) {
             printf("Buffer overflow 1 in libc/stdlib/itoa.c\n");
+            break;
         }
 
         tmp[i] = c;
         i--;
     }
+    while (value != 0);
 
     if (i <= 3) {
         printf("Buffer overflow 2 in libc/stdlib/itoa.c\n");

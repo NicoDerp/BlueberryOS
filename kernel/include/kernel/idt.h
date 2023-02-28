@@ -17,7 +17,8 @@
 #define PIC_EOI		0x20		/* End-of-interrupt command code */
 
 
-#define INT_DOUBLE_FAULT  0x8
+#define INT_DOUBLE_FAULT        8
+#define INT_GENERAL_PROTECTION  13
 
 
 typedef struct {

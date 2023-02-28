@@ -8,7 +8,7 @@
 // Function prototypes
 void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags);
 //__attribute__((noreturn)) void exception_handler(void);
-void interrupt_handler(uint8_t, uint8_t);
+//void interrupt_handler(uint8_t, uint8_t, uint8_t);
 extern void load_idt(idtr_t);
 
 
@@ -25,26 +25,35 @@ extern void* isr_stub_table[];
 
 
 const char* format_interrupt(uint8_t id) {
-    if (id == INT_DOUBLE_FAULT) {
-        return "DOUBLE_FAULT";
-    } else {
-        return "NOT IMPLEMENTED";
-    }
+    if (id == INT_DOUBLE_FAULT) { return "DOUBLE_FAULT"; }
+    else if (id == INT_GENERAL_PROTECTION) { return "GENERAL_PROTECTION"; }
+    else { return "NOT IMPLEMENTED"; }
 }
 
 
-void interrupt_handler(uint8_t interrupt_id, uint8_t is_err) {
+void interrupt_handler(uint8_t ss, uint8_t esp, uint8_t eflags, uint8_t cs, uint8_t eip, uint8_t error_code, uint8_t interrupt_id, uint8_t is_error) {
     printf("\nInterrupt handler:\n");
 
     const char* formatted = format_interrupt(interrupt_id);
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n", interrupt_id);
-    printf(" - Is error: '%d'\n", is_err);
-    printf("");
+    printf(" - Is error: '%d'\n", is_error);
+    printf(" - Error code: '%d'\n", error_code);
+    //printf("");
 
-    if (is_err) {
+    if (is_error) {
         printf(" - Error!\n");
+
+        printf(" - External event: '%d'\n", (error_code & 0x01) > 0);
+        printf(" - Descriptor location: '%d'\n", (error_code & 0x02) > 0);
+
+        if (error_code & 0x02) {
+            printf(" - GDT / LDT: '%d'\n", (error_code & 0x04) > 0);
+        }
+
+        printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
+
         __asm__ volatile ("cli; hlt"); // Completely hangs the computer
     }
 

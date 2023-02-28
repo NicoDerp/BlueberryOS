@@ -45,9 +45,10 @@ int printf(const char* restrict format, ...) {
                 int i = (int) va_arg(parameters, int);
                 char buf[64];
                 itoa(i, buf, 10);
-                printstring(buf);
+                size_t len = strlen(buf);
+                print(buf, len);
                 format++;
-                written++;
+                written += len;
             }
             else if (*format == 's') {
                 const char* s = va_arg(parameters, const char*);
