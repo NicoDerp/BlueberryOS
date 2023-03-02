@@ -45,6 +45,8 @@ void interrupt_handler(uint8_t ss, uint8_t esp, uint8_t eflags, uint8_t cs, uint
     if (is_error) {
         printf(" - Error!\n");
 
+        printf(" - random shit: '%d'\n", 5);
+
         printf(" - External event: '%d'\n", (error_code & 0x01) > 0);
         printf(" - Descriptor location: '%d'\n", (error_code & 0x02) > 0);
 
@@ -54,9 +56,9 @@ void interrupt_handler(uint8_t ss, uint8_t esp, uint8_t eflags, uint8_t cs, uint
 
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
 
-        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
     }
 
+    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
 
