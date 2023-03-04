@@ -14,27 +14,29 @@ isr_stub_%+%1:
     ;pushad
     ;mov eax, [esp+8]
     ;cld
-    push 1
-    push %1
+    push 1  ; signal that this interrupt contains an error
+    push %1 ; interrupt id
     pushad
     add esp, 8
     call interrupt_handler
     sub esp, 8
     popad
+    sub esp, 3
     iret 
 %endmacro
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
     ;pushad
-    push 0 ; error code
-    push 0
-    push %1
+    push 0  ; error code
+    push 0  ; signal that this interrupt doesn't contain any errors
+    push %1 ; interrupt id
     pushad
     add esp, 8
     call interrupt_handler
     sub esp, 8
     popad
+    sub esp, 3
     iret
 %endmacro
 
