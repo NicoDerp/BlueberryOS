@@ -31,7 +31,7 @@ const char* format_interrupt(uint8_t id) {
 }
 
 
-void interrupt_handler(uint8_t eflags, uint8_t cs, uint8_t eip, uint8_t error_code, uint8_t interrupt_id, uint8_t is_error) {
+void interrupt_handler(unsigned int interrupt_id, unsigned int is_error, unsigned int error_code, unsigned int eip, unsigned int cs, unsigned int eflags) {
     printf("\nInterrupt handler:\n");
 
     const char* formatted = format_interrupt(interrupt_id);

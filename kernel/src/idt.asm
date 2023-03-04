@@ -11,17 +11,14 @@ extern interrupt_handler
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
-    ;pushad
-    ;mov eax, [esp+8]
-    ;cld
     push 1  ; signal that this interrupt contains an error
     push %1 ; interrupt id
     pushad
-    add esp, 8
+    add esp, 32
     call interrupt_handler
-    sub esp, 8
+    sub esp, 32
     popad
-    sub esp, 3
+    sub esp, 32
     iret 
 %endmacro
 
@@ -32,11 +29,11 @@ isr_stub_%+%1:
     push 0  ; signal that this interrupt doesn't contain any errors
     push %1 ; interrupt id
     pushad
-    add esp, 8
+    add esp, 32
     call interrupt_handler
-    sub esp, 8
+    sub esp, 32
     popad
-    sub esp, 3
+    sub esp, 32
     iret
 %endmacro
 
