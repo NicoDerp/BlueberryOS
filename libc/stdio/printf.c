@@ -28,10 +28,9 @@ static inline void printstring(const char* data) {
 
 int printf(const char* restrict format, ...) {
     va_list parameters;
-    va_start(parameters, format);
-
     unsigned int written = 0;
 
+    va_start(parameters, format);
     while (*format != 0) {
         if (format[0] == '%' && format[1] != '%') {
             format++;
@@ -46,6 +45,18 @@ int printf(const char* restrict format, ...) {
                 char buf[64];
                 itoa(i, buf, 10);
                 size_t len = strlen(buf);
+
+                /*
+                putchar(buf[0]+'0');
+                putchar(buf[1]+'0');
+
+                printstring("len");
+                char buf2[64];
+                itoa(len, buf2, 10);
+                printstring(buf2);
+                printstring(":");
+                */
+
                 print(buf, len);
                 format++;
                 written += len;

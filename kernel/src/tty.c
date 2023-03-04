@@ -87,7 +87,8 @@ void terminal_write(const char* string, size_t size) {
 void terminal_writestring(const char* string) {
     size_t i = 0;
     while (string[i] != 0) {
-        terminal_writechar(string[i++]);
+        terminal_writechar(string[i]);
+        i++;
     }
 }
 

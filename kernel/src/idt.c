@@ -40,7 +40,11 @@ void interrupt_handler(uint8_t ss, uint8_t esp, uint8_t eflags, uint8_t cs, uint
     printf(" - Interrupt id: '%d'\n", interrupt_id);
     printf(" - Is error: '%d'\n", is_error);
     printf(" - Error code: '%d'\n", error_code);
-    //printf("");
+    printf(" - ss: '%d'\n", ss);
+    printf(" - esp: '%d'\n", esp);
+    printf(" - eflags: '%d'\n", eflags);
+    printf(" - cs: '%d'\n", cs);
+    printf(" - eip: '%d'\n", eip);
 
     if (is_error) {
         printf(" - Error!\n");

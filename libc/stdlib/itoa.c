@@ -5,8 +5,9 @@
 
 char* itoa(int value, char* sp, int base) {
     char tmp[64];
-    tmp[63] = '\0';
-    int i = 62;
+    int i = 63;
+    tmp[i] = '\0';
+    i--;
 
     bool neg = value < 0;
     if (neg) {
@@ -17,13 +18,14 @@ char* itoa(int value, char* sp, int base) {
         char c = value % base + '0';
         value /= base;
 
+        tmp[i] = c;
+        i--;
+
         if (i == 0) {
             printf("Buffer overflow 1 in libc/stdlib/itoa.c\n");
             break;
         }
 
-        tmp[i] = c;
-        i--;
     }
     while (value != 0);
 
@@ -38,11 +40,12 @@ char* itoa(int value, char* sp, int base) {
         i--;
     }
 
-    if (neg) {
+    if (base == 10 && neg) {
         tmp[i] = '-';
         i--;
     }
 
+    /*
     char* tmp2 = &tmp[i+1];
     while (*tmp2 != 0) {
         *sp = *tmp2;
@@ -51,6 +54,12 @@ char* itoa(int value, char* sp, int base) {
     }
 
     sp--;
+    */
+
+    for (int j = 0; j < 63-i; j++) {
+        sp[j] = tmp[i+j+1];
+    }
+
     return sp;
 }
 
