@@ -2,13 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
+uint8_t gdt[5][8];
 
 int main(void) {
-    char buf[64];
-    int a = 120;
-    itoa(a, buf, 10);
-    printf("AA: %s\n", buf);
+    printf("OOga: %ld\n", sizeof(gdt));
     return 0;
 }
 

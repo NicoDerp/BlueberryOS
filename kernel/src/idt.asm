@@ -12,13 +12,24 @@ extern exception_handler
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
-    push dword %1 ; interrupt id
-    push 2
+
+    mov eax, 10
+    mov ecx, 11
+    mov edx, 12
+    mov ebx, 13
+
     pushad
+
+    push %1 ; interrupt id
+    push 69
+    push 420
+
+    cld
     call exception_handler
+
     popad
 
-    add esp, 4    ; restore esp (stack-pointer) to before interrupt id push
+    ;add esp, 4    ; restore esp (stack-pointer) to before interrupt id push
     ;add esp, 8    ; restore esp (stack-pointer) to before interrupt id push
 
     iret
@@ -26,28 +37,18 @@ isr_stub_%+%1:
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
-    push dword %1 ; interrupt id
-    ;push 10
-    
-    push eax
-    push ebx
-    push ecx
-    push edx
-    push esi
-    push edi
-    push esp
 
+    pushad
+
+    push %1 ; interrupt id
+    push 69
+    
+    cld
     call interrupt_handler
 
-    pop esp
-    pop edi
-    pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+    popad
 
-    add esp, 4    ; restore esp (stack-pointer) to before interrupt id push
+    ;add esp, 4    ; restore esp (stack-pointer) to before interrupt id push
     ;add esp, 8    ; restore esp (stack-pointer) to before interrupt id push
 
     iret

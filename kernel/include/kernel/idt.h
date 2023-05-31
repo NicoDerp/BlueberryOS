@@ -39,14 +39,14 @@ typedef struct {
 void idt_initialize(void);
 
 typedef struct {
-    unsigned int eax;
-    unsigned int ebx;
-    unsigned int ecx;
-    unsigned int edx;
-    unsigned int esi;
     unsigned int edi;
+    unsigned int esi;
     unsigned int ebp;
     unsigned int esp;
+    unsigned int ebx;
+    unsigned int edx;
+    unsigned int ecx;
+    unsigned int eax;
 } __attribute__((packed)) stack_state_t;
 
 typedef struct {

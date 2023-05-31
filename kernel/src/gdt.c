@@ -11,61 +11,67 @@ extern void reload_segments();
 void gdt_entry(uint8_t* target, struct GDT source);
 
 
-uint8_t gdt[5 * 8]; // TODO 6 * 8 with TSS
+uint8_t gdt[5][8]; // TODO 6 * 8 with TSS
 
 
 void gdt_initialize() {
 
     struct GDT source;
 
+    /* 0x00 */
     /* Null Descriptor */
     source.base = 0;
     source.limit = 0x00000;
     source.access_byte = 0x00;
     source.flags = 0x0;
-    gdt_entry(gdt + 0x00, source);
+    gdt_entry(gdt[0], source);
 
+    /* 0x08 */
     /* Kernel Mode Code Segment */
     source.base = 0;
     source.limit = 0xFFFFF;
     source.access_byte = 0x9A;
     source.flags = 0xC;
-    gdt_entry(gdt + 0x08, source);
+    gdt_entry(gdt[1], source);
 
+    /* 0x10 */
     /* Kernel Mode Data Segment */
     source.base = 0;
     source.limit = 0xFFFFF;
     source.access_byte = 0x92;
     source.flags = 0xC;
-    gdt_entry(gdt + 0x10, source);
+    gdt_entry(gdt[2], source);
 
+    /* 0x18 */
     /* User Mode Code Segment */
     source.base = 0;
     source.limit = 0xFFFFF;
     source.access_byte = 0xFA;
     source.flags = 0xC;
-    gdt_entry(gdt + 0x18, source);
+    gdt_entry(gdt[3], source);
 
+    /* 0x20 */
     /* User Mode Data Segment */
     source.base = 0;
     source.limit = 0xFFFFF;
     source.access_byte = 0xF2;
     source.flags = 0xC;
-    gdt_entry(gdt + 0x20, source);
+    gdt_entry(gdt[4], source);
 
+    /* 0x28 */
     /* Task State Segment */
     /*
     source.base = &tss;
     source.limit = sizeof(struct TSS);
     source.access_byte = 0x89;
     source.flags = 0x0;
-    gdt_entry(gdt + 0x28, source);
+    gdt_entry(gdt[5], source);
     load_gdt(entry);
     */
 
     //printf("Running %d, %d\n", sizeof(gdt), &gdt[0]);
 
-    load_gdt(sizeof(gdt), &gdt[0]);
+    load_gdt(sizeof(gdt)-1, &gdt[0][0]);
     reload_segments();
 
 }
