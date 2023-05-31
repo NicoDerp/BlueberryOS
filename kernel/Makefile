@@ -15,7 +15,7 @@ LIBDIR = $(PREFIX)/lib
 # Work-around because compiler wasn't configured with --with-sysroot
 #CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/include
 CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem /usr/include
-CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
+CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel -mgeneral-regs-only
 ASM_CFLAGS = -D__is_kernel
 LFLAGS := $(LFLAGS)
 LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lk -lgcc

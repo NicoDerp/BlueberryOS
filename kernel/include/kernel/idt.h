@@ -38,6 +38,11 @@ typedef struct {
 
 void idt_initialize(void);
 
+typedef struct {
+    unsigned int eip;
+    unsigned int cs;
+    unsigned int eflags;
+} __attribute__((packed)) interrupt_frame_t;
 
 #endif /* KERNEL_IDT_H */
 

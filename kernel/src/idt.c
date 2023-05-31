@@ -23,7 +23,6 @@ extern void* isr_stub_table[];
 
 //static bool vectors[32];
 
-
 const char* format_interrupt(uint8_t id) {
     if (id == INT_DOUBLE_FAULT) { return "DOUBLE_FAULT"; }
     else if (id == INT_GENERAL_PROTECTION) { return "GENERAL_PROTECTION"; }
@@ -31,19 +30,35 @@ const char* format_interrupt(uint8_t id) {
 }
 
 
-void interrupt_handler(unsigned int interrupt_id, unsigned int is_error, unsigned int error_code, unsigned int eip, unsigned int cs, unsigned int eflags) {
+__attribute__ ((interrupt))
+void interrupt_handler(interrupt_frame_t* frame) {
     printf("\nInterrupt handler:\n");
 
-    const char* formatted = format_interrupt(interrupt_id);
+    //const char* formatted = format_interrupt(interrupt_id);
 
-    printf(" - Interrupt: %s\n", formatted);
-    printf(" - Interrupt id: '%d'\n", interrupt_id);
-    printf(" - Is error: '%d'\n", is_error);
+    //printf(" - Interrupt: %s\n", formatted);
+    //printf(" - Interrupt id: '%d'\n", interrupt_id);
+    printf(" - eflags: '%d'\n", frame->eflags);
+    printf(" - cs: '%d'\n", frame->cs);
+    printf(" - eip: '%d'\n", frame->eip);
+
+    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+}
+
+__attribute__ ((interrupt))
+void exception_handler(interrupt_frame_t* frame, unsigned int error_code) {
+    printf("\nException handler:\n");
+
+    //const char* formatted = format_interrupt(interrupt_id);
+
+    //printf(" - Interrupt: %s\n", formatted);
+    //printf(" - Interrupt id: '%d'\n", interrupt_id);
     printf(" - Error code: '%d'\n", error_code);
-    printf(" - eflags: '%d'\n", eflags);
-    printf(" - cs: '%d'\n", cs);
-    printf(" - eip: '%d'\n", eip);
+    printf(" - eflags: '%d'\n", frame->eflags);
+    printf(" - cs: '%d'\n", frame->cs);
+    printf(" - eip: '%d'\n", frame->eip);
 
+    /*
     if (is_error) {
         printf(" - Error!\n");
 
@@ -59,10 +74,10 @@ void interrupt_handler(unsigned int interrupt_id, unsigned int is_error, unsigne
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
 
     }
+    */
 
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
-
 
 void idt_initialize(void) {
     idtr.base = (uintptr_t) &idt[0];
@@ -86,10 +101,10 @@ void idt_initialize(void) {
 void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags) {
     idt_entry_t* descriptor = &idt[vector];
 
-    descriptor->isr_low        = ((uint32_t) isr) & 0xFFFF;
-    descriptor->kernel_cs      = 0x08; // this value is whatever offset your kernel code selector is in your GDT
-    descriptor->attributes     = flags;
-    descriptor->isr_high       = ((uint32_t) isr) >> 16;
-    descriptor->reserved       = 0;
+    descriptor->isr_low = ((uint32_t) isr) & 0xFFFF;
+    descriptor->kernel_cs = 0x08; // this value is whatever offset your kernel code selector is in your GDT
+    descriptor->attributes = flags;
+    descriptor->isr_high = ((uint32_t) isr) >> 16;
+    descriptor->reserved = 0;
 }
 

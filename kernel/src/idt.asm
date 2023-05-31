@@ -1,5 +1,6 @@
 
 extern interrupt_handler
+extern exception_handler
 
 
 ; void load_idt(idtr_t idtr);
@@ -11,30 +12,14 @@ extern interrupt_handler
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
-    push 1  ; signal that this interrupt contains an error
-    push %1 ; interrupt id
-    pushad
-    add esp, 32
-    call interrupt_handler
-    sub esp, 32
-    popad
-    sub esp, 32
-    iret 
+    ;push %1 ; interrupt id
+    call exception_handler
 %endmacro
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
-    ;pushad
-    push 0  ; error code
-    push 0  ; signal that this interrupt doesn't contain any errors
-    push %1 ; interrupt id
-    pushad
-    add esp, 32
+    ;push %1 ; interrupt id
     call interrupt_handler
-    sub esp, 32
-    popad
-    sub esp, 32
-    iret
 %endmacro
 
 
