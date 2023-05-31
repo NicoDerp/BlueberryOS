@@ -30,33 +30,38 @@ const char* format_interrupt(uint8_t id) {
 }
 
 
-__attribute__ ((interrupt))
-void interrupt_handler(interrupt_frame_t* frame) {
+//void interrupt_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int interrupt_id, unsigned int test) {
+void interrupt_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int interrupt_id) {
     printf("\nInterrupt handler:\n");
 
-    //const char* formatted = format_interrupt(interrupt_id);
+    const char* formatted = format_interrupt(interrupt_id);
 
-    //printf(" - Interrupt: %s\n", formatted);
-    //printf(" - Interrupt id: '%d'\n", interrupt_id);
-    printf(" - eflags: '%d'\n", frame->eflags);
-    printf(" - cs: '%d'\n", frame->cs);
-    printf(" - eip: '%d'\n", frame->eip);
+    printf(" - Interrupt: %s\n", formatted);
+    printf(" - Interrupt id: '%d'\n", interrupt_id);
+    //printf(" - Test: '%d'\n", test);
+    printf(" - eflags: '%d'\n", frame.eflags);
+    printf(" - cs: '%d'\n", frame.cs);
+    printf(" - eip: '%d'\n", frame.eip);
 
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
-__attribute__ ((interrupt))
-void exception_handler(interrupt_frame_t* frame, unsigned int error_code) {
+//void exception_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int error_code, unsigned int interrupt_id, unsigned int test) {
+void exception_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int error_code, unsigned int interrupt_id) {
     printf("\nException handler:\n");
 
-    //const char* formatted = format_interrupt(interrupt_id);
+    const char* formatted = format_interrupt(interrupt_id);
 
-    //printf(" - Interrupt: %s\n", formatted);
-    //printf(" - Interrupt id: '%d'\n", interrupt_id);
+    printf(" - Interrupt: %s\n", formatted);
+    printf(" - Interrupt id: '%d'\n", interrupt_id);
+    printf(" - edi: '%d'\n", stack_state.edi);
+    printf(" - eax: '%d'\n", stack_state.eax);
+    printf(" - esp: '%d'\n", stack_state.esp);
+    //printf(" - Test: '%d'\n", test);
     printf(" - Error code: '%d'\n", error_code);
-    printf(" - eflags: '%d'\n", frame->eflags);
-    printf(" - cs: '%d'\n", frame->cs);
-    printf(" - eip: '%d'\n", frame->eip);
+    printf(" - eflags: '%d'\n", frame.eflags);
+    printf(" - cs: '%d'\n", frame.cs);
+    printf(" - eip: '%d'\n", frame.eip);
 
     /*
     if (is_error) {

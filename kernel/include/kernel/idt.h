@@ -39,6 +39,17 @@ typedef struct {
 void idt_initialize(void);
 
 typedef struct {
+    unsigned int eax;
+    unsigned int ebx;
+    unsigned int ecx;
+    unsigned int edx;
+    unsigned int esi;
+    unsigned int edi;
+    unsigned int ebp;
+    unsigned int esp;
+} __attribute__((packed)) stack_state_t;
+
+typedef struct {
     unsigned int eip;
     unsigned int cs;
     unsigned int eflags;
