@@ -38,6 +38,9 @@ void interrupt_handler(interrupt_frame_t frame, stack_state_t stack_state, unsig
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n", interrupt_id);
+    printf(" - edi: '%d'\n", stack_state.edi);
+    printf(" - eax: '%d'\n", stack_state.eax);
+    printf(" - esp: '%d'\n", stack_state.esp);
     //printf(" - Test: '%d'\n", test);
     printf(" - eflags: '%d'\n", frame.eflags);
     printf(" - cs: '%d'\n", frame.cs);
