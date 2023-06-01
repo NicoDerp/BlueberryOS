@@ -22,7 +22,7 @@
 #define VGA_LIGHT_BROWN 14
 #define VGA_WHITE 15
 
-void terminal_initialize(void);
+void terminal_initialize(size_t width, size_t height, void* buffer);
 void terminal_write(const char* data, size_t size);
 void terminal_writechar(char c);
 void terminal_writestring(const char* data);

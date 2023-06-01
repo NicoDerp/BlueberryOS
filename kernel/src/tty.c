@@ -5,13 +5,14 @@
 
 #include <kernel/tty.h>
 
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
+static size_t VGA_WIDTH = 80;
+static size_t VGA_HEIGHT = 25;
 
 size_t terminal_row;
 size_t terminal_column;
 
 uint8_t terminal_color;
+uint16_t* terminal_buffer;
 
 inline uint16_t vga_entry(unsigned char c, uint8_t color) {
     return (uint16_t) color << 8 | (uint16_t) c;
@@ -21,12 +22,15 @@ inline uint8_t vga_color(uint8_t fg, uint8_t bg) {
     return bg << 4 | fg;
 }
 
-void terminal_initialize(void) {
+void terminal_initialize(size_t width, size_t height, void* buffer) {
+    VGA_WIDTH = width;
+    VGA_HEIGHT = height;
+
     // Set our copy of the cursor to upper left
     terminal_row = 0;
     terminal_column = 0;
     
-    uint16_t* terminal_buffer = (uint16_t*) 0xB8000; // Set buffer to start of framebuffer
+    terminal_buffer = (uint16_t*) buffer; // Set buffer to start of framebuffer
 
     // Loop through every cell and clear it
     for (size_t y = 0; y < VGA_HEIGHT; y++) {
@@ -38,8 +42,6 @@ void terminal_initialize(void) {
 }
 
 void terminal_scroll_down(void) {
-    uint16_t* terminal_buffer = (uint16_t*) 0xB8000; // Set buffer to start of framebuffer
-
     terminal_row = VGA_HEIGHT - 1;
 
     for (size_t y = 0; y < VGA_HEIGHT-1; y++) {
@@ -57,8 +59,6 @@ void terminal_scroll_down(void) {
 }
 
 void terminal_writechar(const char c) {
-    uint16_t* terminal_buffer = (uint16_t*) 0xB8000; // Set buffer to start of framebuffer
-
     if (c == '\n') {
         terminal_column = 0;
         terminal_row++;
