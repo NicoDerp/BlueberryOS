@@ -35,7 +35,14 @@ SRC_ASM = src/boot.asm src/gdt.asm src/idt.asm src/errors.asm
 OBJ_C = $(SRC_C:.c=.c.o)
 OBJ_ASM = $(SRC_ASM:.asm=.asm.o)
 
+MODULES_C =
+OBJ_MODULES_C = $(MODULES_C:.c=)
+
+MODULES_ASM = src/modules/test.asm
+OBJ_MODULES_ASM = $(MODULES_ASM:.asm=)
+
 OBJ = $(OBJ_C) $(OBJ_ASM)
+OBJ_MODULES = $(OBJ_MODULES_C) $(OBJ_MODULES_ASM)
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
@@ -58,10 +65,22 @@ $(ISO): $(BIN)
 	cp grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o $(ISO) isodir
 
-.PHONY: all clean rebuild check run run-bochs install
+.PHONY: all clean rebuild check run run-bochs install modules
 .SUFFIXES: .o .c .asm
 
-all: $(ISO)
+all: $(ISO) modules
+
+
+%: %.asm
+	$(ASM) -f bin $< -o $@
+
+%: %.c
+	$(CC) -MD -c $^ -o $@ $(CFLAGS) -Wl,--oformat=binary
+
+modules: $(OBJ_MODULES)
+	mkdir -p isodir/modules
+	cp -f $(OBJ_MODULES) isodir/modules
+
 
 clean:
 	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir
@@ -69,13 +88,13 @@ clean:
 rebuild: clean all
 
 check: all
-	@if grub-file --is-x86-multiboot $(BIN); then\
+	@if grub-file --is-x86-multiboot2 $(BIN); then\
 		echo OS is multiboot;\
 	else\
 		echo OS is not multiboot!!;\
 	fi
 
-run: $(ISO)
+run: all
 	qemu-system-i386 -cdrom $(ISO)
 
 run-bochs: $(ISO)
@@ -86,4 +105,5 @@ install:
 	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 -include $(OBJS:.o=.d)
+-include $(OBJ_MODULES:.d)
 

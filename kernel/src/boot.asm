@@ -1,17 +1,20 @@
 
 ; Declare some constants for the multiboot header
-MBALIGN  equ 1 << 0
-MEMINFO  equ 1 << 1
-MBFLAGS  equ MBALIGN | MEMINFO
-MAGIC    equ 0x1BADB002
-CHECKSUM equ -(MAGIC + MBFLAGS)
+MBALIGN       equ 1 << 0
+MEMINFO       equ 1 << 1
+MBFLAGS       equ MBALIGN | MEMINFO
+MAGIC         equ 0xE85250D6
+ARCHITECTURE  equ 0  ; 32-bit protected
+HEADER_LENGTH equ 4*(4+0)
+CHECKSUM      equ -(MAGIC + ARCHITECTURE + HEADER_LENGTH)
 
 
 ; Set the bytes
 section .multiboot
 align 4
     dd MAGIC
-    dd MBFLAGS
+    dd ARCHITECTURE
+    dd HEADER_LENGTH
     dd CHECKSUM
 
 
