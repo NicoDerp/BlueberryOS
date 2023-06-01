@@ -7,8 +7,8 @@
 
 // Function prototypes
 void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags);
-//__attribute__((noreturn)) void exception_handler(void);
-//void interrupt_handler(uint8_t, uint8_t, uint8_t);
+void PIC_remap(int offset1, int offset2);
+void PIC_sendEOI(unsigned char irq);
 extern void load_idt(idtr_t);
 
 
@@ -35,10 +35,13 @@ typedef struct {
 } __attribute__((packed)) test_struct_t;
 
 void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
-//void interrupt_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int interrupt_id) {
     printf("\nInterrupt handler:\n");
 
     const char* formatted = format_interrupt(interrupt_id);
+
+    (void)stack_state;
+    (void)test_struct;
+    (void)frame;
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n", interrupt_id);
@@ -56,6 +59,8 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     //io_outb(PIC1, PIC_EOI);
     //io_outb(PIC2, PIC_EOI);
 
+    PIC_sendEOI(interrupt_id);
+
     int scan;
     register int i;
 
@@ -66,16 +71,17 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     io_outb(PIC1, 0x20);
 
     printf("i: %d, scan: %d\n", i, scan);
-
-    //__asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
-//void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, unsigned int eflags, unsigned int cs, unsigned int eip, unsigned int error_code) {
 void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int error_code) {
     printf("\nException handler:\n");
 
 
     const char* formatted = format_interrupt(interrupt_id);
+
+    (void)stack_state;
+    (void)test_struct;
+    (void)frame;
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n\n", interrupt_id);
@@ -146,7 +152,7 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
     }
 
-    //__asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
 void idt_initialize(void) {
@@ -162,8 +168,10 @@ void idt_initialize(void) {
     __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
     __asm__ volatile ("sti"); // set the interrupt flag
 
-    io_outb(0x21, 0xfd);
-    io_outb(0xa1, 0xff);
+    PIC_remap(0, 8);
+
+    io_outb(PIC1_DATA, 0xfd);
+    io_outb(PIC2_DATA, 0xff);
     io_enable();
 }
 
@@ -177,4 +185,46 @@ void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags) {
     descriptor->isr_high = ((uint32_t) isr) >> 16;
     descriptor->reserved = 0;
 }
+
+void PIC_sendEOI(unsigned char irq)
+{
+    if(irq >= 8) {
+        io_outb(PIC2_COMMAND, PIC_EOI);
+    }
+
+    io_outb(PIC1_COMMAND, PIC_EOI);
+}
+
+/* Copied from https://wiki.osdev.org/PIC#Initialisation */
+void PIC_remap(int offset1, int offset2) {
+    unsigned char a1;
+    unsigned char a2;
+
+    a1 = io_inb(PIC1_DATA);
+    a2 = io_inb(PIC2_DATA);
+
+    io_outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
+    io_wait();
+    io_outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
+    io_wait();
+
+    io_outb(PIC1_DATA, offset1);
+    io_wait();
+    io_outb(PIC2_DATA, offset2);
+    io_wait();
+
+    io_outb(PIC1_DATA, 4);
+    io_wait();
+    io_outb(PIC2_DATA, 2);
+    io_wait();
+
+    io_outb(PIC1_DATA, ICW4_8086);
+    io_wait();
+    io_outb(PIC2_DATA, ICW4_8086);
+    io_wait();
+
+    io_outb(PIC1_DATA, a1);
+    io_outb(PIC2_DATA, a2);
+}
+
 

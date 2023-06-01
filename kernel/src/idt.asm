@@ -13,9 +13,9 @@ extern exception_handler
 %macro isr_err_stub 1
 isr_stub_%+%1:
 
-    push %1 ; interrupt id
-    push 69
-    push 420
+    push dword %1 ; interrupt id
+    push dword 69
+    push dword 420
 
     pushad
 
@@ -32,9 +32,9 @@ isr_stub_%+%1:
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
 
-    push %1 ; interrupt id
-    push 69
-    push 420
+    push dword %1 ; interrupt id
+    push dword 69
+    push dword 420
     
     pushad
 
