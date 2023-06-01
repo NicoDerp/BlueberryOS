@@ -1,6 +1,5 @@
 
-extern interrupt_handler
-extern exception_handler
+extern common_handler
 
 
 ; void load_idt(idtr_t idtr);
@@ -13,6 +12,7 @@ extern exception_handler
 %macro isr_err_stub 1
 isr_stub_%+%1:
 
+    push dword 1  ; signal that this interrupt has an error
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
@@ -20,11 +20,11 @@ isr_stub_%+%1:
     pushad
 
     cld
-    call exception_handler
+    call common_handler
 
     popad
 
-    add esp, 16     ; 'pop' interrupt-id, 2*test number and error-code
+    add esp, 20     ; 'pop' has_erorr, interrupt-id, 2*test number and error-code
 
     iret
 %endmacro
@@ -32,6 +32,8 @@ isr_stub_%+%1:
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
 
+    push dword 0  ; signal that this interrupt doesn't have an error
+    push dword 0  ; error-code
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
@@ -39,11 +41,11 @@ isr_stub_%+%1:
     pushad
 
     cld
-    call interrupt_handler
+    call common_handler
 
     popad
 
-    add esp, 12     ; 'pop' interrupt-id and 2*test-number
+    add esp, 20     ; 'pop' has_error, interrupt-id, 2*test-number and error-code
 
     iret
 %endmacro

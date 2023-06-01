@@ -49,6 +49,11 @@ void terminal_scroll_down(void) {
             terminal_buffer[index_cur] = terminal_buffer[index_next];
         }
     }
+
+    for (size_t x = 0; x < VGA_WIDTH; x++) {
+        const size_t index = (VGA_HEIGHT-1) * VGA_WIDTH + x;
+        terminal_buffer[index] = ' ';
+    }
 }
 
 void terminal_writechar(const char c) {

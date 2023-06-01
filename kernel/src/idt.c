@@ -26,6 +26,9 @@ extern void* isr_stub_table[];
 const char* format_interrupt(uint8_t id) {
     if (id == INT_DOUBLE_FAULT) { return "DOUBLE_FAULT"; }
     else if (id == INT_GENERAL_PROTECTION) { return "GENERAL_PROTECTION"; }
+    else if (id == INT_TIMER) { return "TIMER"; }
+    else if (id == INT_KEYBOARD) { return "KEYBOARD"; }
+    else if (id == INT_MOUSE) { return "MOUSE"; }
     else { return "NOT IMPLEMENTED"; }
 }
 
@@ -59,22 +62,24 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     //io_outb(PIC1, PIC_EOI);
     //io_outb(PIC2, PIC_EOI);
 
-    unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
-    PIC_sendEOI(irq);
+    if (interrupt_id == INT_KEYBOARD) {
+        unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
+        PIC_sendEOI(irq);
 
-    int scan;
-    register int i;
+        int scan;
+        register int i;
 
-    scan = io_inb(0x60);
-    i = io_inb(0x61);
-    io_outb(0x61, i|0x80);
-    io_outb(0x61, i);
-    io_outb(PIC1, 0x20);
+        scan = io_inb(0x60);
+        i = io_inb(0x61);
+        io_outb(0x61, i|0x80);
+        io_outb(0x61, i);
+        io_outb(PIC1, 0x20);
 
-    printf("i: %d, scan: %d\n", i, scan);
+        printf("i: %d, scan: %d\n", i, scan);
+    }
 }
 
-void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int error_code) {
+void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int error_code, bool has_error) {
     printf("\nException handler:\n");
 
 
@@ -110,7 +115,7 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     printf(" - cs: '%d'\n", frame.cs);
     printf(" - eip: '%d'\n", frame.eip);
 
-    if (interrupt_id != 0x08) {
+    if (has_error) {
         printf("\nError breakdown:\n");
 
 
@@ -154,6 +159,15 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     }
 
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+}
+
+void common_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, interrupt_frame_t frame, unsigned int error_code) {
+
+    if (interrupt_id < 32) {
+        exception_handler(stack_state, test_struct, interrupt_id, frame, error_code, has_error);
+    } else {
+        interrupt_handler(stack_state, test_struct, interrupt_id, frame);
+    }
 }
 
 void idt_initialize(void) {

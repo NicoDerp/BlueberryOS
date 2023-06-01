@@ -6,7 +6,7 @@
 
 #define IDT_IRQ_OFFSET 0x20
 
-#define IDT_DESCRIPTORS 32 + 16              /* First 32 are CPU. Next 16 are PIC. */
+#define IDT_DESCRIPTORS 32 + 16         /* First 32 are CPU. Next 16 are PIC. */
 #define IDT_MAX_DESCRIPTORS 256
 
 #define PIC1		0x20		/* IO base address for master PIC */
