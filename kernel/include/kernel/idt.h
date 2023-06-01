@@ -4,7 +4,9 @@
 
 #include <stdint.h>
 
-#define IDT_DESCRIPTORS 32
+#define IDT_IRQ_OFFSET 0x20
+
+#define IDT_DESCRIPTORS 32 + 16              /* First 32 are CPU. Next 16 are PIC. */
 #define IDT_MAX_DESCRIPTORS 256
 
 #define PIC1		0x20		/* IO base address for master PIC */
@@ -31,6 +33,10 @@
 
 #define INT_DOUBLE_FAULT        8
 #define INT_GENERAL_PROTECTION  13
+
+#define INT_TIMER               IDT_IRQ_OFFSET + 0
+#define INT_KEYBOARD            IDT_IRQ_OFFSET + 1
+#define INT_MOUSE               IDT_IRQ_OFFSET + 12
 
 
 typedef struct {

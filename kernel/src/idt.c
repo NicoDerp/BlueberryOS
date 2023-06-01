@@ -59,7 +59,8 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     //io_outb(PIC1, PIC_EOI);
     //io_outb(PIC2, PIC_EOI);
 
-    PIC_sendEOI(interrupt_id);
+    unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
+    PIC_sendEOI(irq);
 
     int scan;
     register int i;
@@ -164,14 +165,14 @@ void idt_initialize(void) {
         //vectors[vector] = true;
     }
 
+    PIC_remap(IDT_IRQ_OFFSET, IDT_IRQ_OFFSET + 0x08);
+
     //load_idt(idtr);
     __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
     __asm__ volatile ("sti"); // set the interrupt flag
 
-    PIC_remap(0, 8);
-
-    io_outb(PIC1_DATA, 0xfd);
-    io_outb(PIC2_DATA, 0xff);
+    io_outb(PIC1_DATA, 0xFD);
+    io_outb(PIC2_DATA, 0xFF);
     io_enable();
 }
 
