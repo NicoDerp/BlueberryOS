@@ -30,8 +30,8 @@ const char* format_interrupt(uint8_t id) {
 }
 
 typedef struct {
-    unsigned int num1;
-    unsigned int num2;
+    unsigned int num1; // arg1
+    unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
 void interrupt_handler(unsigned int test, unsigned int interrupt_id, stack_state_t stack_state, interrupt_frame_t frame) {
@@ -53,7 +53,7 @@ void interrupt_handler(unsigned int test, unsigned int interrupt_id, stack_state
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
-void exception_handler(test_struct_t test_struct, unsigned int interrupt_id, unsigned int edi, unsigned int esi, unsigned int ebp, unsigned int esp, unsigned int ebx, unsigned int edx, unsigned int ecx, unsigned int eax, unsigned int error_code, unsigned int eip, unsigned int cs, unsigned int eflags) {
+void exception_handler(test_struct_t test_struct, unsigned int interrupt_id, unsigned int edi, unsigned int esi, unsigned int ebp, unsigned int esp, unsigned int ebx, unsigned int edx, unsigned int ecx, unsigned int eax, unsigned int eflags, unsigned int cs, unsigned int eip, unsigned int error_code) {
 //void exception_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int error_code, unsigned int interrupt_id) {
     printf("\nException handler:\n");
 
@@ -61,6 +61,7 @@ void exception_handler(test_struct_t test_struct, unsigned int interrupt_id, uns
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n\n", interrupt_id);
+    /*
     printf(" - eax: '%d'\n", eax);
     printf(" - ebx: '%d'\n", ebx);
     printf(" - ecx: '%d'\n", ecx);
@@ -69,6 +70,7 @@ void exception_handler(test_struct_t test_struct, unsigned int interrupt_id, uns
     printf(" - ebp: '%d'\n", ebp);
     printf(" - edi: '%d'\n", edi);
     printf(" - esi: '%d'\n\n", esi);
+    */
     printf(" - Test1: '%d'\n", test_struct.num1);
     printf(" - Test2: '%d'\n", test_struct.num2);
     printf(" - Error code: '%d'\n", error_code);

@@ -13,11 +13,6 @@ extern exception_handler
 %macro isr_err_stub 1
 isr_stub_%+%1:
 
-    mov eax, 10
-    mov ecx, 11
-    mov edx, 12
-    mov ebx, 13
-
     pushad
 
     push %1 ; interrupt id
@@ -31,6 +26,8 @@ isr_stub_%+%1:
 
     ;add esp, 4    ; restore esp (stack-pointer) to before interrupt id push
     ;add esp, 8    ; restore esp (stack-pointer) to before interrupt id push
+
+    add esp, 4     ; 'pop' error code
 
     iret
 %endmacro
