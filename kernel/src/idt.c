@@ -116,7 +116,6 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
             //printf("type: %d, scan: %d\n", type, scancode);
             char key = keyboard_US[scancode];
             printf("%c", key);
-
         }
 
         PIC_sendEOI(irq);
