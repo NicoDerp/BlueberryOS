@@ -24,7 +24,7 @@ isr_stub_%+%1:
 
     popad
 
-    add esp, 12    ; 'pop' interrupt-id, test number and error-code
+    add esp, 16     ; 'pop' interrupt-id, 2*test number and error-code
 
     iret
 %endmacro
@@ -34,6 +34,7 @@ isr_stub_%+%1:
 
     push %1 ; interrupt id
     push 69
+    push 420
     
     pushad
 
@@ -42,7 +43,7 @@ isr_stub_%+%1:
 
     popad
 
-    add esp, 8    ; 'pop' interrupt-id and test-number
+    add esp, 12     ; 'pop' interrupt-id and 2*test-number
 
     iret
 %endmacro

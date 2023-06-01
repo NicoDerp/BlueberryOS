@@ -34,7 +34,7 @@ typedef struct {
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
-void interrupt_handler(stack_state_t stack_state, unsigned int test, unsigned int interrupt_id, interrupt_frame_t frame) {
+void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
 //void interrupt_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int interrupt_id) {
     printf("\nInterrupt handler:\n");
 
@@ -42,19 +42,36 @@ void interrupt_handler(stack_state_t stack_state, unsigned int test, unsigned in
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n", interrupt_id);
+    /*
     printf(" - edi: '%d'\n", stack_state.edi);
     printf(" - eax: '%d'\n", stack_state.eax);
     printf(" - esp: '%d'\n", stack_state.esp);
-    printf(" - Test: '%d'\n", test);
+    printf(" - Test1: '%d'\n", test_struct.num1);
+    printf(" - Test2: '%d'\n", test_struct.num2);
     printf(" - eflags: '%d'\n", frame.eflags);
     printf(" - cs: '%d'\n", frame.cs);
     printf(" - eip: '%d'\n", frame.eip);
+    */
 
-    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    //io_outb(PIC1, PIC_EOI);
+    //io_outb(PIC2, PIC_EOI);
+
+    int scan;
+    register int i;
+
+    scan = io_inb(0x60);
+    i = io_inb(0x61);
+    io_outb(0x61, i|0x80);
+    io_outb(0x61, i);
+    io_outb(PIC1, 0x20);
+
+    printf("i: %d, scan: %d\n", i, scan);
+
+    //__asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
-void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, unsigned int eflags, unsigned int cs, unsigned int eip, unsigned int error_code) {
-//void exception_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int error_code, unsigned int interrupt_id) {
+//void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, unsigned int eflags, unsigned int cs, unsigned int eip, unsigned int error_code) {
+void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int error_code) {
     printf("\nException handler:\n");
 
 
@@ -69,8 +86,8 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     }
     */
 
+    printf(" - eax: '%d'\n", stack_state.eax);
     /*
-    printf(" - eax: '%d'\n", eax);
     printf(" - ebx: '%d'\n", ebx);
     printf(" - ecx: '%d'\n", ecx);
     printf(" - edx: '%d'\n", edx);
@@ -82,9 +99,9 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     printf(" - Test1: '%d'\n", test_struct.num1);
     printf(" - Test2: '%d'\n", test_struct.num2);
     printf(" - Error code: '%d'\n", error_code);
-    printf(" - eflags: '%d'\n", eflags);
-    printf(" - cs: '%d'\n", cs);
-    printf(" - eip: '%d'\n", eip);
+    printf(" - eflags: '%d'\n", frame.eflags);
+    printf(" - cs: '%d'\n", frame.cs);
+    printf(" - eip: '%d'\n", frame.eip);
 
     if (interrupt_id != 0x08) {
         printf("\nError breakdown:\n");
@@ -145,9 +162,9 @@ void idt_initialize(void) {
     __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
     __asm__ volatile ("sti"); // set the interrupt flag
 
-    //io_outb(0x21, 0xfd);
-    //io_outb(0xa1, 0xff);
-    //io_enable();
+    io_outb(0x21, 0xfd);
+    io_outb(0xa1, 0xff);
+    io_enable();
 }
 
 
