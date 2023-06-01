@@ -34,7 +34,7 @@ typedef struct {
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
-void interrupt_handler(unsigned int test, unsigned int interrupt_id, stack_state_t stack_state, interrupt_frame_t frame) {
+void interrupt_handler(stack_state_t stack_state, unsigned int test, unsigned int interrupt_id, interrupt_frame_t frame) {
 //void interrupt_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int interrupt_id) {
     printf("\nInterrupt handler:\n");
 
@@ -53,14 +53,22 @@ void interrupt_handler(unsigned int test, unsigned int interrupt_id, stack_state
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
-void exception_handler(test_struct_t test_struct, unsigned int interrupt_id, unsigned int edi, unsigned int esi, unsigned int ebp, unsigned int esp, unsigned int ebx, unsigned int edx, unsigned int ecx, unsigned int eax, unsigned int eflags, unsigned int cs, unsigned int eip, unsigned int error_code) {
+void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, unsigned int eflags, unsigned int cs, unsigned int eip, unsigned int error_code) {
 //void exception_handler(interrupt_frame_t frame, stack_state_t stack_state, unsigned int error_code, unsigned int interrupt_id) {
     printf("\nException handler:\n");
+
 
     const char* formatted = format_interrupt(interrupt_id);
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n\n", interrupt_id);
+
+    /*
+    if (interrupt_id == 0x08) {
+        return;
+    }
+    */
+
     /*
     printf(" - eax: '%d'\n", eax);
     printf(" - ebx: '%d'\n", ebx);
@@ -78,25 +86,50 @@ void exception_handler(test_struct_t test_struct, unsigned int interrupt_id, uns
     printf(" - cs: '%d'\n", cs);
     printf(" - eip: '%d'\n", eip);
 
-    /*
-    if (is_error) {
-        printf(" - Error!\n");
+    if (interrupt_id != 0x08) {
+        printf("\nError breakdown:\n");
 
-        printf(" - random shit: '%d'\n", 5);
+
+        /* Volume 3 - Chapter 6.13 & 6.14 */
+
+        /** EXT
+         * External event (bit 0) — When set, indicates that the exception occurred during delivery of an
+         * event external to the program, such as an interrupt or an earlier exception. 5 The bit is cleared if the
+         * exception occurred during delivery of a software interrupt (INT n, INT3, or INTO).
+        */
 
         printf(" - External event: '%d'\n", (error_code & 0x01) > 0);
+
+        /** IDT
+         * Descriptor location (bit 1) — When set, indicates that the index portion of the error code refers
+         * to a gate descriptor in the IDT; when clear, indicates that the index refers to a descriptor in the GDT
+         * or the current LDT.
+         */
+
         printf(" - Descriptor location: '%d'\n", (error_code & 0x02) > 0);
 
-        if (error_code & 0x02) {
+
+        /** TI
+         * GDT/LDT (bit 2) — Only used when the IDT flag is clear. When set, the TI flag indicates that the
+         * index portion of the error code refers to a segment or gate descriptor in the LDT; when clear, it indi-
+         * cates that the index refers to a descriptor in the current GDT.
+         */
+
+        if (!(error_code & 0x02)) {
             printf(" - GDT / LDT: '%d'\n", (error_code & 0x04) > 0);
         }
 
+        /** Segment selector index
+         * The segment selector index field provides an index into the IDT, GDT, or current LDT to the segment or gate
+         * selector being referenced by the error code. In some cases the error code is null (all bits are clear except possibly
+         * EXT). A null error code indicates that the error was not caused by a reference to a specific segment or that a null
+         * segment selector was referenced in an operation.
+         */
+
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
-
     }
-    */
 
-    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    //__asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
 void idt_initialize(void) {
