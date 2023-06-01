@@ -39,6 +39,11 @@
 #define INT_MOUSE               IDT_IRQ_OFFSET + 12
 
 
+#define KEY_PRESSED     0x30
+#define KEY_RELEASED    0x20
+
+
+
 typedef struct {
     uint16_t isr_low; // Lower 16 bits of ISR's address
     uint16_t kernel_cs; // The GDT segment selector that the CPU will load into CS before called the ISR

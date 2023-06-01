@@ -38,7 +38,7 @@ typedef struct {
 } __attribute__((packed)) test_struct_t;
 
 void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
-    printf("\nInterrupt handler:\n");
+    //printf("\nInterrupt handler:\n");
 
     const char* formatted = format_interrupt(interrupt_id);
 
@@ -46,8 +46,14 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     (void)test_struct;
     (void)frame;
 
+    unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
+
+    /*
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n", interrupt_id);
+    printf(" - IRQ: '%d'\n", irq);
+    */
+
     /*
     printf(" - edi: '%d'\n", stack_state.edi);
     printf(" - eax: '%d'\n", stack_state.eax);
@@ -61,21 +67,59 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
 
     //io_outb(PIC1, PIC_EOI);
     //io_outb(PIC2, PIC_EOI);
+    char keyboard_US [128] =
+    {
+        0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',   
+      '\t', /* <-- Tab */
+      'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',     
+        0, /* <-- control key */
+      'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',  0, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',   0,
+      '*',
+        0,  /* Alt */
+      ' ',  /* Space bar */
+        0,  /* Caps lock */
+        0,  /* 59 - F1 key ... > */
+        0,   0,   0,   0,   0,   0,   0,   0,
+        0,  /* < ... F10 */
+        0,  /* 69 - Num lock*/
+        0,  /* Scroll Lock */
+        0,  /* Home key */
+        0,  /* Up Arrow */
+        0,  /* Page Up */
+      '-',
+        0,  /* Left Arrow */
+        0,
+        0,  /* Right Arrow */
+      '+',
+        0,  /* 79 - End key*/
+        0,  /* Down Arrow */
+        0,  /* Page Down */
+        0,  /* Insert Key */
+        0,  /* Delete Key */
+        0,   0,   0,
+        0,  /* F11 Key */
+        0,  /* F12 Key */
+        0,  /* All other keys are undefined */
+    };
 
     if (interrupt_id == INT_KEYBOARD) {
-        unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
+        int scancode = io_inb(0x60);
+        int type = io_inb(0x61);
+        //io_outb(0x61, i|0x80);
+        //io_outb(0x61, i);
+        //io_outb(PIC1, 0x20);
+
+        //if (type == KEY_PRESSED) {
+        //}
+
+        if (scancode < 128) {
+            //printf("type: %d, scan: %d\n", type, scancode);
+            char key = keyboard_US[scancode];
+            printf("%c", key);
+
+        }
+
         PIC_sendEOI(irq);
-
-        int scan;
-        register int i;
-
-        scan = io_inb(0x60);
-        i = io_inb(0x61);
-        io_outb(0x61, i|0x80);
-        io_outb(0x61, i);
-        io_outb(PIC1, 0x20);
-
-        printf("i: %d, scan: %d\n", i, scan);
     }
 }
 
