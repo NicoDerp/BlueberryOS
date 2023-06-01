@@ -107,19 +107,17 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
         } 
     }
 
-    return;
+    printf("\nStarting BlueberryOS\n");
 
-    terminal_writestring("\nStarting BlueberryOS\n");
-
-    terminal_writestring("Setting up GDT ... ");
+    printf("Setting up GDT ... ");
     gdt_initialize();
-    terminal_writestring("[OK]\n");
+    printf("[OK]\n");
 
-    terminal_writestring("Setting up IDT ... ");
+    printf("Setting up IDT ... ");
     idt_initialize();
-    terminal_writestring("[OK]\n");
+    printf("[OK]\n");
     
-    terminal_writestring("\n\nWelcome to BlueberryOS!\n");
+    printf("\n\nWelcome to BlueberryOS!\n");
 
 
     for (;;) {

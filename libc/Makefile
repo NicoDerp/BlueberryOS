@@ -30,14 +30,13 @@ ASMFLAGS = -felf32
 
 AR = i686-elf-ar
 
-SRC_C = src/kernel.c src/tty.c
-
 FREEOBJS =\
 	stdio/printf.o \
 	stdio/putchar.o \
 	stdio/puts.o \
 	stdlib/abort.o \
 	stdlib/itoa.o \
+	stdlib/uitoa.o \
 	string/memcmp.o \
 	string/memcpy.o \
 	string/memmove.o \

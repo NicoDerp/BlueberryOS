@@ -3,16 +3,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-char* itoa(int value, char* sp, int base) {
+char* uitoa(unsigned int value, char* sp, int base) {
     char tmp[64];
     int i = 63;
     tmp[i] = '\0';
     i--;
-
-    bool neg = value < 0;
-    if (neg) {
-        value = -value;
-    }
 
     do {
         char c = value % base + '0';
@@ -22,7 +17,7 @@ char* itoa(int value, char* sp, int base) {
         i--;
 
         if (i == 0) {
-            printf("Buffer overflow 1 in libc/stdlib/itoa.c\n");
+            printf("Buffer overflow 1 in libc/stdlib/uitoa.c\n");
             break;
         }
 
@@ -30,7 +25,7 @@ char* itoa(int value, char* sp, int base) {
     while (value != 0);
 
     if (i <= 3) {
-        printf("Buffer overflow 2 in libc/stdlib/itoa.c\n");
+        printf("Buffer overflow 2 in libc/stdlib/uitoa.c\n");
     }
 
     /*
@@ -41,11 +36,6 @@ char* itoa(int value, char* sp, int base) {
         i--;
     }
     */
-
-    if (base == 10 && neg) {
-        tmp[i] = '-';
-        i--;
-    }
 
     /*
     char* tmp2 = &tmp[i+1];

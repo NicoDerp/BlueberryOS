@@ -12,6 +12,7 @@ __attribute__((__noreturn__))
 void abort(void);
 
 char* itoa(int, char*, int);
+char* uitoa(unsigned int, char*, int);
 
 #ifdef __cplusplus
 }
