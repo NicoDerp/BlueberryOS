@@ -18,7 +18,7 @@
 #error "The kernel needs to be compiled with an ix86-elf compiler"
 #endif
 
-typedef void (*module_t)(void);
+typedef void (*module_func_t)(void);
 
 //void kernel_main(const multiboot_header* mutliboot_structure) {
 void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
@@ -54,7 +54,8 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
 
     printf("start\n");
 
-    module_t module;
+    struct multiboot_tag_module* modules[32];
+    size_t moduleCount = 0;
 
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
@@ -75,7 +76,7 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
                 ((struct multiboot_tag_module *) tag)->mod_end,
                 ((struct multiboot_tag_module *) tag)->cmdline);
 
-                module = (module_t) ((struct multiboot_tag_module*) tag)->mod_start;
+                modules[moduleCount++] = (struct multiboot_tag_module*) tag;
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
                 printf("mem_lower = %uKB, mem_upper = %uKB\n",
@@ -123,7 +124,26 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
     
     printf("\n\nWelcome to BlueberryOS!\n");
 
-    module();
+    for (size_t i = 0; i < moduleCount; i++) {
+        struct multiboot_tag_module* module = modules[i];
+        size_t moduleSize = module->mod_end - module->mod_start;
+        printf("Module size: %d\n", moduleSize);
+        printf("Contents:\n");
+        for (size_t j = 0; j < moduleSize; j++) {
+            printf("0x%x: 0x%x\n", j, *((unsigned char*)module->mod_start+j));
+        }
+        printf("Running:\n");
+        module_func_t module_func = (module_func_t) module->mod_start;
+        module_func();
+
+        //printf("ooga");
+        //asm volatile("int $10");
+
+        //unsigned int num;
+        //asm("\t movl %%eax,%0" : "=r" (num));
+
+        //printf("Output is: 0x%x\n", num);
+    }
 
     for (;;) {
         asm("hlt");

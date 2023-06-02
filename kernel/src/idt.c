@@ -40,7 +40,7 @@ typedef struct {
 void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
     //printf("\nInterrupt handler:\n");
 
-    const char* formatted = format_interrupt(interrupt_id);
+    //const char* formatted = format_interrupt(interrupt_id);
 
     (void)stack_state;
     (void)test_struct;
@@ -104,7 +104,7 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
 
     if (interrupt_id == INT_KEYBOARD) {
         int scancode = io_inb(0x60);
-        int type = io_inb(0x61);
+        //int type = io_inb(0x61);
         //io_outb(0x61, i|0x80);
         //io_outb(0x61, i);
         //io_outb(PIC1, 0x20);
