@@ -83,7 +83,7 @@ clean:
 	rm -rf $(OBJS) $(LIBK_OBJS)	*.o */*.o */*/*.o
 	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) *.d */*.d */*/*.d
 
-install: install-headers install-libs
+install: $(BINARIES) install-headers install-libs
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)

@@ -119,7 +119,6 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
     
     printf("\n\nWelcome to BlueberryOS!\n");
 
-
     for (;;) {
         asm("hlt");
     }

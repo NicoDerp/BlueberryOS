@@ -18,6 +18,10 @@ char* itoa(int value, char* sp, int base) {
         char c = value % base + '0';
         value /= base;
 
+        if (c > '9' && c < 'A') {
+            c += 'A' - '9' - 1;
+        }
+
         tmp[i] = c;
         i--;
 
