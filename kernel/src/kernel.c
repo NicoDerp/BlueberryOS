@@ -18,6 +18,8 @@
 #error "The kernel needs to be compiled with an ix86-elf compiler"
 #endif
 
+typedef void (*module_t)(void);
+
 //void kernel_main(const multiboot_header* mutliboot_structure) {
 void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
 
@@ -33,19 +35,16 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
         printf("[ERROR] Failed to verify if bootloader has passed correct information");
     }
 
-    //struct multiboot_tag* tag = (struct multiboot_tag*) ebx;
-
     /* Initialize framebuffer first-thing */
     /* Copied from https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#kernel_002ec */
     struct multiboot_tag* tag;
-    for (tag = (struct multiboot_tag *) (ebx + 8);
+    for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
-       tag = (struct multiboot_tag *) ((multiboot_uint8_t *) tag 
-                                       + ((tag->size + 7) & ~7)))
+       tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
         if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER)
         {
-            struct multiboot_tag_framebuffer *tagfb = (struct multiboot_tag_framebuffer *) tag;
+            struct multiboot_tag_framebuffer *tagfb = (struct multiboot_tag_framebuffer*) tag;
 
             /* Initialize framebuffer */
             terminal_initialize((size_t) tagfb->common.framebuffer_width, (size_t) tagfb->common.framebuffer_height, (void*) (unsigned long) tagfb->common.framebuffer_addr);
@@ -53,10 +52,13 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
         }
     }
 
-    for (tag = (struct multiboot_tag *) (ebx + 8);
+    printf("start\n");
+
+    module_t module;
+
+    for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
-       tag = (struct multiboot_tag *) ((multiboot_uint8_t *) tag 
-                                       + ((tag->size + 7) & ~7)))
+       tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
         printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
         switch (tag->type)
@@ -72,6 +74,8 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
                 ((struct multiboot_tag_module *) tag)->mod_start,
                 ((struct multiboot_tag_module *) tag)->mod_end,
                 ((struct multiboot_tag_module *) tag)->cmdline);
+
+                module = (module_t) ((struct multiboot_tag_module*) tag)->mod_start;
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
                 printf("mem_lower = %uKB, mem_upper = %uKB\n",
@@ -91,7 +95,7 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
                     printf("mmap\n");
 
                     for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
-                        (multiboot_uint8_t *) mmap < (multiboot_uint8_t *) tag + tag->size;
+                        (multiboot_uint8_t*) mmap < (multiboot_uint8_t *) tag + tag->size;
                         mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
 
                         printf(" base_addr = 0x%x%x,"
@@ -104,7 +108,7 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
                     }
                 }
                 break;
-        } 
+        }
     }
 
     printf("\nStarting BlueberryOS\n");
@@ -118,6 +122,8 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
     printf("[OK]\n");
     
     printf("\n\nWelcome to BlueberryOS!\n");
+
+    module();
 
     for (;;) {
         asm("hlt");

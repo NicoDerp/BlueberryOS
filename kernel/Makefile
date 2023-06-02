@@ -35,7 +35,7 @@ SRC_ASM = src/boot.asm src/gdt.asm src/idt.asm src/errors.asm
 OBJ_C = $(SRC_C:.c=.c.o)
 OBJ_ASM = $(SRC_ASM:.asm=.asm.o)
 
-MODULES_C =
+MODULES_C = src/modules/shell.c
 OBJ_MODULES_C = $(MODULES_C:.c=)
 
 MODULES_ASM = src/modules/test.asm
@@ -59,7 +59,7 @@ $(BIN): $(OBJ)
 	$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $^ $(LIBS)
 
 # Making iso
-$(ISO): $(BIN)
+$(ISO): $(BIN) modules
 	mkdir -p isodir/boot/grub
 	cp $(BIN) isodir/boot/$(BIN)
 	cp grub.cfg isodir/boot/grub/grub.cfg
@@ -68,7 +68,7 @@ $(ISO): $(BIN)
 .PHONY: all clean rebuild check run run-bochs install modules
 .SUFFIXES: .o .c .asm
 
-all: $(ISO) modules
+all: $(ISO)
 
 
 %: %.asm
@@ -83,7 +83,7 @@ modules: $(OBJ_MODULES)
 
 
 clean:
-	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir
+	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) $(OBJ_MODULES) $(OBJ_MODULES:.d) isodir
 
 rebuild: clean all
 
