@@ -6,6 +6,7 @@
 #include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
+#include <kernel/paging.h>
 #include <kernel/memory.h>
 
 /* Check if you are targeting the wrong operating system */
@@ -122,6 +123,10 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
     printf("Setting up IDT ... ");
     idt_initialize();
     printf("[OK]\n");
+
+    printf("Setting up paging ...");
+    paging_initialize();
+    printf("[OK]\n");
     
     printf("\n\nWelcome to BlueberryOS!\n");
 
@@ -146,6 +151,10 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
 
         //printf("Output is: 0x%x\n", num);
     }
+
+    pageframe_t frame = kalloc_frame();
+    printf("frame: 0x%x\n", frame);
+    kfree_frame(frame);
 
     for (;;) {
         asm("hlt");
