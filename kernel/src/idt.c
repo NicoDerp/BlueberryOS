@@ -1,6 +1,10 @@
 
 #include <kernel/idt.h>
 #include <kernel/io.h>
+#include <kernel/tty.h>
+
+#include <unistd.h>
+#include <sys/syscall.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -46,6 +50,42 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
     (void)test_struct;
     (void)frame;
     (void)interrupt_id;
+
+    switch (stack_state.eax) {
+        case (SYS_exit):
+            {
+                printf("Exit!\n");
+
+                int status = stack_state.ebx;
+
+                printf("Status: '%d'\n", status);
+            }
+            break;
+
+        case (SYS_write):
+            {
+                printf("Write!\n");
+
+                int fd = stack_state.ebx;
+                const void* buf = (const void*) stack_state.ecx;
+                size_t count = stack_state.edx;
+
+                if (fd == STDOUT_FILENO) {
+                    if (count == 1) {
+                        terminal_writechar((char) ((int) buf & 0xFF));
+                    } else {
+                        terminal_write(buf, count);
+                    }
+                } else {
+                    printf("Invalid fd '%d'\n", fd);
+                }
+            }
+
+            break;
+
+        default:
+            printf("Invalid syscall id '%d'\n", stack_state.eax);
+    }
 }
 
 void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {

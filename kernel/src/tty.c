@@ -59,6 +59,10 @@ void terminal_scroll_down(void) {
 }
 
 void terminal_writechar(const char c) {
+    if (c == '\0') {
+        return;
+    }
+
     if (c == '\n') {
         terminal_column = 0;
         terminal_row++;
