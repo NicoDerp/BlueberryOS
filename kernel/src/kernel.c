@@ -23,7 +23,7 @@
 typedef void (*module_func_t)(void);
 
 //void kernel_main(const multiboot_header* mutliboot_structure) {
-void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
+void kernel_main(unsigned int eax, unsigned int ebx) {
 
     /*
     for (int y = 0; y < 100; y++) {
@@ -128,10 +128,9 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
     paging_initialize();
     printf("[OK]\n");
     
-    unsigned int* y = (unsigned int*) 0x100001;
-    *y = 5;
-
-    printf("a: 0x%x, 0x%x\n", y, *y);
+    //unsigned int* y = (unsigned int*) 0x0FFFFF;
+    //*y = 5;
+    //printf("a: 0x%x, 0x%x\n", y, *y);
 
     printf("\n\nWelcome to BlueberryOS!\n");
 

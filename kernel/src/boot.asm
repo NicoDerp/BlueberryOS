@@ -62,8 +62,6 @@ _start:
     ; arg1
     push eax
 
-    push 69
-
     ; Enter the kernel!
     ; kernel_main(arg1, arg2)
     extern kernel_main

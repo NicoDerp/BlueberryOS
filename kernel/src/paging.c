@@ -7,19 +7,17 @@
 
 #include <stdio.h>
 
-extern void enablePaging(void);
+//extern void enablePaging(void);
+extern void enablePaging(pagedirectory_t);
 extern void loadPageDirectory(unsigned int*);
 
 pagedirectory_t page_directory;
-pagetable_t* pagetables[1024];
 
 void paging_initialize(void) {
     page_directory = (pagedirectory_t) kalloc_frame();
     //first_page_table = (pagetable_t) kalloc_frame();
 
     for (size_t i = 0; i < 1024; i++) {
-        pagetables[i] = 0;
-
         /** This sets the following flags to the pages:
          *   Supervisor: Only kernel-mode can access them
          *   Write Enabled: It can be both read from and written to
@@ -38,19 +36,21 @@ void paging_initialize(void) {
 
     change_pagetable(0, true, true);
 
-    loadPageDirectory(page_directory);
-    enablePaging();
+    //loadPageDirectory(page_directory);
+    //enablePaging();
+    enablePaging(page_directory);
 }
 
 void change_pagetable(size_t index, bool writable, bool kernel) {
 
     pagetable_t pagetable;
 
-    if (pagetables[index] == 0) {
+    if (page_directory[index] == 0x00000002) {
         pagetable = (pagetable_t) kalloc_frame();
-        pagetables[index] = &pagetable;
+        unsigned int flags = page_directory[index] & 0x3;
+        page_directory[index] = ((unsigned int) pagetable) | flags;
     } else {
-        pagetable = *pagetables[index];
+        pagetable = (pagetable_t) (page_directory[index] & 0xfffff00);
     }
 
     unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
@@ -61,5 +61,24 @@ void change_pagetable(size_t index, bool writable, bool kernel) {
     }
 
     page_directory[index] = ((unsigned int) pagetable) | flags;
+}
+
+void unmap_page(void* virtualaddr) {
+
+    uint32_t pdindex = (uint32_t) virtualaddr >> 22;
+    uint32_t ptindex = (uint32_t) virtualaddr >> 12 & 0x03FF;
+
+    pagetable_t pagetable = (pagetable_t) (page_directory[pdindex] & 0xfffff00);
+
+    // Set page or entry to not present
+    pagetable[ptindex] = 0x00000000;
+}
+
+void unmap_pagetable(void* virtualaddr) {
+
+    uint32_t pdindex = (uint32_t) virtualaddr >> 22;
+
+    // Set the page-table to not present, with some flags (maybe unnecessary)
+    page_directory[pdindex] = 0x00000002;
 }
 

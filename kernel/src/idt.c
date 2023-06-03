@@ -133,6 +133,7 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     (void)stack_state;
     (void)test_struct;
     (void)frame;
+    (void)has_error;
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n\n", interrupt_id);
