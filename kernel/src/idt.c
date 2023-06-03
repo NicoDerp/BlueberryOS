@@ -235,15 +235,6 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer
 }
 
-void common_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, interrupt_frame_t frame, unsigned int error_code) {
-
-    if (interrupt_id < 32) {
-        exception_handler(stack_state, test_struct, interrupt_id, frame, error_code, has_error);
-    } else {
-        interrupt_handler(stack_state, test_struct, interrupt_id, frame);
-    }
-}
-
 void idt_initialize(void) {
     idtr.base = (uintptr_t) &idt[0];
     idtr.limit = (uint16_t) sizeof(idt_entry_t) * IDT_MAX_DESCRIPTORS - 1;

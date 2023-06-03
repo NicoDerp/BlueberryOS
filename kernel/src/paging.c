@@ -8,8 +8,8 @@
 #include <stdio.h>
 
 //extern void enablePaging(void);
+//extern void loadPageDirectory(unsigned int*);
 extern void enablePaging(pagedirectory_t);
-extern void loadPageDirectory(unsigned int*);
 extern void flushPaging(void);
 
 pagedirectory_t page_directory;
