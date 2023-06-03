@@ -1,6 +1,7 @@
 
 extern exception_handler
 extern interrupt_handler
+extern syscall_handler
 
 
 ; void load_idt(idtr_t idtr);
@@ -70,6 +71,25 @@ isr_stub_%+%1:
     iret
 %endmacro
 
+%macro syc_stub 1
+isr_stub_%+%1:
+
+    push dword %1 ; interrupt id
+    push dword 69
+    push dword 420
+    
+    pushad
+
+    cld
+    call syscall_handler
+
+    popad
+
+    add esp, 12     ; 'pop' interrupt-id and 2*test-number
+
+    iret
+%endmacro
+
 ; Define exception handlers
 isr_exc_no_err_stub 0
 isr_exc_no_err_stub 1
@@ -122,7 +142,11 @@ irq_stub 44
 irq_stub 45
 irq_stub 46
 irq_stub 47
-DESCRIPTOR_COUNT equ 48
+
+; System call stuff
+syc_stub 48
+
+DESCRIPTOR_COUNT equ 49
 
 global isr_stub_table
 isr_stub_table:

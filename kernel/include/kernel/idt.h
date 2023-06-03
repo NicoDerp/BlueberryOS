@@ -40,6 +40,8 @@
 #define INT_KEYBOARD            IDT_IRQ_OFFSET + 1
 #define INT_MOUSE               IDT_IRQ_OFFSET + 12
 
+#define INT_SYSCALL
+
 
 #define KEY_PRESSED     0x30
 #define KEY_RELEASED    0x20

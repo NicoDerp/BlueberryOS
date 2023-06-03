@@ -15,8 +15,11 @@ This is very in-development and just a hobby-project.
 You will need:
  - Linux (not tested on anything other)
  - A [cross-compiler](https://wiki.osdev.org/GCC_Cross-Compiler) for i686
- - (optional) An emulator, like QEMU
- - The source code for BlueberryOS (download by using git clone)
+ - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
+ - Git
+ - The source code for BlueberryOS (download by using `git clone https://github.com/NicoDerp/BlueberryOS.git`)
+
+Download source
 
 Then head into all sub-directories and run:
 
@@ -26,10 +29,29 @@ $ make install
 ```
 
 Inside the `kernel` directory you will now find a `blueberryos.iso`. 
-To emulate:
+Now you can emulate using your favourite emulator or even run the BlueberryOS on real hardware!
+If you wan't to emulate using QEMU you can just use the command:
 ```shell
-$ qemu-system-i386 -cdrom blueberryos.iso
+$ make run
 ```
+Or, if you like Bochs more:
+```shell
+$ make run-bochs
+```
+
+## Documentation for developers
+
+### Cross-compiler
+
+It is important that you use the `i686-elf-gcc` cross-compiler when developing for this operating system.
+This is because the entire standard-library is re-written to work with BlueberryOS.
+
+This ensures portability, so any C code can run with ease.
+
+### Syscalls
+
+Instead of the conventional `int $80` for linux-based operating systems, this os uses the interrupt `$30` or decimal `48`.
+
 
 ## License
 
