@@ -3,9 +3,10 @@
 
 #include <stdio.h>
 
+#include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
-#include <kernel/multiboot2.h>
+#include <kernel/memory.h>
 
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
@@ -132,9 +133,10 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
         for (size_t j = 0; j < moduleSize; j++) {
             printf("0x%x: 0x%x\n", j, *((unsigned char*)module->mod_start+j));
         }
-        printf("Running:\n");
-        module_func_t module_func = (module_func_t) module->mod_start;
-        module_func();
+
+        //printf("Running:\n");
+        //module_func_t module_func = (module_func_t) module->mod_start;
+        //module_func();
 
         //printf("ooga");
         //asm volatile("int $10");

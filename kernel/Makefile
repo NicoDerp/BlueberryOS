@@ -29,7 +29,7 @@ ISO = blueberryos.iso
 BIN = blueberryos.bin
 
 
-SRC_C = src/kernel.c src/tty.c src/gdt.c src/idt.c src/errors.c src/io.c
+SRC_C = src/kernel.c src/tty.c src/gdt.c src/idt.c src/errors.c src/io.c src/memory.c
 SRC_ASM = src/boot.asm src/gdt.asm src/idt.asm src/errors.asm
 
 OBJ_C = $(SRC_C:.c=.c.o)
