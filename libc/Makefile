@@ -51,8 +51,8 @@ OBJS = $(FREEOBJS) $(HOSTEDOBJS)
 
 LIBK_OBJS = $(FREEOBJS:.o=.libk.o)
 
-#BINARIES = libc.a libk.a # Not ready for libc yet.
-BINARIES = libk.a
+BINARIES = libc.a libk.a # Not ready for libc yet.
+#BINARIES = libk.a
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 

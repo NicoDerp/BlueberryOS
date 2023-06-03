@@ -4,8 +4,8 @@
 
 #include <sys/cdefs.h>
 
-#define SYS_EXIT  0
-#define SYS_WRITE 1
+#define SYS_exit  0
+#define SYS_write 1
 
 #endif
 

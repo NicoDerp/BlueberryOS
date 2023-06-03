@@ -20,9 +20,17 @@ static inline void printstring(const char* data) {
 
 #else
 
-// TODO implement stdio and write system call
+#include <unistd.h>
+#include <sys/syscall.h>
 
-#error "System calls aren't implemented yet"
+static inline void print(const char* data, size_t length) {
+    syscall(SYS_write, 1, data, length);
+}
+
+static inline void printstring(const char* data) {
+    size_t length = strlen(data);
+    syscall(SYS_write, 1, data, length);
+}
 
 #endif
 

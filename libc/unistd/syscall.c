@@ -10,8 +10,8 @@ extern void syscall3(int, ...);
 
 typedef void (*function_t)(int, ...);
 function_t lookup[] = {
-    syscall0, /* SYS_EXIT */
-    syscall3, /* SYS_WRITE */
+    syscall0, /* SYS_exit */
+    syscall3, /* SYS_write */
 };
 
 int syscall(long unsigned int number, ...) {

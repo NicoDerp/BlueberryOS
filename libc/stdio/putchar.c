@@ -2,7 +2,14 @@
 #include <stdio.h>
 
 #if defined(__is_libk)
+
 #include <kernel/tty.h>
+
+#else
+
+#include <unistd.h>
+#include <sys/syscall.h>
+
 #endif
 
 int putchar(int ic) {
@@ -14,8 +21,7 @@ int putchar(int ic) {
 
 #else
 
-// TODO implement stdio and write system call
-#error "System calls aren't implemented yet"
+    syscall(SYS_write, 1, ic, 1);
 
 #endif
 
