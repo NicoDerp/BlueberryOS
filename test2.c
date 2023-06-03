@@ -1,13 +1,21 @@
 
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdint.h>
 
-uint8_t gdt[5][8];
+typedef struct {
+    uint32_t present:1;
+    uint32_t readwrite:1;
+    uint32_t usermode:1;
+    uint32_t reserved:2;
+    uint32_t available:3;
+    uint32_t address:20;
+    uint32_t ooga;
+} pagetable_t;
 
 int main(void) {
-    printf("OOga: %ld\n", sizeof(gdt));
-    return 0;
+    long unsigned int num = 0xFFFFFFFFFFFFFFFF;
+    pagetable_t* x = (pagetable_t*) &num;
+    pagetable_t table = *x;
+    printf("0x%x\n", table.address);
 }
 

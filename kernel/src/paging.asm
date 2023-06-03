@@ -9,6 +9,12 @@ enablePaging:
     mov cr0, eax
     ret
 
+global flushPaging
+flushPaging:
+    mov eax, cr3
+    mov cr3, eax
+    ret
+
 ;enablePaging:
 ;    push ebp
 ;    mov ebp, esp

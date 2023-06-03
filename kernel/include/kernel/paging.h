@@ -7,14 +7,25 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+/*
 typedef struct {
-    unsigned char present:1;
-    unsigned char readwrite:1;
-    unsigned char usermode:1;
-    unsigned char reserved:2;
-    unsigned char available:3;
-    unsigned int address:20;
+    uint32_t present:1;
+    uint32_t readwrite:1;
+    uint32_t usermode:1;
+    uint32_t reserved:2;
+    uint32_t available:3;
+    uint32_t address:20;
 } page_t;
+
+typedef struct {
+    uint32_t present:1;
+    uint32_t readwrite:1;
+    uint32_t usermode:1;
+    uint32_t reserved:2;
+    uint32_t available:3;
+    uint32_t address:20;
+} pagetable_t;
+*/
 
 typedef uint32_t* pagetable_t;
 

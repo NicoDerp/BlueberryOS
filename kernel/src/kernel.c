@@ -124,13 +124,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     idt_initialize();
     printf("[OK]\n");
 
-    printf("Setting up paging ...");
+    printf("Setting up Paging ...");
     paging_initialize();
     printf("[OK]\n");
     
-    //unsigned int* y = (unsigned int*) 0x0FFFFF;
-    //*y = 5;
-    //printf("a: 0x%x, 0x%x\n", y, *y);
+    /*
+    change_pagetable(0, false, false);
+
+    unsigned int* y = (unsigned int*) 0x0FFFFF;
+    *y = 5;
+    printf("a: 0x%x, 0x%x\n", y, *y);
+    */
+
 
     printf("\n\nWelcome to BlueberryOS!\n");
 
@@ -156,9 +161,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //printf("Output is: 0x%x\n", num);
     }
 
+    /*
     pageframe_t frame = kalloc_frame();
     printf("frame: 0x%x\n", frame);
     kfree_frame(frame);
+    */
 
     for (;;) {
         asm("hlt");
