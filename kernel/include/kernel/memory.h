@@ -10,8 +10,8 @@ extern unsigned int kernelend;
 #define FRAME_4MB 0x400000
 
 #define FRAME_SIZE FRAME_4KB
-#define MAX_FRAMES FRAME_SIZE / FRAME_MAP_SIZE
-#define FRAME_START kernelend
+#define MAX_FRAMES (FRAME_SIZE / FRAME_MAP_SIZE)
+#define FRAME_START (FRAME_SIZE - (kernelend - 1) % FRAME_SIZE + kernelend-1)
 #define FRAME_CACHE_SIZE 8
 
 typedef enum {
