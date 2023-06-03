@@ -31,8 +31,10 @@
 #define ICW4_SFNM	0x10		/* Special fully nested (not) */
 
 
+#define INT_INVALID_OPCODE      6
 #define INT_DOUBLE_FAULT        8
 #define INT_GENERAL_PROTECTION  13
+#define INT_PAGE_FAULT          14
 
 #define INT_TIMER               IDT_IRQ_OFFSET + 0
 #define INT_KEYBOARD            IDT_IRQ_OFFSET + 1
@@ -74,8 +76,8 @@ typedef struct {
 
 typedef struct {
     unsigned int eflags;
-    unsigned int cs;
     unsigned int eip;
+    unsigned int cs;
 } __attribute__((packed)) interrupt_frame_t;
 
 #endif /* KERNEL_IDT_H */

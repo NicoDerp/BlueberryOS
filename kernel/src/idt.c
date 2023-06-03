@@ -24,8 +24,10 @@ extern void* isr_stub_table[];
 //static bool vectors[32];
 
 const char* format_interrupt(uint8_t id) {
-    if (id == INT_DOUBLE_FAULT) { return "DOUBLE_FAULT"; }
+    if      (id == INT_INVALID_OPCODE) { return "INVALID_OPCODE"; }
+    else if (id == INT_DOUBLE_FAULT) { return "DOUBLE_FAULT"; }
     else if (id == INT_GENERAL_PROTECTION) { return "GENERAL_PROTECTION"; }
+    else if (id == INT_PAGE_FAULT) { return "PAGE_FAULT"; }
     else if (id == INT_TIMER) { return "TIMER"; }
     else if (id == INT_KEYBOARD) { return "KEYBOARD"; }
     else if (id == INT_MOUSE) { return "MOUSE"; }
@@ -158,7 +160,7 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     printf(" - cs: '%d'\n", frame.cs);
     printf(" - eip: '%d'\n", frame.eip);
 
-    if (has_error) {
+    if (interrupt_id == INT_GENERAL_PROTECTION) {
         printf("\nError breakdown:\n");
 
 
@@ -199,6 +201,34 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
          */
 
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
+    } else if (interrupt_id == INT_PAGE_FAULT) {
+        printf("\nError breakdown:\n");
+        
+        if (error_code & 0x01) {
+            printf(" - Page was present\n");
+        } else {
+            printf(" - Page wasn't present\n");
+        }
+
+        if (error_code & 0x02) {
+            printf(" - Operation that caused fault was a write-operation\n");
+        } else {
+            printf(" - Operation that caused fault was a read-operation\n");
+        }
+
+        if (error_code & 0x04) {
+            printf(" - Fault happened in user-mode\n");
+        } else {
+            printf(" - Fault happened in kernel-mode\n");
+        }
+
+        if (error_code & 0x08) {
+            printf(" - Fault caused by reserved bits being overwritten\n");
+        }
+
+        if (error_code & 0x10) {
+            printf(" - Fault occured during instruction fetch\n");
+        }
     }
 
     __asm__ volatile ("cli; hlt"); // Completely hangs the computer

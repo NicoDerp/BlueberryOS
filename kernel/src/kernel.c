@@ -128,6 +128,11 @@ void kernel_main(unsigned int test, unsigned int eax, unsigned int ebx) {
     paging_initialize();
     printf("[OK]\n");
     
+    unsigned int* y = (unsigned int*) 0x100001;
+    *y = 5;
+
+    printf("a: 0x%x, 0x%x\n", y, *y);
+
     printf("\n\nWelcome to BlueberryOS!\n");
 
     for (size_t i = 0; i < moduleCount; i++) {
