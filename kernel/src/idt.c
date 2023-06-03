@@ -24,20 +24,29 @@ extern void* isr_stub_table[];
 //static bool vectors[32];
 
 const char* format_interrupt(uint8_t id) {
-    if      (id == INT_INVALID_OPCODE) { return "INVALID_OPCODE"; }
-    else if (id == INT_DOUBLE_FAULT) { return "DOUBLE_FAULT"; }
+    if      (id == INT_INVALID_OPCODE)     { return "INVALID_OPCODE";     }
+    else if (id == INT_DOUBLE_FAULT)       { return "DOUBLE_FAULT";       }
     else if (id == INT_GENERAL_PROTECTION) { return "GENERAL_PROTECTION"; }
-    else if (id == INT_PAGE_FAULT) { return "PAGE_FAULT"; }
-    else if (id == INT_TIMER) { return "TIMER"; }
-    else if (id == INT_KEYBOARD) { return "KEYBOARD"; }
-    else if (id == INT_MOUSE) { return "MOUSE"; }
-    else { return "NOT IMPLEMENTED"; }
+    else if (id == INT_PAGE_FAULT)         { return "PAGE_FAULT";         }
+    else if (id == INT_TIMER)              { return "TIMER";              }
+    else if (id == INT_KEYBOARD)           { return "KEYBOARD";           }
+    else if (id == INT_MOUSE)              { return "MOUSE";              }
+    else if (id == INT_SYSCALL)            { return "SYSCALL";            }
+    else                                   { return "NOT IMPLEMENTED";    }
 }
 
 typedef struct {
     unsigned int num1; // arg1
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
+
+void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
+    printf("Syscall!\n");
+    (void)stack_state;
+    (void)test_struct;
+    (void)frame;
+    (void)interrupt_id;
+}
 
 void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
     //printf("\nInterrupt handler:\n");

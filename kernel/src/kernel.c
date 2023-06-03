@@ -9,6 +9,9 @@
 #include <kernel/paging.h>
 #include <kernel/memory.h>
 
+#include <unistd.h>
+#include <sys/syscall.h>
+
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certaintly run into trouble."
@@ -160,6 +163,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
         //printf("Output is: 0x%x\n", num);
     }
+
+    syscall(SYS_exit);
 
     /*
     pageframe_t frame = kalloc_frame();

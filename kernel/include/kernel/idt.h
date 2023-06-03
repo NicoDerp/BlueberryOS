@@ -6,7 +6,7 @@
 
 #define IDT_IRQ_OFFSET 0x20
 
-#define IDT_DESCRIPTORS 32 + 16         /* First 32 are CPU. Next 16 are PIC. */
+#define IDT_DESCRIPTORS 32 + 16 + 1     /* First 32 are CPU. Next 16 are PIC. Next is Syscall */
 #define IDT_MAX_DESCRIPTORS 256
 
 #define PIC1		0x20		/* IO base address for master PIC */
@@ -31,16 +31,16 @@
 #define ICW4_SFNM	0x10		/* Special fully nested (not) */
 
 
-#define INT_INVALID_OPCODE      6
-#define INT_DOUBLE_FAULT        8
-#define INT_GENERAL_PROTECTION  13
-#define INT_PAGE_FAULT          14
+#define INT_INVALID_OPCODE      0x06  /* 6 */
+#define INT_DOUBLE_FAULT        0x08  /* 8 */
+#define INT_GENERAL_PROTECTION  0x0C  /* 13 */
+#define INT_PAGE_FAULT          0x0D  /* 14 */
 
-#define INT_TIMER               IDT_IRQ_OFFSET + 0
-#define INT_KEYBOARD            IDT_IRQ_OFFSET + 1
-#define INT_MOUSE               IDT_IRQ_OFFSET + 12
+#define INT_TIMER               IDT_IRQ_OFFSET + 0x00  /* 0 */
+#define INT_KEYBOARD            IDT_IRQ_OFFSET + 0x01  /* 1 */
+#define INT_MOUSE               IDT_IRQ_OFFSET + 0x02  /* 12 */
 
-#define INT_SYSCALL
+#define INT_SYSCALL             0x30  /* 48 */
 
 
 #define KEY_PRESSED     0x30

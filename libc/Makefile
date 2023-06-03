@@ -42,6 +42,8 @@ FREEOBJS =\
 	string/memmove.o \
 	string/memset.o \
 	string/strlen.o \
+	unistd/syscall.o \
+	unistd/syscall_asm.o \
 
 HOSTEDOBJS =
 
