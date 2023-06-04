@@ -24,12 +24,12 @@ static inline void printstring(const char* data) {
 #include <sys/syscall.h>
 
 static inline void print(const char* data, size_t length) {
-    syscall(SYS_write, 1, data, length);
+    syscall(SYS_write, STDOUT_FILENO, data, length);
 }
 
 static inline void printstring(const char* data) {
     size_t length = strlen(data);
-    syscall(SYS_write, 1, data, length);
+    syscall(SYS_write, STDOUT_FILENO, data, length);
 }
 
 #endif

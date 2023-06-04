@@ -21,7 +21,7 @@ int putchar(int ic) {
 
 #else
 
-    syscall(SYS_write, 1, ic, 1);
+    syscall(SYS_write, STDOUT_FILENO, ic, 1);
 
 #endif
 

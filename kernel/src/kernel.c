@@ -164,7 +164,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //printf("Output is: 0x%x\n", num);
     }
 
-    int a = syscall(SYS_write, 1, "Hello world!\n", 13);
+    int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     printf("Out: %d\n", a);
 
     /*
