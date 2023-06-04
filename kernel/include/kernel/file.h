@@ -12,7 +12,7 @@ typedef enum {
 
 typedef struct {
     char* name;
-    filetype_t filetype;
+    filetype_t type;
     char* content;
 } file_t;
 
