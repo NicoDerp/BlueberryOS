@@ -1,7 +1,7 @@
 
 # Default
 SYSROOT = /home/nico/Projects/blueberryos/sysroot
-CFLAGS ?= -O3 -g
+CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
 DESTDIR = $(SYSROOT)
@@ -18,7 +18,8 @@ LIBDIR = $(PREFIX)/lib
 CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/local/include
 CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude
 ASM_CFLAGS =
-LFLAGS := $(LFLAGS) -Wl,--gc-sections
+LFLAGS := $(LFLAGS)
+#-Wl,--gc-sections
 LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -lgcc
 

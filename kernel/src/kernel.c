@@ -8,9 +8,7 @@
 #include <kernel/idt.h>
 #include <kernel/paging.h>
 #include <kernel/memory.h>
-
-#include <unistd.h>
-#include <sys/syscall.h>
+#include <kernel/file.h>
 
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
@@ -142,14 +140,21 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("\n\nWelcome to BlueberryOS!\n");
 
+    printf("Modules: %d\n", moduleCount);
+
     for (size_t i = 0; i < moduleCount; i++) {
         struct multiboot_tag_module* module = modules[i];
         size_t moduleSize = module->mod_end - module->mod_start;
         printf("Module size: %d\n", moduleSize);
+
+        file_t* file = loadFileFromMultiboot(module);
+
+        /*
         printf("Contents:\n");
         for (size_t j = 0; j < moduleSize; j++) {
             printf("0x%x: 0x%x\n", j, *((unsigned char*)module->mod_start+j));
         }
+        */
 
         //printf("Running:\n");
         //module_func_t module_func = (module_func_t) module->mod_start;
@@ -164,8 +169,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //printf("Output is: 0x%x\n", num);
     }
 
-    int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
-    printf("Out: %d\n", a);
+    //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
+    //printf("Out: %d\n", a);
 
     /*
     pageframe_t frame = kalloc_frame();

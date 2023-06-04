@@ -30,20 +30,13 @@ ISO = blueberryos.iso
 BIN = blueberryos.bin
 
 
-SRC_C = src/kernel.c src/tty.c src/gdt.c src/idt.c src/errors.c src/io.c src/memory.c src/paging.c
+SRC_C = src/kernel.c src/tty.c src/gdt.c src/idt.c src/errors.c src/io.c src/memory.c src/paging.c src/file.c
 SRC_ASM = src/boot.asm src/gdt.asm src/idt.asm src/errors.asm src/paging.asm
 
 OBJ_C = $(SRC_C:.c=.c.o)
 OBJ_ASM = $(SRC_ASM:.asm=.asm.o)
 
-MODULES_C = src/modules/shell.c
-OBJ_MODULES_C = $(MODULES_C:.c=)
-
-MODULES_ASM = src/modules/test.asm
-OBJ_MODULES_ASM = $(MODULES_ASM:.asm=)
-
 OBJ = $(OBJ_C) $(OBJ_ASM)
-OBJ_MODULES = $(OBJ_MODULES_C) $(OBJ_MODULES_ASM)
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
@@ -71,20 +64,8 @@ $(ISO): $(BIN) modules
 
 all: $(ISO)
 
-
-%: %.asm
-	$(ASM) -f bin $< -o $@
-
-%: %.c
-	$(CC) -MD -c $^ -o $@ $(CFLAGS) -Wl,--oformat=binary
-
-modules: $(OBJ_MODULES)
-	mkdir -p isodir/modules
-	cp -f $(OBJ_MODULES) isodir/modules
-
-
 clean:
-	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) $(OBJ_MODULES) $(OBJ_MODULES:.d) isodir
+	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir
 
 rebuild: clean all
 
@@ -106,5 +87,4 @@ install:
 	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 -include $(OBJS:.o=.d)
--include $(OBJ_MODULES:.d)
 
