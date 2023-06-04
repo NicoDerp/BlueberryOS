@@ -45,6 +45,15 @@ typedef struct {
     uint32_t entrySize;
 } section_header_t;
 
+typedef struct {
+    uint32_t name;
+    uint32_t value;
+    uint32_t size;
+    char info;
+    char other;
+    uint16_t sectionIndex;
+} symbol_table_t;
+
 static inline section_header_t* getSectionHeader(file_header_t* file_header) {
     return (section_header_t*) ((int) file_header + file_header->sectionTable);
 }
@@ -140,7 +149,8 @@ file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
         file_header_t* file_header = (file_header_t*) module->mod_start;
 
         for (size_t i = 1; i < file_header->sectionEntryCount; i++) {
-            printf("Section name %d: '%s'\n", i, getSectionName(file_header, i));
+            section_header_t* section = getSectionEntry(file_header, i);
+            printf("Section name %d: '%s'. Type: '%d'\n", i, getSectionName(file_header, i), section->type);
         }
 
         
