@@ -2,6 +2,7 @@
 #include <kernel/idt.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
+#include <kernel/usermode.h>
 
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -170,6 +171,8 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
         }
 
         PIC_sendEOI(irq);
+
+        enter_usermode();
     }
 }
 

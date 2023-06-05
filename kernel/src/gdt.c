@@ -61,11 +61,9 @@ void gdt_initialize() {
 
     /* 0x28 */
     /* Task State Segment */
-    source.base = (uint32_t) &sys_tss;
-    source.limit = sizeof(tss_t);
-    source.access_byte = 0x89;
-    source.flags = 0x0;
-    gdt_entry(gdt[5], source);
+    //install_tss(&source);
+    //gdt_entry(gdt[5], source);
+    install_tss(gdt[5]);
 
     //printf("Running %d, %d\n", sizeof(gdt), &gdt[0]);
 

@@ -37,6 +37,7 @@ multiboot_header:
 ; Reserve 16kb for stack
 section .bss
 align 16
+global stack_bottom
 stack_bottom:
     resb 16384
 stack_top:

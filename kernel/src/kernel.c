@@ -126,6 +126,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     gdt_initialize();
     printf("[OK]\n");
 
+    printf("Flushing TSS ...");
+    flush_tss();
+    printf("[OK]\n");
+
     printf("Setting up IDT ... ");
     idt_initialize();
     printf("[OK]\n");
@@ -174,8 +178,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
         //printf("Output is: 0x%x\n", num);
     }
-
-    switch_to_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);
