@@ -40,6 +40,7 @@ typedef struct {
 void tss_initialize(void);
 //void install_tss(struct GDT* source);
 void install_tss(uint8_t* entryBytes);
+void set_kernel_stack(uint32_t esp);
 
 extern void enter_usermode(void);
 extern void flush_tss(void);

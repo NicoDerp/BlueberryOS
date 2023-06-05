@@ -74,4 +74,10 @@ void install_tss(struct GDT* source) {
 }
 */
 
+void set_kernel_stack(uint32_t esp) {
+    // Setting ss0 just in case
+    sys_tss.ss0 = 0x10;  /* Kernel data segment */
+    sys_tss.esp0 = esp;
+}
+
 
