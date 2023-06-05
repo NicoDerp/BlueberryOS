@@ -13,6 +13,7 @@ struct GDT {
 };
 
 void gdt_initialize(void);
+void gdt_entry(uint8_t* target, struct GDT source);
 
 
 #endif /* KERNEL_GDT_H */

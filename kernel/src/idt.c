@@ -71,6 +71,8 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
                 const void* buf = (const void*) stack_state.ecx;
                 size_t count = stack_state.edx;
 
+                printf("fd: %d\nbuf: %s\n, count: %d\n", fd, buf, count);
+
                 if (fd == STDOUT_FILENO) {
                     if (count == 1) {
                         terminal_writechar((char) ((int) buf & 0xFF));

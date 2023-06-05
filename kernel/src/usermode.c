@@ -39,6 +39,7 @@ void tss_initialize(void) {
     //sys_tss.iomap = (unsigned short) sizeof(tss_t);
 }
 
+/*
 void install_tss(uint8_t* entryBytes) {
 
     gdt_entry_t* entry = (gdt_entry_t*) entryBytes;
@@ -63,6 +64,7 @@ void install_tss(uint8_t* entryBytes) {
     entry->base_high = (base & (0xff << 24)) >> 24; //isolate top byte
 
 }
+*/
 
 /*
 void install_tss(struct GDT* source) {
@@ -73,6 +75,17 @@ void install_tss(struct GDT* source) {
     source->limit = sizeof(tss_t);
 }
 */
+
+void install_tss(uint8_t* gdt) {
+
+    struct GDT source;
+    source.access_byte = 0x89;
+    source.flags = 0x0;
+    source.base = (uint32_t) &sys_tss;
+    source.limit = sizeof(tss_t);
+
+    gdt_entry(gdt, source);
+}
 
 void set_kernel_stack(uint32_t esp) {
     // Setting ss0 just in case

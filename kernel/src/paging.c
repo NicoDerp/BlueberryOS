@@ -35,6 +35,7 @@ void paging_initialize(void) {
     page_directory[0] = ((unsigned int) first_page_table) | 3;
     */
 
+    // Map first page
     change_pagetable(0, true, true);
 
     //loadPageDirectory(page_directory);

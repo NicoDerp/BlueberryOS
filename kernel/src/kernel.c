@@ -1,8 +1,6 @@
 
 #include <kernel/tty.h>
 
-#include <stdio.h>
-
 #include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
@@ -10,6 +8,9 @@
 #include <kernel/paging.h>
 #include <kernel/memory.h>
 #include <kernel/file.h>
+
+#include <string.h>
+#include <stdio.h>
 
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
@@ -156,8 +157,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         size_t moduleSize = module->mod_end - module->mod_start;
         printf("Module size: %d\n", moduleSize);
 
+        /*
         file_t* file = loadFileFromMultiboot(module);
         (void)file;
+        */
 
         /*
         printf("Contents:\n");
@@ -166,9 +169,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
         */
 
-        //printf("Running:\n");
-        //module_func_t module_func = (module_func_t) module->mod_start;
-        //module_func();
+        memcpy((void*) (5*FRAME_4KB), (void*) module->mod_start, moduleSize);
+
+        printf("Running:\n");
+        module_func_t module_func = (module_func_t) module->mod_start;
+        module_func();
 
         //printf("ooga");
         //asm volatile("int $10");
@@ -179,11 +184,26 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //printf("Output is: 0x%x\n", num);
     }
 
+    //change_pagetable_vaddr(0, true, false);
+
+    printf("a: 0x%x\n", *((uint8_t*) (5*FRAME_4KB)));
+
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
 
-    enter_usermode();
+    // Momentary fix: set kernel page to usermode to run simple test user program
+    change_pagetable(1, true, false);
+    change_pagetable(2, true, false);
+    change_pagetable(3, true, false);
+    change_pagetable(4, true, false);
+    change_pagetable(5, true, false);
+    change_pagetable(6, true, false);
+    change_pagetable(7, true, false);
+    change_pagetable(8, true, false);
+    change_pagetable(9, true, false);
+    change_pagetable(10, true, false);
+    //enter_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);

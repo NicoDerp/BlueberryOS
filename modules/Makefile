@@ -24,7 +24,8 @@ LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -lgcc
 
 ASM = nasm
-ASMFLAGS = -felf32
+#ASMFLAGS = -felf32
+ASMFLAGS = -fbin
 
 
 ISO = blueberryos.iso
@@ -32,7 +33,7 @@ BIN = blueberryos.bin
 
 
 SRC_C = src/test.c
-SRC_ASM =
+SRC_ASM = src/userfunc.asm
 
 OBJ_C = $(SRC_C:.c=.mod)
 OBJ_ASM = $(SRC_ASM:.asm=.mod)
