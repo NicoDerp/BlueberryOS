@@ -33,8 +33,8 @@
 
 #define INT_INVALID_OPCODE      0x06  /* 6 */
 #define INT_DOUBLE_FAULT        0x08  /* 8 */
-#define INT_GENERAL_PROTECTION  0x0C  /* 13 */
-#define INT_PAGE_FAULT          0x0D  /* 14 */
+#define INT_GENERAL_PROTECTION  0x0D  /* 13 */
+#define INT_PAGE_FAULT          0x0E  /* 14 */
 
 #define INT_TIMER               IDT_IRQ_OFFSET + 0x00  /* 0 */
 #define INT_KEYBOARD            IDT_IRQ_OFFSET + 0x01  /* 1 */

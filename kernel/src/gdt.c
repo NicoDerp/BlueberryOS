@@ -1,5 +1,6 @@
 
 #include <kernel/gdt.h>
+#include <kernel/usermode.h>
 #include <kernel/errors.h>
 #include <stdio.h>
 
@@ -11,7 +12,7 @@ extern void reload_segments();
 void gdt_entry(uint8_t* target, struct GDT source);
 
 
-uint8_t gdt[5][8]; // TODO 6 * 8 with TSS
+uint8_t gdt[6][8]; // TODO 6 * 8 with TSS
 
 
 void gdt_initialize() {
@@ -60,14 +61,11 @@ void gdt_initialize() {
 
     /* 0x28 */
     /* Task State Segment */
-    /*
-    source.base = &tss;
-    source.limit = sizeof(struct TSS);
+    source.base = (uint32_t) &sys_tss;
+    source.limit = sizeof(tss_t);
     source.access_byte = 0x89;
     source.flags = 0x0;
     gdt_entry(gdt[5], source);
-    load_gdt(entry);
-    */
 
     //printf("Running %d, %d\n", sizeof(gdt), &gdt[0]);
 

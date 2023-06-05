@@ -6,6 +6,7 @@
 #include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
+#include <kernel/usermode.h>
 #include <kernel/paging.h>
 #include <kernel/memory.h>
 #include <kernel/file.h>
@@ -117,6 +118,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("\nStarting BlueberryOS\n");
 
+    printf("Settings up System TSS ...");
+    tss_initialize();
+    printf("[OK]\n");
+
     printf("Setting up GDT ... ");
     gdt_initialize();
     printf("[OK]\n");
@@ -148,6 +153,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("Module size: %d\n", moduleSize);
 
         file_t* file = loadFileFromMultiboot(module);
+        (void)file;
 
         /*
         printf("Contents:\n");
@@ -169,6 +175,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //printf("Output is: 0x%x\n", num);
     }
 
+    switch_to_usermode();
+
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);
 
@@ -177,6 +185,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("frame: 0x%x\n", frame);
     kfree_frame(frame);
     */
+
 
     for (;;) {
         asm("hlt");

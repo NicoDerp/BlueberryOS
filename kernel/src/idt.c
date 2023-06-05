@@ -277,7 +277,23 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
         }
 
         if (error_code & 0x10) {
-            printf(" - Fault occured during instruction fetch\n");
+            printf(" - Fault occured because of instruction fetch\n");
+        }
+
+        if (error_code & 0x20) {
+            printf(" - Fault caused by protection-key violation\n");
+        }
+
+        if (error_code & 0x40) {
+            printf(" - Fault caused by shadow-stack access\n");
+        }
+
+        if (error_code & 0x80) {
+            printf(" - Fault occured during HLAT paging\n");
+        }
+
+        if (error_code & 0x8000) {
+            printf(" - Fault resulted from violation of SGX-specific access-control requirements\n");
         }
     }
 
