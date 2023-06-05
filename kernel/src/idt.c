@@ -171,12 +171,10 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
         }
 
         PIC_sendEOI(irq);
-
-        enter_usermode();
     }
 }
 
-void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int error_code, bool has_error) {
+void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, unsigned int error_code, interrupt_frame_t frame) {
     printf("\nException handler:\n");
 
 

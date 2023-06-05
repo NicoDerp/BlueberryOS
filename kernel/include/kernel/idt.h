@@ -77,9 +77,9 @@ typedef struct {
 } __attribute__((packed)) stack_state_t;
 
 typedef struct {
-    unsigned int eflags;
     unsigned int eip;
     unsigned int cs;
+    unsigned int eflags;
 } __attribute__((packed)) interrupt_frame_t;
 
 #endif /* KERNEL_IDT_H */

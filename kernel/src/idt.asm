@@ -34,8 +34,8 @@ isr_stub_%+%1:
 %macro isr_exc_no_err_stub 1
 isr_stub_%+%1:
 
-    push dword 0  ; signal that this interrupt doesn't have an error
     push dword 0  ; error-code
+    push dword 0  ; signal that this interrupt doesn't have an error
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
