@@ -52,6 +52,15 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
     (void)frame;
     (void)interrupt_id;
 
+    printf("edi: '%d'\n", stack_state.edi);
+    printf("esi: '%d'\n", stack_state.esi);
+    printf("ebp: '%d'\n", stack_state.ebp);
+    printf("esp: '%d'\n", stack_state.esp);
+    printf("ebx: '%d'\n", stack_state.ebx);
+    printf("edx: '%d'\n", stack_state.edx);
+    printf("ecx: '%d'\n", stack_state.ecx);
+    printf("eax: '%d'\n", stack_state.eax);
+
     switch (stack_state.eax) {
         case (SYS_exit):
             {
@@ -69,16 +78,18 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
 
                 int fd = stack_state.ebx;
                 const void* buf = (const void*) stack_state.ecx;
-                size_t count = stack_state.edx;
+                int count = stack_state.edx;
 
-                printf("fd: %d\nbuf: %s\n, count: %d\n", fd, buf, count);
+                printf("fd: %d\nbuf: 0x%x\ncount: %d\n", fd, (unsigned int) buf, count);
 
                 if (fd == STDOUT_FILENO) {
+                    /*
                     if (count == 1) {
                         terminal_writechar((char) ((int) buf & 0xFF));
                     } else {
                         terminal_write(buf, count);
                     }
+                    */
                 } else {
                     printf("Invalid fd '%d'\n", fd);
                 }

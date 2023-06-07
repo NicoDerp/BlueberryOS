@@ -32,7 +32,7 @@ typedef uint32_t* pagetable_t;
 typedef uint32_t* pagedirectory_t;
 
 void paging_initialize(void);
-void change_pagetable(size_t index, bool writable, bool kernel);
+void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel);
 
 #endif /* KERNEL_PAGING_H */
 

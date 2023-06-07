@@ -12,6 +12,9 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <sys/syscall.h>
+#include <unistd.h>
+
 /* Check if you are targeting the wrong operating system */
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certaintly run into trouble."
@@ -138,7 +141,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Setting up Paging ...");
     paging_initialize();
     printf("[OK]\n");
-    
+
     /*
     change_pagetable(0, false, false);
 
@@ -147,6 +150,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("a: 0x%x, 0x%x\n", y, *y);
     */
 
+    // For test user-process, map virtual addr 0 to physical addr 0x5000 (5*4KB = 20KB)
+    map_pagetable(0x5000/FRAME_4KB, 0, true, false);
 
     printf("\n\nWelcome to BlueberryOS!\n");
 
@@ -169,10 +174,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
         */
 
-        memcpy((void*) (5*FRAME_4KB), (void*) module->mod_start, moduleSize);
+        memcpy((void*) (0x5000), (void*) module->mod_start, moduleSize);
+        module_func_t module_func = (module_func_t) (0x5000);
+
+        printf("Contents:\n");
+        for (size_t j = 0; j < moduleSize; j += 2) {
+            printf("0x%x: 0x%x\n", j, *((uint16_t*) (0x5000+j)));
+        }
 
         printf("Running:\n");
-        module_func_t module_func = (module_func_t) module->mod_start;
         module_func();
 
         //printf("ooga");
@@ -184,25 +194,17 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //printf("Output is: 0x%x\n", num);
     }
 
+    //syscall(SYS_write, STDOUT_FILENO, "hello", 5);
+
     //change_pagetable_vaddr(0, true, false);
 
-    printf("a: 0x%x\n", *((uint8_t*) (5*FRAME_4KB)));
+    //printf("a: 0x%x\n", *((uint8_t*) 0x5000));
 
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
 
     // Momentary fix: set kernel page to usermode to run simple test user program
-    change_pagetable(1, true, false);
-    change_pagetable(2, true, false);
-    change_pagetable(3, true, false);
-    change_pagetable(4, true, false);
-    change_pagetable(5, true, false);
-    change_pagetable(6, true, false);
-    change_pagetable(7, true, false);
-    change_pagetable(8, true, false);
-    change_pagetable(9, true, false);
-    change_pagetable(10, true, false);
     //enter_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);

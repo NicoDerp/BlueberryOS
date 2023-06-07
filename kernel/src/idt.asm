@@ -21,7 +21,7 @@ isr_stub_%+%1:
 
     pushad
 
-    cld
+    ;cld
     call exception_handler
 
     popad
@@ -42,7 +42,7 @@ isr_stub_%+%1:
     
     pushad
 
-    cld
+    ;cld
     call exception_handler
 
     popad
@@ -61,7 +61,7 @@ isr_stub_%+%1:
     
     pushad
 
-    cld
+    ;cld
     call interrupt_handler
 
     popad
@@ -77,10 +77,10 @@ isr_stub_%+%1:
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
-    
+
     pushad
 
-    cld
+    ;cld
     call syscall_handler
 
     popad

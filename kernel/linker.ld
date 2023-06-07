@@ -15,7 +15,6 @@ SECTIONS {
      * be loaded at by the bootloader */
     . = 1M;
 
-
     /* First put the multiboot header, as it is required to be put very early
      * in the image, or the bootloader won't recognize the file format */
     .text BLOCK(4K) : ALIGN(4K) {
@@ -41,6 +40,7 @@ SECTIONS {
         *(COMMON)
         *(.bss)
         kernelend = .;
+
     }
 
 

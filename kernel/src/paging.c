@@ -16,8 +16,8 @@ pagedirectory_t page_directory;
 
 void paging_initialize(void) {
     page_directory = (pagedirectory_t) kalloc_frame();
-    //first_page_table = (pagetable_t) kalloc_frame();
 
+    // Sets default attributes for all page-directory entries
     for (size_t i = 0; i < 1024; i++) {
         /** This sets the following flags to the pages:
          *   Supervisor: Only kernel-mode can access them
@@ -35,37 +35,42 @@ void paging_initialize(void) {
     page_directory[0] = ((unsigned int) first_page_table) | 3;
     */
 
-    // Map first page
-    change_pagetable(0, true, true);
+    // Identity-map first page
+    map_pagetable(0, 0, true, true);
 
     //loadPageDirectory(page_directory);
     //enablePaging();
     enablePaging(page_directory);
 }
 
-void change_pagetable(size_t index, bool writable, bool kernel) {
+void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
 
     pagetable_t pagetable;
 
     // Check if page-table is present
-    if (page_directory[index] & 1) {
-        pagetable = (pagetable_t) (page_directory[index] & 0xFFFFF000);
+    if (page_directory[virtualIndex] & 1) {
+        pagetable = (pagetable_t) (page_directory[virtualIndex] & 0xFFFFF000);
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
-        unsigned int flags = page_directory[index] & 0x3;
-        page_directory[index] = ((unsigned int) pagetable) | flags;
+
+        /*
+        malloc(&pagetable, 0, FRAME_4KB);
+        unsigned int flags = page_directory[virtualIndex] & 0x3;
+        page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
+        */
     }
 
     unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
 
     for (size_t i = 0; i < 1024; i++) {
-        // sets attrbitues
-        pagetable[i] = (i * FRAME_4KB) | flags;
+        // Sets address and attributes
+        pagetable[i] = ((i+physicalIndex) * FRAME_4KB) | flags;
     }
 
-    page_directory[index] = ((unsigned int) pagetable) | flags;
+    page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
 
+    // TODO is it faster or slower to invlpg for all pages, or invalidate entire directory?
     flushPaging();
 }
 

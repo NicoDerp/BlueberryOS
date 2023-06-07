@@ -24,19 +24,15 @@ LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -lgcc
 
 ASM = nasm
-#ASMFLAGS = -felf32
-ASMFLAGS = -fbin
+ASMFLAGS = -felf32
+#ASMFLAGS = -fbin
 
 
-ISO = blueberryos.iso
-BIN = blueberryos.bin
-
-
-SRC_C = src/test.c
+SRC_C =
 SRC_ASM = src/userfunc.asm
 
-OBJ_C = $(SRC_C:.c=.mod)
-OBJ_ASM = $(SRC_ASM:.asm=.mod)
+OBJ_C = $(SRC_C:.c=.c.mod)
+OBJ_ASM = $(SRC_ASM:.asm=.asm.mod)
 
 OBJ = $(OBJ_C) $(OBJ_ASM)
 
@@ -44,12 +40,15 @@ OBJ = $(OBJ_C) $(OBJ_ASM)
 
 #$(CC) -MD -c $^ -o $@ $(CFLAGS) -Wl,--oformat=binary
 #%.c.o: %.c
-%.mod: %.c
+%.c.o: %.c
 	$(CC) -MD $^ -o $@ $(CFLAGS) $(LIBS)
 
 #$(ASM) -f bin $< -o $@
-%.mod: %.asm
+%.asm.o: %.asm
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
+
+%.mod: %.o
+	$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $< $(LIBS)
 
 .PHONY: all clean build rebuild check run run-bochs install
 .SUFFIXES: .o .c .asm
@@ -63,7 +62,7 @@ clean:
 
 rebuild: clean build
 
-install:
+install: $(OBJ)
 	mkdir -p ../kernel/isodir/modules
 	cp -f --preserve=timestamps $(OBJ) ../kernel/isodir/modules/.
 
