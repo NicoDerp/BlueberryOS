@@ -33,6 +33,8 @@ typedef uint32_t* pagedirectory_t;
 
 void paging_initialize(void);
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel);
+void unmap_page(void* virtualaddr);
+void unmap_pagetable(size_t index);
 
 #endif /* KERNEL_PAGING_H */
 

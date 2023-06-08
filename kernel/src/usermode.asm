@@ -22,6 +22,8 @@ enter_usermode:
     push (3 * 8) | 3
     ;push test_user_function
     push 5000h
+    ;push 20480
+    ;push 0
     iret
 
 ;test_user_function:
@@ -32,8 +34,8 @@ enter_usermode:
 ;    int 48
 ;.loop:
 ;    jmp .loop
-
-
+;
+;
 ;str:
 ;    db "Hello world!", 0
 

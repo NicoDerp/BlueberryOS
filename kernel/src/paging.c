@@ -87,17 +87,15 @@ void unmap_page(void* virtualaddr) {
     flushPaging();
 }
 
-void unmap_pagetable(void* virtualaddr) {
-
-    uint32_t pdindex = (uint32_t) virtualaddr >> 22;
+void unmap_pagetable(size_t index) {
 
     // If the page is present then free
-    if (page_directory[pdindex] & 1) {
-        kfree_frame((void*) (page_directory[pdindex] & 0xFFFFF000));
+    if (page_directory[index] & 1) {
+        kfree_frame((void*) (page_directory[index] & 0xFFFFF000));
     }
 
     // Set the page-table to not present
-    page_directory[pdindex] = 0x00000000;
+    page_directory[index] = 0x00000000;
 
     flushPaging();
 }

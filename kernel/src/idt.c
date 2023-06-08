@@ -82,8 +82,6 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
 
                 printf("fd: %d\nbuf: 0x%x\ncount: %d\n", fd, (unsigned int) buf, count);
 
-                buf += 0x5000;
-
                 if (fd == STDOUT_FILENO) {
                     if (count == 1) {
                         terminal_writechar((char) ((int) buf & 0xFF));
@@ -187,7 +185,7 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     }
 }
 
-void exception_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, unsigned int error_code, interrupt_frame_t frame) {
+void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, unsigned int error_code, interrupt_frame_t frame) {
     printf("\nException handler:\n");
 
 
@@ -267,6 +265,8 @@ void exception_handler(stack_state_t stack_state, test_struct_t test_struct, uns
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
     } else if (interrupt_id == INT_PAGE_FAULT) {
         printf("\nError breakdown:\n");
+
+        printf(" - Fault happened because of operation at 0x%x\n", cr2);
         
         if (error_code & 0x01) {
             printf(" - Page was present\n");

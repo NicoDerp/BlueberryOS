@@ -150,9 +150,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("a: 0x%x, 0x%x\n", y, *y);
     */
 
-    // For test user-process, map virtual addr 0 to physical addr 0x5000 (5*4KB = 20KB)
-    //map_pagetable(0x5000/FRAME_4KB, 0, true, false);
-
     printf("\n\nWelcome to BlueberryOS!\n");
 
     printf("Modules: %d\n", moduleCount);
@@ -175,15 +172,17 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         */
 
         memcpy((void*) (0x5000), (void*) module->mod_start, moduleSize);
-        module_func_t module_func = (module_func_t) (0x5000);
+        //module_func_t module_func = (module_func_t) (0x5000);
 
+        /*
         printf("Contents:\n");
         for (size_t j = 0; j < moduleSize; j += 2) {
             printf("0x%x: 0x%x\n", j, *((uint16_t*) (0x5000+j)));
         }
+        */
 
-        printf("Running:\n");
-        module_func();
+        //printf("Running:\n");
+        //module_func();
 
         //printf("ooga");
         //asm volatile("int $10");
@@ -192,6 +191,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //asm("\t movl %%eax,%0" : "=r" (num));
 
         //printf("Output is: 0x%x\n", num);
+    }
+
+    if (moduleCount == 0) {
+        printf("No modules!\n");
+        return;
     }
 
     //syscall(SYS_write, STDOUT_FILENO, "hello", 5);
@@ -204,8 +208,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
 
-    // Momentary fix: set kernel page to usermode to run simple test user program
-    //enter_usermode();
+    // For test user-process, map virtual addr 0 to physical addr 0x5000 (5*4KB = 20KB)
+    //map_pagetable(0x5000/FRAME_4KB, 0, true, false);
+
+    //map_pagetable(0x5, 0x5, true, false);
+    unmap_pagetable(0x4);
+    unmap_pagetable(0x5);
+    unmap_pagetable(0x6);
+
+    printf("Value: 0x%x\n", *((uint8_t*) 0x5000));
+    printf("Value: 0x%x\n", *((uint8_t*) 0x5001));
+
+    enter_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);

@@ -21,6 +21,9 @@ isr_stub_%+%1:
 
     pushad
 
+    mov eax, cr2
+    push eax
+
     ;cld
     call exception_handler
 
@@ -41,6 +44,9 @@ isr_stub_%+%1:
     push dword 420
     
     pushad
+
+    mov eax, cr2
+    push eax
 
     ;cld
     call exception_handler
