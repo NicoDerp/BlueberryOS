@@ -151,7 +151,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     */
 
     // For test user-process, map virtual addr 0 to physical addr 0x5000 (5*4KB = 20KB)
-    map_pagetable(0x5000/FRAME_4KB, 0, true, false);
+    //map_pagetable(0x5000/FRAME_4KB, 0, true, false);
 
     printf("\n\nWelcome to BlueberryOS!\n");
 

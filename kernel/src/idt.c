@@ -82,14 +82,14 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
 
                 printf("fd: %d\nbuf: 0x%x\ncount: %d\n", fd, (unsigned int) buf, count);
 
+                buf += 0x5000;
+
                 if (fd == STDOUT_FILENO) {
-                    /*
                     if (count == 1) {
                         terminal_writechar((char) ((int) buf & 0xFF));
                     } else {
                         terminal_write(buf, count);
                     }
-                    */
                 } else {
                     printf("Invalid fd '%d'\n", fd);
                 }
