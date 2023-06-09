@@ -242,7 +242,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Before: 0x%x\n", page_directory[1]);
     printf("Before: 0x%x\n", page_directory[2]);
 
-    //enter_usermode();
+    enter_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);
