@@ -242,6 +242,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Before: 0x%x\n", page_directory[1]);
     printf("Before: 0x%x\n", page_directory[2]);
 
+    unsigned int cs;
+    asm("mov %%cs, %0" :: "r"(cs));
+    printf("cs: 0x%x\n", cs);
+
     enter_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);

@@ -77,7 +77,7 @@ check: all
 	fi
 
 run: all
-	qemu-system-i386 -cdrom $(ISO)
+	qemu-system-i386 -cdrom $(ISO) -s
 
 run-bochs: $(ISO)
 	bochs

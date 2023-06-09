@@ -218,9 +218,9 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
     printf(" - Test1: '%d'\n", test_struct.num1);
     printf(" - Test2: '%d'\n", test_struct.num2);
     printf(" - Error code: '%d'\n", error_code);
-    printf(" - eflags: '%d'\n", frame.eflags);
-    printf(" - cs: '%d'\n", frame.cs);
-    printf(" - eip: '%d'\n", frame.eip);
+    printf(" - eflags: 0x%x\n", frame.eflags);
+    printf(" - cs: 0x%x\n", frame.cs);
+    printf(" - eip: 0x%x\n", frame.eip);
 
     if (interrupt_id == INT_GENERAL_PROTECTION) {
         printf("\nError breakdown:\n");

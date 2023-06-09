@@ -1,8 +1,8 @@
 
 global flush_tss
 flush_tss:
-    ;mov ax, (5 * 8) | 0
-    mov ax, 28h
+    mov ax, (5 * 8) | 0
+    ;mov ax, 28h
     ltr ax
     ret
 
