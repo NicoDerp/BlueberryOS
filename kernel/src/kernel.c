@@ -120,6 +120,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
     }
 
+    extern pagedirectory_t page_directory;
     printf("\nStarting BlueberryOS\n");
 
     printf("Settings up System TSS ...");
@@ -154,11 +155,16 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Modules: %d\n", moduleCount);
 
-    extern pagedirectory_t page_directory;
     printf("Before: 0x%x\n", page_directory[0]);
+    printf("Before: 0x%x\n", page_directory[1]);
+    printf("Before: 0x%x\n", page_directory[2]);
 
     // For test, identity map
-    //map_pagetable(1, 1, true, false);
+    map_pagetable(1, 1, true, false);
+
+    printf("Before: 0x%x\n", page_directory[0]);
+    printf("Before: 0x%x\n", page_directory[1]);
+    printf("Before: 0x%x\n", page_directory[2]);
 
     for (size_t i = 0; i < moduleCount; i++) {
         struct multiboot_tag_module* module = modules[i];
@@ -171,7 +177,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         */
 
         //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
-        //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
+        memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
 
         /*
         printf("Contents:\n");
@@ -232,12 +238,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     // For test user-process, map virtual addr 0 to physical addr 4MB
     //map_pagetable(FRAME_4MB/FRAME_4KB, 0, true, false);
 
-    extern pagedirectory_t page_directory;
     printf("Before: 0x%x\n", page_directory[0]);
     printf("Before: 0x%x\n", page_directory[1]);
     printf("Before: 0x%x\n", page_directory[2]);
 
-    enter_usermode();
+    //enter_usermode();
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);

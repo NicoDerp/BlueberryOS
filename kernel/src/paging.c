@@ -50,9 +50,13 @@ void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, boo
     // Check if page-table is present
     if (page_directory[virtualIndex] & 1) {
         pagetable = (pagetable_t) (page_directory[virtualIndex] & 0xFFFFF000);
+
+        printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
+
+        printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
 
         /*
         malloc(&pagetable, 0, FRAME_4KB);
@@ -66,7 +70,7 @@ void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, boo
     for (size_t i = 0; i < 1024; i++) {
         // Sets address and attributes for all pages in pagetable
         //pagetable[i] = (physicalIndex * FRAME_4KB + i) | flags;
-        pagetable[i] = ((physicalIndex+i) * FRAME_4KB) | flags;
+        pagetable[i] = (physicalIndex * FRAME_4MB + i * FRAME_4KB) | flags;
     }
 
     page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
