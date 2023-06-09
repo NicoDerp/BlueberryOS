@@ -154,6 +154,12 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Modules: %d\n", moduleCount);
 
+    extern pagedirectory_t page_directory;
+    printf("Before: 0x%x\n", page_directory[0]);
+
+    // For test, identity map
+    //map_pagetable(1, 1, true, false);
+
     for (size_t i = 0; i < moduleCount; i++) {
         struct multiboot_tag_module* module = modules[i];
         size_t moduleSize = module->mod_end - module->mod_start;
@@ -164,39 +170,42 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         (void)file;
         */
 
-        /*
-        printf("Contents:\n");
-        for (size_t j = 0; j < moduleSize; j++) {
-            printf("0x%x: 0x%x\n", j, *((unsigned char*)module->mod_start+j));
-        }
-        */
-
-        memcpy((void*) (0x5000), (void*) module->mod_start, moduleSize);
-        //module_func_t module_func = (module_func_t) (0x5000);
+        //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
+        //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
 
         /*
         printf("Contents:\n");
-        for (size_t j = 0; j < moduleSize; j += 2) {
-            printf("0x%x: 0x%x\n", j, *((uint16_t*) (0x5000+j)));
+        for (size_t j = 0; j < moduleSize-16; j++) {
+            printf("0x%x: 0x%x\n", j, *((uint8_t*) (0x1024+j)));
         }
         */
 
-        //printf("Running:\n");
-        //module_func();
-
-        //printf("ooga");
-        //asm volatile("int $10");
-
-        //unsigned int num;
-        //asm("\t movl %%eax,%0" : "=r" (num));
-
-        //printf("Output is: 0x%x\n", num);
+        /*
+        module_func_t module_func = (module_func_t) FRAME_4MB;
+        printf("Running:\n");
+        module_func();
+        */
     }
 
     if (moduleCount == 0) {
         printf("No modules!\n");
         return;
     }
+
+    /*
+    extern pagedirectory_t page_directory;
+    printf("Before: 0x%x\n", page_directory[1]);
+    printf("a: 0x%x\n", *((uint8_t*) 0x1000));
+
+    map_pagetable(0, 1, true, true);
+
+    printf("Before: 0x%x\n", page_directory[1]);
+    printf("a: 0x%x\n", *((uint8_t*) 0x1000));
+
+    unmap_pagetable(1);
+
+    printf("After: 0x%x\n", page_directory[1]);
+    */
 
     //syscall(SYS_write, STDOUT_FILENO, "hello", 5);
 
@@ -208,16 +217,25 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
 
-    // For test user-process, map virtual addr 0 to physical addr 0x5000 (5*4KB = 20KB)
-    //map_pagetable(0x5000/FRAME_4KB, 0, true, false);
-
     //map_pagetable(0x5, 0x5, true, false);
+    /*
     unmap_pagetable(0x4);
     unmap_pagetable(0x5);
     unmap_pagetable(0x6);
+    */
 
-    printf("Value: 0x%x\n", *((uint8_t*) 0x5000));
-    printf("Value: 0x%x\n", *((uint8_t*) 0x5001));
+    /*
+    printf("Value: 0x%x\n", *((uint8_t*) (FRAME_4MB+0)));
+    printf("Value: 0x%x\n", *((uint8_t*) (FRAME_4MB+1)));
+    */
+
+    // For test user-process, map virtual addr 0 to physical addr 4MB
+    //map_pagetable(FRAME_4MB/FRAME_4KB, 0, true, false);
+
+    extern pagedirectory_t page_directory;
+    printf("Before: 0x%x\n", page_directory[0]);
+    printf("Before: 0x%x\n", page_directory[1]);
+    printf("Before: 0x%x\n", page_directory[2]);
 
     enter_usermode();
 

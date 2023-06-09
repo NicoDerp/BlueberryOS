@@ -64,8 +64,9 @@ void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, boo
     unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
 
     for (size_t i = 0; i < 1024; i++) {
-        // Sets address and attributes
-        pagetable[i] = ((i+physicalIndex) * FRAME_4KB) | flags;
+        // Sets address and attributes for all pages in pagetable
+        //pagetable[i] = (physicalIndex * FRAME_4KB + i) | flags;
+        pagetable[i] = ((physicalIndex+i) * FRAME_4KB) | flags;
     }
 
     page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;

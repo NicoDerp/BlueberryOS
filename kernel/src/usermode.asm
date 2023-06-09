@@ -21,7 +21,9 @@ enter_usermode:
     pushf
     push (3 * 8) | 3
     ;push test_user_function
-    push 5000h
+    ;push 5000h
+    ;push 400000h
+    push 0h
     ;push 20480
     ;push 0
     iret

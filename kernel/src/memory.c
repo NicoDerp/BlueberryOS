@@ -30,11 +30,15 @@ pageframe_t kalloc_frame(void) {
 }
 
 void kfree_frame(pageframe_t frame) {
-    size_t index = ((unsigned int) frame - FRAME_START);
+    size_t index = (unsigned int) frame - FRAME_START;
     if (index != 0) {
         index /= FRAME_SIZE;
     }
-    printf("Index: %d\n", index);
+    if (index >= FRAME_MAP_SIZE) {
+        printf("Index not in correct range\n");
+        return;
+    }
+
     frame_map[index] = FREE;
 }
 
