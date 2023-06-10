@@ -252,6 +252,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf(" - Physical stack at 0x%x\n", stack_ptr);
     printf(" - Virtual stack at 0x%x\n", virtual_stack_ptr);
     printf(" - Virtual stack-top at 0x%x\n", virtual_stack_top);
+
+    // test
+    map_page(FRAME_4MB, 0x0, true, false);
+
     enter_usermode(FRAME_4MB, virtual_stack_top);
 
     /*
