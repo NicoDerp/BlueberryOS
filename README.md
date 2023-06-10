@@ -13,12 +13,12 @@ This is very in-development and just a hobby-project.
 ## Goals
 
 - [x] Libc with syscalls
-- [-] Usermode (work-in-progress)
-- [-] ELF-parsing (begginings)
-- [-] Multiple processes
-- [-] Fully adapted cross-compiler
-- [-] 64-bit
-- [-] UEFI
+- [ ] Usermode (work-in-progress)
+- [ ] ELF-parsing (begginings)
+- [ ] Multiple processes
+- [ ] Fully adapted cross-compiler
+- [ ] 64-bit
+- [ ] UEFI
 
 ## Setup
 
