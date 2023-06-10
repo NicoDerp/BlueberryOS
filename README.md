@@ -12,19 +12,19 @@ This is very in-development and just a hobby-project.
 
 ## Goals
 
-[x] Libc with syscalls
-[-] Usermode (work-in-progress)
-[-] ELF-parsing (begginings)
-[-] Multiple processes
-[-] Fully adapted cross-compiler
-[-] 64-bit
-[-] UEFI
+- [x] Libc with syscalls
+- [-] Usermode (work-in-progress)
+- [-] ELF-parsing (begginings)
+- [-] Multiple processes
+- [-] Fully adapted cross-compiler
+- [-] 64-bit
+- [-] UEFI
 
 ## Setup
 
 You will need:
  - Linux (not tested on anything other)
- - Custom [cross-compiler](https://wiki.osdev.org/GCC_Cross-Compiler) for i686 (see Cross-compiler section below)
+ - Custom cross-compiler for i686 (see Cross-compiler section below)
  - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
  - The source code for BlueberryOS (download by using `git clone https://github.com/NicoDerp/BlueberryOS.git`)
 
