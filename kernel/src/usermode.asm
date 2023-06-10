@@ -9,20 +9,37 @@ flush_tss:
 
 global enter_usermode
 enter_usermode:
+    ; backup stack pointer for use
+    mov ebp, esp
+    cli
+
     mov ax, (4 * 8) | 3
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-    mov eax, esp
+    ;mov eax, esp
     push (4 * 8) | 3
+
+    mov eax, [ebp+8]
     push eax
+
     pushf
+    pop eax
+    or eax, 0x200 ; set IF (enable interrupts)
+    push eax
+
     push (3 * 8) | 3
     ;push test_user_function
     ;push 5000h
-    push 400000h
+    ;push 400000h
+
+    ; Why clear eax?
+    xor eax, eax
+    mov eax, [ebp+4]
+    push eax
+
     ;push 0h
     ;push 20480
     ;push 0

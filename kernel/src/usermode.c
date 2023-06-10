@@ -30,7 +30,6 @@ void tss_initialize(void) {
     // Ensure tss is zeroed
     memset(&sys_tss, 0, sizeof(tss_t));
 
-    // TODO set values
     sys_tss.ss0 = 0x10;  /* Kernel data segment */
     sys_tss.esp0 = 0x00; /* Kernel stack pointer offset idk what to put here */
 

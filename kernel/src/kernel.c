@@ -242,11 +242,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Before: 0x%x\n", page_directory[1]);
     printf("Before: 0x%x\n", page_directory[2]);
 
-    unsigned int cs;
-    asm("mov %%cs, %0" :: "r"(cs));
-    printf("cs: 0x%x\n", cs);
-
-    enter_usermode();
+    uint32_t stack_ptr = (uint32_t) kalloc_frame();
+    uint32_t virtual_stack_ptr = FRAME_4MB + 0x1000;
+    map_page(stack_ptr, virtual_stack_ptr, true, false);
+    printf("User stack at physical 0x%x, and virtual 0x%x\n", stack_ptr, virtual_stack_ptr);
+    enter_usermode(FRAME_4MB, virtual_stack_ptr + 0x100);
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);

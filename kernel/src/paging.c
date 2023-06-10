@@ -79,6 +79,49 @@ void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, boo
     flushPaging();
 }
 
+void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel) {
+
+    uint32_t physicalPTI = physicalAddr / FRAME_4MB;
+    uint32_t virtualPTI = virtualAddr / FRAME_4MB;
+
+    // Same as mod 1024 but better
+    uint32_t physicalPI = (physicalAddr / FRAME_4KB) & 0x03FF;
+
+    pagetable_t pagetable;
+    bool present = page_directory[virtualPTI] & 1;
+
+    // Check if page-table is present
+    if (present) {
+        pagetable = (pagetable_t) (page_directory[virtualPTI] & 0xFFFFF000);
+
+        printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+    } else {
+        // Allocate new pagetable if it isn't present
+        pagetable = (pagetable_t) kalloc_frame();
+
+        printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+
+        /*
+        malloc(&pagetable, 0, FRAME_4KB);
+        unsigned int flags = page_directory[virtualIndex] & 0x3;
+        page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
+        */
+    }
+
+    unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
+
+    // Sets address and attributes for all pages in pagetable
+    pagetable[physicalPI] = (physicalPTI * FRAME_4MB + physicalPI * FRAME_4KB) | flags;
+
+    // TODO should I change flags of entire pagetable or keep?
+    if (!present) {
+        page_directory[virtualPTI] = ((unsigned int) pagetable) | flags;
+    }
+
+    // TODO is it faster or slower to invlpg for all pages, or invalidate entire directory?
+    flushPaging();
+}
+
 void unmap_page(void* virtualaddr) {
 
     uint32_t pdindex = (uint32_t) virtualaddr >> 22;

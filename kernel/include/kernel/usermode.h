@@ -42,7 +42,7 @@ void tss_initialize(void);
 void install_tss(uint8_t* entryBytes);
 void set_kernel_stack(uint32_t esp);
 
-extern void enter_usermode(void);
+extern void enter_usermode(uint32_t addr, uint32_t stack_ptr);
 extern void flush_tss(void);
 
 

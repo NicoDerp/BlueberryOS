@@ -3,6 +3,7 @@ BITS 32
 
 section .text
 main:
+    push 69
     mov eax, 1    ; SYS_write
     mov ebx, 1    ; STDOUT_FILENO
     mov ecx, str  ; &str
