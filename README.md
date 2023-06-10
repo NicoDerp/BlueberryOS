@@ -13,7 +13,7 @@ This is very in-development and just a hobby-project.
 ## Goals
 
 - [x] Libc with syscalls
-- [ ] Usermode (work-in-progress)
+- [x] Usermode
 - [ ] ELF-parsing (early stages)
 - [ ] Multiple processes
 - [ ] Fully adapted cross-compiler
