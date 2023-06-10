@@ -35,6 +35,15 @@ void tss_initialize(void) {
 
     sys_tss.cs = 0x08;   /* Kernel code segment */
 
+    /*
+    sys_tss.es = 0x13;
+    sys_tss.cs = 0x13;
+    sys_tss.ss = 0x13;
+    sys_tss.ds = 0x13;
+    sys_tss.fs = 0x13;
+    sys_tss.gs = 0x13;
+    */
+
     //sys_tss.iomap = (unsigned short) sizeof(tss_t);
 }
 
@@ -78,6 +87,7 @@ void install_tss(struct GDT* source) {
 void install_tss(uint8_t* gdt) {
 
     struct GDT source;
+
     source.access_byte = 0x89;
     source.flags = 0x0;
     source.base = (uint32_t) &sys_tss;

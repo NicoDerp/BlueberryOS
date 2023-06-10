@@ -18,7 +18,7 @@ extern void load_idt(idtr_t);
 
 
 // Create an array of IDT entries; aligned for performance
-__attribute__((aligned(0x10))) static idt_entry_t idt[IDT_DESCRIPTORS];
+__attribute__((aligned(0x10))) static idt_entry_t idt[IDT_USED_DESCRIPTORS];
 
 // Create an IDTR
 static idtr_t idtr;
@@ -210,7 +210,6 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
     printf(" - ebx: '%d'\n", ebx);
     printf(" - ecx: '%d'\n", ecx);
     printf(" - edx: '%d'\n", edx);
-    printf(" - esp: '%d'\n", esp);
     printf(" - ebp: '%d'\n", ebp);
     printf(" - edi: '%d'\n", edi);
     printf(" - esi: '%d'\n\n", esi);
@@ -221,6 +220,14 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
     printf(" - eflags: 0x%x\n", frame.eflags);
     printf(" - cs: 0x%x\n", frame.cs);
     printf(" - eip: 0x%x\n", frame.eip);
+    printf(" - esp: 0x%x\n", stack_state.esp);
+    printf(" - faulted from ring %d\n", frame.cs & 0x3);
+
+    /*
+    uint32_t cs;
+    asm volatile("mov %%cs, %0" : "=r"(cs));
+    printf(" - current cs: 0x%x\n", cs);
+    */
 
     if (interrupt_id == INT_GENERAL_PROTECTION) {
         printf("\nError breakdown:\n");
@@ -318,10 +325,14 @@ void idt_initialize(void) {
     idtr.base = (uintptr_t) &idt[0];
     idtr.limit = (uint16_t) sizeof(idt_entry_t) * IDT_MAX_DESCRIPTORS - 1;
     
-    for (size_t vector = 0; vector < IDT_DESCRIPTORS; vector++) {
+    for (size_t vector = 0; vector < IDT_PRIVILEGED_DESCRIPTORS; vector++) {
         idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
         //vectors[vector] = true;
     }
+
+    // Syscall
+    //idt_set_descriptor(INT_SYSCALL, isr_stub_table[INT_SYSCALL], 0x8E);
+    idt_set_descriptor(INT_SYSCALL, isr_stub_table[INT_SYSCALL], 0xE5);
 
     PIC_remap(IDT_IRQ_OFFSET, IDT_IRQ_OFFSET + 0x08);
 
