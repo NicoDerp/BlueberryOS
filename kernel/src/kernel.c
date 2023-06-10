@@ -244,9 +244,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     uint32_t stack_ptr = (uint32_t) kalloc_frame();
     uint32_t virtual_stack_ptr = FRAME_4MB + 0x1000;
+    uint32_t virtual_stack_top = virtual_stack_ptr + 0xF00;
+
     map_page(stack_ptr, virtual_stack_ptr, true, false);
-    printf("User stack at physical 0x%x, and virtual 0x%x\n", stack_ptr, virtual_stack_ptr);
-    enter_usermode(FRAME_4MB, virtual_stack_ptr + 0x100);
+    printf("User process info:\n");
+    printf(" - Code starting at 0x%x\n", FRAME_4MB);
+    printf(" - Physical stack at 0x%x\n", stack_ptr);
+    printf(" - Virtual stack at 0x%x\n", virtual_stack_ptr);
+    printf(" - Virtual stack-top at 0x%x\n", virtual_stack_top);
+    enter_usermode(FRAME_4MB, virtual_stack_top);
 
     //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //printf("Out: %d\n", a);
