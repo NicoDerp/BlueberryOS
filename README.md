@@ -14,7 +14,7 @@ This is very in-development and just a hobby-project.
 
 - [x] Libc with syscalls
 - [ ] Usermode (work-in-progress)
-- [ ] ELF-parsing (begginings)
+- [ ] ELF-parsing (early stages)
 - [ ] Multiple processes
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit
