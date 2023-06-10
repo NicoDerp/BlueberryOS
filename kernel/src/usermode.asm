@@ -11,7 +11,7 @@ global enter_usermode
 enter_usermode:
     ; backup stack pointer for use
     mov ebp, esp
-    cli
+    ;cli
 
     mov ax, (4 * 8) | 3
     mov ds, ax

@@ -254,8 +254,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf(" - Virtual stack-top at 0x%x\n", virtual_stack_top);
     enter_usermode(FRAME_4MB, virtual_stack_top);
 
-    //int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
-    //printf("Out: %d\n", a);
+    /*
+    int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
+    printf("Out: %d\n", a);
+    */
 
     /*
     pageframe_t frame = kalloc_frame();

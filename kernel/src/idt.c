@@ -223,11 +223,9 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
     printf(" - esp: 0x%x\n", stack_state.esp);
     printf(" - faulted from ring %d\n", frame.cs & 0x3);
 
-    /*
     uint32_t cs;
     asm volatile("mov %%cs, %0" : "=r"(cs));
     printf(" - current cs: 0x%x\n", cs);
-    */
 
     if (interrupt_id == INT_GENERAL_PROTECTION) {
         printf("\nError breakdown:\n");
@@ -332,7 +330,8 @@ void idt_initialize(void) {
 
     // Syscall
     //idt_set_descriptor(INT_SYSCALL, isr_stub_table[INT_SYSCALL], 0x8E);
-    idt_set_descriptor(INT_SYSCALL, isr_stub_table[INT_SYSCALL], 0xE5);
+    //idt_set_descriptor(INT_SYSCALL, isr_stub_table[INT_SYSCALL], 0xE5);
+    idt_set_descriptor(INT_SYSCALL, isr_stub_table[INT_SYSCALL], 0xEE);
 
     PIC_remap(IDT_IRQ_OFFSET, IDT_IRQ_OFFSET + 0x08);
 
