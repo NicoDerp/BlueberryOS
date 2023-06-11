@@ -104,7 +104,7 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     initialize_tss(&process->tss);
 
     process->physical_stack = (uint32_t) kalloc_frame();
-    process->virtual_stack = FRAME_4MB + 0x1000;
+    process->virtual_stack = 4*FRAME_4KB;
     process->virtual_stack_top = process->virtual_stack + 0xF00;
 
     map_page_pd(process->pd, process->physical_stack, process->virtual_stack, true, false);
@@ -117,8 +117,10 @@ void runProcess(process_t* process) {
     currentProcess = process->id;
 
     // Load process's TSS
+    /*
     install_tss_(&process->tss);
     flush_tss();
+    */
 
     // Maybe need to reload GDT also, not sure
 
@@ -136,6 +138,13 @@ void set_kernel_stack(uint32_t esp) {
     // Setting ss0 just in case
     sys_tss.ss0 = 0x10;  /* Kernel data segment */
     sys_tss.esp0 = esp;
+}
+
+void use_system_tss(void) {
+    
+    install_tss_(&sys_tss);
+    flush_tss();
+
 }
 
 

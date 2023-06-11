@@ -143,6 +143,13 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     paging_initialize();
     printf("[OK]\n");
 
+    printf("Setting up Kernel Stack ...");
+    uint32_t esp;
+    asm volatile("mov %%esp, %0" : "=r"(esp));
+    set_kernel_stack(esp);
+    printf("[OK]\n");
+
+
     /*
     change_pagetable(0, false, false);
 
@@ -171,6 +178,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("Process info:\n");
         printf(" - Name: '%s'\n", process->name);
         printf(" - Id: %d\n", process->id);
+        printf(" - Entry point: 0x%x\n", process->entryPoint);
+        printf(" - Pagetables:\n");
+        printf("   - 0x%x\n", process->pd[0]);
+        printf("   - 0x%x\n", process->pd[1]);
+        printf("   - 0x%x\n", process->pd[2]);
+        printf("   - 0x%x\n", process->pd[3]);
+        printf("   - 0x%x\n", process->pd[4]);
+
+        //runProcess(process);
 
         //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
         //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
@@ -217,10 +233,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     //change_pagetable_vaddr(0, true, false);
 
     //printf("a: 0x%x\n", *((uint8_t*) 0x5000));
-
-    uint32_t esp;
-    asm volatile("mov %%esp, %0" : "=r"(esp));
-    set_kernel_stack(esp);
 
     //map_pagetable(0x5, 0x5, true, false);
     /*

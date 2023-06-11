@@ -29,7 +29,6 @@ void paging_initialize(void) {
 
     loadPageDirectory(page_directory);
     enablePaging();
-    //enablePaging(page_directory);
 }
 
 pagedirectory_t new_pagedirectory(bool writable, bool kernel) {
@@ -43,6 +42,33 @@ pagedirectory_t new_pagedirectory(bool writable, bool kernel) {
 
     return pd;
 }
+
+void use_system_pagedirectory(void) {
+    loadPageDirectory(page_directory);
+}
+
+pagedirectory_t copy_system_pagedirectory(void) {
+
+    pagedirectory_t pd = (pagedirectory_t) kalloc_frame();
+
+    for (size_t i = 0; i < 1024; i++) {
+        /*
+        // If system page directory's pagetable is present
+        if (page_directory[i] & 1) {
+
+            // Then allocate new
+
+        } else {
+            pd[i] = page_directory[i];
+        }
+        */
+
+        pd[i] = page_directory[i];
+    }
+
+    return pd;
+}
+
 
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
 
@@ -78,6 +104,39 @@ void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, boo
 
     // TODO is it faster or slower to invlpg for all pages, or invalidate entire directory?
     flushPaging();
+}
+
+void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
+
+    pagetable_t pagetable;
+
+    // Check if page-table is present
+    if (pd[virtualIndex] & 1) {
+        pagetable = (pagetable_t) (pd[virtualIndex] & 0xFFFFF000);
+
+        printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+    } else {
+        // Allocate new pagetable if it isn't present
+        pagetable = (pagetable_t) kalloc_frame();
+
+        printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+
+        /*
+        malloc(&pagetable, 0, FRAME_4KB);
+        unsigned int flags = page_directory[virtualIndex] & 0x3;
+        page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
+        */
+    }
+
+    unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
+
+    for (size_t i = 0; i < 1024; i++) {
+        // Sets address and attributes for all pages in pagetable
+        //pagetable[i] = (physicalIndex * FRAME_4KB + i) | flags;
+        pagetable[i] = (physicalIndex * FRAME_4MB + i * FRAME_4KB) | flags;
+    }
+
+    pd[virtualIndex] = ((unsigned int) pagetable) | flags;
 }
 
 void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel) {

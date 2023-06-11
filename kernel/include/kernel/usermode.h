@@ -59,6 +59,7 @@ void tss_initialize(void);
 //void install_tss(struct GDT* source);
 void install_tss(uint8_t* entryBytes);
 void set_kernel_stack(uint32_t esp);
+void use_system_tss(void);
 
 process_t* newProcess(char* name, struct multiboot_tag_module* module);
 void runProcess(process_t* processID);

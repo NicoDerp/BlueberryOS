@@ -178,17 +178,31 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
 
 pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
 
-    pagedirectory_t pd = new_pagedirectory(true, false);
+    // Copy kernel's pagedirectory to this pagedirectory
+    pagedirectory_t pd = copy_system_pagedirectory();
+
+    // Map first pagetable
+    map_pagetable_pd(pd, 0, 0, true, false);
+
     size_t module_size = module->mod_end - module->mod_start;
 
-    // Allocate memory for data
-    pageframe_t pageframe = kalloc_frame();
+    // ceil(module_size / FRAME_4KB)
+    for (size_t i = 0; i < (module_size+FRAME_4KB-1)/FRAME_4KB; i++) {
 
-    // Copy data to pageframe
-    memcpy(pageframe, (void*) module->mod_start, module_size);
+        printf("Allocating new pageframe to copy executable data with index %d\n", i);
 
-    // Map page
-    map_page_pd(pd, (uint32_t) pageframe, 0x0, true, false);
+        uint32_t offset = i*FRAME_4KB;
+
+        // Allocate memory for data
+        pageframe_t pageframe = kalloc_frame();
+
+        // Copy data to pageframe
+        memcpy((void*) ((uint32_t) pageframe + offset), (void*) (module->mod_start + offset), module_size);
+
+        // Map page
+        map_page_pd(pd, (uint32_t) pageframe + offset, 0x0 + offset, true, false);
+        printf("Mapping 0x%x to 0x%x\n", (uint32_t) pageframe + offset, 0x0 + offset);
+    }
 
     return pd;
 }
