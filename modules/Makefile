@@ -28,7 +28,7 @@ ASM = nasm
 ASMFLAGS = -fbin
 
 
-SRC_C =
+SRC_C = src/test.c
 SRC_ASM = src/userfunc.asm
 
 OBJ_C = $(SRC_C:.c=.c.mod)
@@ -40,7 +40,8 @@ OBJ = $(OBJ_C) $(OBJ_ASM)
 
 #$(CC) -MD -c $^ -o $@ $(CFLAGS) -Wl,--oformat=binary
 #%.c.o: %.c
-%.c.o: %.c
+#%.c.o: %.c
+%.c.mod: %.c
 	$(CC) -MD $^ -o $@ $(CFLAGS) $(LIBS)
 
 #$(ASM) -f bin $< -o $@

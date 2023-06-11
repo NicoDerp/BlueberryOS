@@ -8,39 +8,40 @@
 #include <stdio.h>
 
 //extern void enablePaging(void);
-//extern void loadPageDirectory(unsigned int*);
-extern void enablePaging(pagedirectory_t);
+//extern void enablePaging(pagedirectory_t);
+extern void enablePaging(void);
 extern void flushPaging(void);
 
 pagedirectory_t page_directory;
 
 void paging_initialize(void) {
-    page_directory = (pagedirectory_t) kalloc_frame();
 
     // Sets default attributes for all page-directory entries
-    for (size_t i = 0; i < 1024; i++) {
-        /** This sets the following flags to the pages:
-         *   Supervisor: Only kernel-mode can access them
-         *   Write Enabled: It can be both read from and written to
-         *   Not Present: The page table is not present
-         */
-        page_directory[i] = 0x00000002;
-    }
-
-    /*
-    for (size_t i = 0; i < 1024; i++) {
-        // attributes: supervisor level, read/write, present.
-        first_page_table[i] = (i * FRAME_4KB) | 3;
-    }
-    page_directory[0] = ((unsigned int) first_page_table) | 3;
-    */
+    /** This sets the following flags to the pages:
+     *   Supervisor: Only kernel-mode can access them
+     *   Write Enabled: It can be both read from and written to
+     *   Not Present: The page table is not present
+     */
+    page_directory = new_pagedirectory(true, true);
 
     // Identity-map first page
     map_pagetable(0, 0, true, true);
 
-    //loadPageDirectory(page_directory);
-    //enablePaging();
-    enablePaging(page_directory);
+    loadPageDirectory(page_directory);
+    enablePaging();
+    //enablePaging(page_directory);
+}
+
+pagedirectory_t new_pagedirectory(bool writable, bool kernel) {
+    pagedirectory_t pd = (pagedirectory_t) kalloc_frame();
+
+    // Not present
+    unsigned int flags = (!kernel << 2) | (writable << 1);
+    for (size_t i = 0; i < 1024; i++) {
+        pd[i] = flags;
+    }
+
+    return pd;
 }
 
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
@@ -120,6 +121,46 @@ void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool k
 
     // TODO is it faster or slower to invlpg for all pages, or invalidate entire directory?
     flushPaging();
+}
+
+void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel) {
+
+    uint32_t physicalPTI = physicalAddr / FRAME_4MB;
+    uint32_t virtualPTI = virtualAddr / FRAME_4MB;
+
+    // Same as mod 1024 but better
+    uint32_t physicalPI = (physicalAddr / FRAME_4KB) & 0x03FF;
+
+    pagetable_t pagetable;
+    bool present = pd[virtualPTI] & 1;
+
+    // Check if page-table is present
+    if (present) {
+        pagetable = (pagetable_t) (pd[virtualPTI] & 0xFFFFF000);
+
+        printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+    } else {
+        // Allocate new pagetable if it isn't present
+        pagetable = (pagetable_t) kalloc_frame();
+
+        printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+
+        /*
+        malloc(&pagetable, 0, FRAME_4KB);
+        unsigned int flags = page_directory[virtualIndex] & 0x3;
+        page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
+        */
+    }
+
+    unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
+
+    // Sets address and attributes for all pages in pagetable
+    pagetable[physicalPI] = (physicalPTI * FRAME_4MB + physicalPI * FRAME_4KB) | flags;
+
+    // TODO should I change flags of entire pagetable or keep?
+    if (!present) {
+        pd[virtualPTI] = ((unsigned int) pagetable) | flags;
+    }
 }
 
 void unmap_page(void* virtualaddr) {

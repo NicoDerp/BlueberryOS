@@ -31,9 +31,13 @@ typedef uint32_t* pagetable_t;
 
 typedef uint32_t* pagedirectory_t;
 
+extern void loadPageDirectory(pagedirectory_t);
+
 void paging_initialize(void);
+pagedirectory_t new_pagedirectory(bool writable, bool kernel);
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel);
 void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel);
+void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel);
 void unmap_page(void* virtualaddr);
 void unmap_pagetable(size_t index);
 

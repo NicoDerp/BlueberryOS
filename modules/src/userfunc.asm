@@ -3,12 +3,11 @@ BITS 32
 
 section .text
 main:
-    push 69
     mov eax, 1    ; SYS_write
     mov ebx, 1    ; STDOUT_FILENO
     mov ecx, str  ; &str
     mov edx, 12   ; len(str)
-    int 48        ; syscall
+    int 30h       ; syscall
 .loop:
     jmp .loop
 

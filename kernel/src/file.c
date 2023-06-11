@@ -1,6 +1,8 @@
 
 #include <kernel/file.h>
 #include <kernel/memory.h>
+#include <kernel/paging.h>
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -8,29 +10,6 @@
 
 #include <stdio.h>
 
-
-typedef struct {
-    char magic[4];
-    char class;
-    char endianness;
-    char version1;
-    char targetABI;
-    char ABIversion;
-    char pad[7];
-    uint16_t type;
-    uint16_t targetArch;
-    uint32_t version2;
-    uint32_t entryPoint;
-    uint32_t headerTable;
-    uint32_t sectionTable;
-    uint32_t flags; /* May be unused */
-    uint16_t headerSize;
-    uint16_t headerEntrySize;
-    uint16_t headerEntryCount;
-    uint16_t sectionEntrySize;
-    uint16_t sectionEntryCount;
-    uint16_t sectionNamesIndex;
-} file_header_t;
 
 typedef struct {
     uint32_t nameOffset;
@@ -46,6 +25,17 @@ typedef struct {
 } section_header_t;
 
 typedef struct {
+    uint32_t type;
+    uint32_t offset;
+    uint32_t vaddr;
+    uint32_t paddr;
+    uint32_t filesz;
+    uint32_t memsz;
+    uint32_t flags;
+    uint32_t align; /* TODO */
+} program_header_t;
+
+typedef struct {
     uint32_t name;
     uint32_t value;
     uint32_t size;
@@ -54,32 +44,40 @@ typedef struct {
     uint16_t sectionIndex;
 } symbol_table_t;
 
-static inline section_header_t* getSectionHeader(file_header_t* file_header) {
-    return (section_header_t*) ((int) file_header + file_header->sectionTable);
+static inline section_header_t* getSectionHeader(elf_header_t* elf_header) {
+    return (section_header_t*) ((int) elf_header + elf_header->sectionTable);
 }
 
-static inline section_header_t* getSectionEntry(file_header_t* file_header, size_t index) {
-    return &getSectionHeader(file_header)[index];
+static inline section_header_t* getSectionEntry(elf_header_t* elf_header, size_t index) {
+    return &getSectionHeader(elf_header)[index];
 }
 
-static inline char* getNamesEntry(file_header_t* file_header) {
-    if (file_header->sectionNamesIndex == 0) {
+static inline program_header_t* getProgramHeader(elf_header_t* elf_header) {
+    return (program_header_t*) ((int) elf_header + elf_header->programTable);
+}
+
+static inline program_header_t* getProgramEntry(elf_header_t* elf_header, size_t index) {
+    return &getProgramHeader(elf_header)[index];
+}
+
+static inline char* getNamesEntry(elf_header_t* elf_header) {
+    if (elf_header->sectionNamesIndex == 0) {
         return NULL;
     }
 
-    section_header_t* section = getSectionEntry(file_header, file_header->sectionNamesIndex);
-    char* namesEntry = (char*) ((int)file_header + section->offset);
+    section_header_t* section = getSectionEntry(elf_header, elf_header->sectionNamesIndex);
+    char* namesEntry = (char*) ((int)elf_header + section->offset);
     return namesEntry;
 }
 
-static inline char* getSectionName(file_header_t* file_header, size_t index) {
-    if (file_header->sectionNamesIndex == 0) {
+static inline char* getSectionName(elf_header_t* elf_header, size_t index) {
+    if (elf_header->sectionNamesIndex == 0) {
         return NULL;
     }
 
-    section_header_t* section = getSectionEntry(file_header, index);
-    section_header_t* namesSection = getSectionEntry(file_header, file_header->sectionNamesIndex);
-    char* namesEntry = (char*) ((int)file_header + namesSection->offset);
+    section_header_t* section = getSectionEntry(elf_header, index);
+    section_header_t* namesSection = getSectionEntry(elf_header, elf_header->sectionNamesIndex);
+    char* namesEntry = (char*) ((int)elf_header + namesSection->offset);
     return namesEntry + section->nameOffset;
 }
 
@@ -105,34 +103,94 @@ bool isModuleELF(struct multiboot_tag_module* module) {
         return false;
     }
 
-    file_header_t file_header = *((file_header_t*) module->mod_start);
+    elf_header_t elf_header = *((elf_header_t*) module->mod_start);
 
     // Check endianness
-    if (file_header.endianness != 1) {
+    if (elf_header.endianness != 1) {
         printf("Unable to load file: Executable not made for little-endian\n");
         return false;
     }
     
     // Check if ELF version is correct
-    if (file_header.version1 != 1) {
+    if (elf_header.version1 != 1) {
         printf("Unable to load file: ELF version is not 1\n");
         return false;
     }
 
     // Check if file is executable
-    if (file_header.type != 0x02) {
+    if (elf_header.type != 0x02) {
         printf("Unable to load file: ELF is not executable\n");
         return false;
     }
 
     // Check if executable is made for x86
-    if (file_header.targetArch != 0x03) {
+    if (elf_header.targetArch != 0x03) {
         printf("Unable to load file: Executable is not made for x86\n");
         return false;
     }
 
     return true;
 
+}
+
+pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
+
+    pagedirectory_t pd = new_pagedirectory(true, false);
+
+    elf_header_t* elf_header = (elf_header_t*) module->mod_start;
+
+    /*
+    for (size_t i = 1; i < elf_header->sectionEntryCount; i++) {
+        section_header_t* section = getSectionEntry(elf_header, i);
+        printf("Section name %d: '%s'. Type: '%d'\n", i, getSectionName(elf_header, i), section->type);
+    }
+    */
+
+    for (size_t i = 0; i < elf_header->programEntryCount; i++) {
+        program_header_t* program = getProgramEntry(elf_header, i);
+        printf("Type: %d, vaddr: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->memsz, program->align);
+
+        // Check if program header is loadable
+        if (program->type == 0x01) {
+
+            if (program->memsz > FRAME_4KB) {
+                printf("[ERROR] Can't load program header %d, because it is bigger than 4KB\n");
+                return pd;
+            }
+
+            // Allocate memory for program header
+            pageframe_t pageframe = kalloc_frame();
+            void* data = (void*) module->mod_start + program->offset;
+
+            // Set pageframe to zero with size of memsz
+            memset(pageframe, 0, program->memsz);
+
+            // Copy program header data to pageframe
+            memcpy(pageframe, data, program->filesz);
+
+            // Map page
+            map_page_pd(pd, (uint32_t) pageframe, program->vaddr, true, false);
+        }
+    }
+
+    return pd;
+}
+
+pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
+
+    pagedirectory_t pd = new_pagedirectory(true, false);
+    size_t module_size = module->mod_end - module->mod_start;
+
+    // Allocate memory for data
+    pageframe_t pageframe = kalloc_frame();
+
+    // Copy data to pageframe
+    memcpy(pageframe, (void*) module->mod_start, module_size);
+
+    // Map page
+    map_page_pd(pd, (uint32_t) pageframe, 0x0, true, false);
+
+    return pd;
 }
 
 file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
@@ -145,13 +203,6 @@ file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
 
     if (isELF) {
         file->type = ELF;
-
-        file_header_t* file_header = (file_header_t*) module->mod_start;
-
-        for (size_t i = 1; i < file_header->sectionEntryCount; i++) {
-            section_header_t* section = getSectionEntry(file_header, i);
-            printf("Section name %d: '%s'. Type: '%d'\n", i, getSectionName(file_header, i), section->type);
-        }
 
         
     } else {

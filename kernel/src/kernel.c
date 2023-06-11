@@ -160,24 +160,20 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Before: 0x%x\n", page_directory[2]);
 
     // For test, identity map
-    map_pagetable(1, 1, true, false);
-
-    printf("Before: 0x%x\n", page_directory[0]);
-    printf("Before: 0x%x\n", page_directory[1]);
-    printf("Before: 0x%x\n", page_directory[2]);
+    //map_pagetable(1, 1, true, false);
 
     for (size_t i = 0; i < moduleCount; i++) {
         struct multiboot_tag_module* module = modules[i];
         size_t moduleSize = module->mod_end - module->mod_start;
         printf("Module size: %d\n", moduleSize);
 
-        /*
-        file_t* file = loadFileFromMultiboot(module);
-        (void)file;
-        */
+        process_t* process = newProcess("Ooga booga", module);
+        printf("Process info:\n");
+        printf(" - Name: '%s'\n", process->name);
+        printf(" - Id: %d\n", process->id);
 
         //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
-        memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
+        //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
 
         /*
         printf("Contents:\n");
@@ -197,6 +193,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("No modules!\n");
         return;
     }
+
+
+    for (;;) {};
 
     /*
     extern pagedirectory_t page_directory;
@@ -242,6 +241,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Before: 0x%x\n", page_directory[1]);
     printf("Before: 0x%x\n", page_directory[2]);
 
+    /*
     uint32_t stack_ptr = (uint32_t) kalloc_frame();
     uint32_t virtual_stack_ptr = FRAME_4MB + 0x1000;
     uint32_t virtual_stack_top = virtual_stack_ptr + 0xF00;
@@ -257,6 +257,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     map_page(FRAME_4MB, 0x0, true, false);
 
     enter_usermode(FRAME_4MB, virtual_stack_top);
+    */
 
     /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);

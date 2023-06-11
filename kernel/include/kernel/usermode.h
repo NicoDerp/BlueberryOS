@@ -2,9 +2,15 @@
 #ifndef KERNEL_USERMODE_H
 #define KERNEL_USERMODE_H
 
+#include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
+#include <kernel/paging.h>
+
 #include <stdint.h>
 
+
+#define PROCESS_MAX_NAME_LENGTH 128
+#define PROCESSES_MAX 32
 
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
@@ -38,10 +44,24 @@ typedef struct {
     //uint32_t ssp;
 } __attribute__((packed)) tss_t;
 
+typedef struct {
+    char name[PROCESS_MAX_NAME_LENGTH+1];
+    pagedirectory_t pd;
+    tss_t tss;
+    uint32_t entryPoint;
+    uint32_t physical_stack;
+    uint32_t virtual_stack;
+    uint32_t virtual_stack_top;
+    int id;
+} process_t;
+
 void tss_initialize(void);
 //void install_tss(struct GDT* source);
 void install_tss(uint8_t* entryBytes);
 void set_kernel_stack(uint32_t esp);
+
+process_t* newProcess(char* name, struct multiboot_tag_module* module);
+void runProcess(process_t* processID);
 
 extern void enter_usermode(uint32_t addr, uint32_t stack_ptr);
 extern void flush_tss(void);
