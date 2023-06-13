@@ -26,15 +26,15 @@ multiboot_header:
 .frame_buffer:
     dw 5    ; Type
     dw 0    ; Flags. Optional
-    dd .frame_buffer_end - .frame_buffer  ; Size
-    dd 80   ; Width
-    dd 25   ; Height
-    dd 32   ; Depth idk
+    dq .frame_buffer_end - .frame_buffer  ; Size
+    dq 80   ; Width
+    dq 25   ; Height
+    dq 32   ; Depth idk
 
 .frame_buffer_end:
     dw 0
     dw 0
-    dd 5
+    dq 5
 
 .end:
 
@@ -111,9 +111,6 @@ _start:
     ; - Present
     ; - Read/write
     ;mov (page_table2 - 0xC0000000 + 1023 * 4), (0x000B8000 | 0x003)
-
-.loop:
-    jmp .loop
 
     ; Tell the CPU where the page directory is
     mov eax, (page_directory - 0xC0000000)

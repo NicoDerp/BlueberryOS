@@ -65,7 +65,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     terminal_initialize(80, 40, (void*) 0xC03FF000);
 
-    printf("start\n");
+    //printf("start\n");
     for (;;) {}
 
     struct multiboot_tag_module* modules[32];
