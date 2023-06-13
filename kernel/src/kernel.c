@@ -75,20 +75,25 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     terminal_initialize(80, 25, (void*) 0xC03FF000);
     //terminal_initialize(80, 25, (void*) 0x003FF000);
 
-    //terminal_writestring("ooga");
-
     printf("start\n");
-    for (;;) {}
+
 
     struct multiboot_tag_module* modules[32];
     size_t moduleCount = 0;
 
+    //tag = (struct multiboot_tag*) (ebx - 0xC0000000 + 8);
+    printf("ebx: 0x%x\n", ebx);
+    //printf("t: 0x%x\n", tag->type);
+
+    /*
     struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
         printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
+        for (;;) {}
+
         switch (tag->type)
         {
             case MULTIBOOT_TAG_TYPE_CMDLINE:
@@ -138,8 +143,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                 break;
         }
     }
+    */
 
-    extern pagedirectory_t page_directory;
     printf("\nStarting BlueberryOS\n");
 
     printf("Settings up System TSS ...");
@@ -158,17 +163,77 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     idt_initialize();
     printf("[OK]\n");
 
-    /*
     printf("Setting up Paging ...");
     paging_initialize();
     printf("[OK]\n");
-    */
 
     printf("Setting up Kernel Stack ...");
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
     printf("[OK]\n");
+
+    for (;;) {}
+
+    //printf("a: %d\n", 1/0);
+
+    struct multiboot_tag* tag;
+    for (tag = (struct multiboot_tag*) (ebx + 8);
+       tag->type != MULTIBOOT_TAG_TYPE_END;
+       tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
+    {
+        //printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
+        for (;;) {}
+
+        switch (tag->type)
+        {
+            case MULTIBOOT_TAG_TYPE_CMDLINE:
+                printf("Command line = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
+                break;
+            case MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME:
+                printf("Boot loader name = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
+                break;
+            case MULTIBOOT_TAG_TYPE_MODULE:
+                printf("Module at 0x%x-0x%x. Command line '%s'\n",
+                ((struct multiboot_tag_module *) tag)->mod_start,
+                ((struct multiboot_tag_module *) tag)->mod_end,
+                ((struct multiboot_tag_module *) tag)->cmdline);
+
+                modules[moduleCount++] = (struct multiboot_tag_module*) tag;
+                break;
+            case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
+                printf("mem_lower = %uKB, mem_upper = %uKB\n",
+                  ((struct multiboot_tag_basic_meminfo *) tag)->mem_lower,
+                  ((struct multiboot_tag_basic_meminfo *) tag)->mem_upper);
+                break;
+            case MULTIBOOT_TAG_TYPE_BOOTDEV:
+                printf("Boot device 0x%x,%u,%u\n",
+                  ((struct multiboot_tag_bootdev *) tag)->biosdev,
+                  ((struct multiboot_tag_bootdev *) tag)->slice,
+                  ((struct multiboot_tag_bootdev *) tag)->part);
+                break;
+            case MULTIBOOT_TAG_TYPE_MMAP:
+                {
+                    multiboot_memory_map_t *mmap;
+
+                    printf("mmap\n");
+
+                    for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
+                        (multiboot_uint8_t*) mmap < (multiboot_uint8_t *) tag + tag->size;
+                        mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
+
+                        printf(" base_addr = 0x%x%x,"
+                        " length = 0x%x%x, type = 0x%x\n",
+                        (unsigned) (mmap->addr >> 32),
+                        (unsigned) (mmap->addr & 0xffffffff),
+                        (unsigned) (mmap->len >> 32),
+                        (unsigned) (mmap->len & 0xffffffff),
+                        (unsigned) mmap->type);
+                    }
+                }
+                break;
+        }
+    }
 
     for (;;) {}
 

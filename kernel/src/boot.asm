@@ -70,6 +70,7 @@ stack_top:
 
 section .bss
 align 4096
+global page_directory
 page_directory:
     resb 4096
 page_table1:
@@ -88,19 +89,11 @@ _start:
     ; - Read/write (1)
     ; - Kernel     (0)
     ; - Page-table is at page_table1
-    ;mov ecx, (page_table1 - 0xC0000000 + 2)
     mov ecx, (page_table1 - 0xC0000000 + 3)
     mov [page_directory - 0xC0000000 + 0], ecx
-    mov [page_directory - 0xC0000000 + KERNEL_PAGE_INDEX*4], ecx
 
     ; Map higher-half
-    ; - Present    (1)
-    ; - Read/write (1)
-    ; - Kernel     (0)
-    ; - Page-table is at page_table1
-    ;mov ecx, (page_table1 - 0xC0000000 + 2)
-    ;mov ecx, (page_table1 - 0xC0000000 + 3)
-    ;mov [page_directory - 0xC0000000 + KERNEL_PAGE_INDEX], ecx
+    mov [page_directory - 0xC0000000 + KERNEL_PAGE_INDEX*4], ecx
 
     ; Fill page table's pages
     mov edi, (page_table1 - 0xC0000000)
@@ -118,7 +111,6 @@ _start:
     ; Write page entry which is at edi, and entry is esi | 2 which is
     ; read/write | present
     mov edx, esi
-    ;or edx, 2
     or edx, 3
     mov [edi], edx
 
@@ -145,8 +137,8 @@ _start:
 
     ; Enable paging
     mov ecx, cr0
-    or ecx, 0x80010000
-    ;or ecx, 0x80000001
+    ;or ecx, 0x80010000
+    or ecx, 0x80000001
     ;or ecx, 0x80000000
     mov cr0, ecx
 
@@ -163,8 +155,8 @@ HigherHalf:
     ;mov [page_directory+0], dword 0
 
     ; Force a TLB flush
-    mov ecx, cr3
-    mov cr3, ecx
+    ;mov ecx, cr3
+    ;mov cr3, ecx
 
     ; Set the esp register to the top of the stack as it grows downwards.
     mov esp, stack_top

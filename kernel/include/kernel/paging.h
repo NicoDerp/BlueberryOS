@@ -31,6 +31,8 @@ typedef uint32_t* pagetable_t;
 
 typedef uint32_t* pagedirectory_t;
 
+extern pagedirectory_t page_directory;
+
 extern void loadPageDirectory(pagedirectory_t);
 
 void paging_initialize(void);

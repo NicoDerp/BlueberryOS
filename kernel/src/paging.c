@@ -12,7 +12,7 @@
 extern void enablePaging(void);
 extern void flushPaging(void);
 
-pagedirectory_t page_directory;
+//pagedirectory_t page_directory;
 
 void paging_initialize(void) {
 
@@ -22,13 +22,13 @@ void paging_initialize(void) {
      *   Write Enabled: It can be both read from and written to
      *   Not Present: The page table is not present
      */
-    page_directory = new_pagedirectory(true, true);
+    //page_directory = new_pagedirectory(true, true);
 
     // Identity-map first page
-    map_pagetable(0, 0, true, true);
+    //map_pagetable(0, 0, true, true);
 
-    loadPageDirectory(page_directory);
-    enablePaging();
+    //loadPageDirectory(page_directory);
+    //enablePaging();
 }
 
 pagedirectory_t new_pagedirectory(bool writable, bool kernel) {
@@ -113,7 +113,6 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
     // Check if page-table is present
     if (pd[virtualIndex] & 1) {
         pagetable = (pagetable_t) (pd[virtualIndex] & 0xFFFFF000);
-
         printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
