@@ -63,7 +63,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     */
 
-    terminal_initialize(80, 40, (void*) 0xC03FF000);
+    terminal_initialize(80, 25, (void*) 0xC03FF000);
+    //terminal_initialize(80, 25, (void*) 0x003FF000);
+
+    terminal_writestring("ooga");
 
     //printf("start\n");
     for (;;) {}

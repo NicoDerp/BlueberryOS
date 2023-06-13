@@ -23,18 +23,18 @@ multiboot_header:
     dd HEADER_LENGTH
     dd CHECKSUM
 
-.frame_buffer:
-    dw 5    ; Type
-    dw 0    ; Flags. Optional
-    dq .frame_buffer_end - .frame_buffer  ; Size
-    dq 80   ; Width
-    dq 25   ; Height
-    dq 32   ; Depth idk
+;.frame_buffer:
+;    dw 5    ; Type
+;    dw 0    ; Flags. Optional
+;    dq .frame_buffer_end - .frame_buffer  ; Size
+;    dq 80   ; Width
+;    dq 25   ; Height
+;    dq 32   ; Depth idk
 
-.frame_buffer_end:
-    dw 0
-    dw 0
-    dq 5
+;.frame_buffer_end:
+;    dw 0
+;    dw 0
+;    dq 5
 
 .end:
 
@@ -61,6 +61,7 @@ global _start:function (_start.end - _start)
 _start:
 
     ; Now we are in 32-bit real-mode.
+    int 0
 
     ; Map first pagedirectory entry
     ; - Present    (1)
