@@ -46,6 +46,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     /* Initialize framebuffer first-thing */
     /* Copied from https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#kernel_002ec */
     struct multiboot_tag* tag;
+    /*
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
@@ -53,14 +54,19 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER)
         {
             struct multiboot_tag_framebuffer *tagfb = (struct multiboot_tag_framebuffer*) tag;
-
+*/
             /* Initialize framebuffer */
+/*
             terminal_initialize((size_t) tagfb->common.framebuffer_width, (size_t) tagfb->common.framebuffer_height, (void*) (unsigned long) tagfb->common.framebuffer_addr);
             break;
         }
     }
+    */
+
+    terminal_initialize(80, 40, (void*) 0xC03FF000);
 
     printf("start\n");
+    for (;;) {}
 
     struct multiboot_tag_module* modules[32];
     size_t moduleCount = 0;
@@ -139,9 +145,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     idt_initialize();
     printf("[OK]\n");
 
+    /*
     printf("Setting up Paging ...");
     paging_initialize();
     printf("[OK]\n");
+    */
 
     printf("Setting up Kernel Stack ...");
     uint32_t esp;
@@ -149,6 +157,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     set_kernel_stack(esp);
     printf("[OK]\n");
 
+    for (;;) {}
 
     /*
     change_pagetable(0, false, false);
