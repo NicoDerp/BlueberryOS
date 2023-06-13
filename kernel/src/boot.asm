@@ -3,9 +3,6 @@ extern kernelstart
 extern kernelend
 
 ; Declare some constants for the multiboot header
-MBALIGN       equ 1 << 0
-MEMINFO       equ 1 << 1
-MBFLAGS       equ MBALIGN | MEMINFO
 MAGIC         equ 0xE85250D6
 ARCHITECTURE  equ 0  ; 32-bit protected
 HEADER_LENGTH equ multiboot_header.end - multiboot_header
@@ -15,26 +12,50 @@ CHECKSUM      equ -(MAGIC + ARCHITECTURE + HEADER_LENGTH)
 KERNEL_PAGE_INDEX equ (0xC0000000 >> 22) ; 768
 
 ; Set the bytes
-section .multiboot.data
-align 4
+section .multiboot.data align=4096
+;section .multiboot.data
+;align 4
 multiboot_header:
     dd MAGIC
     dd ARCHITECTURE
     dd HEADER_LENGTH
     dd CHECKSUM
 
-;.frame_buffer:
-;    dw 5    ; Type
-;    dw 0    ; Flags. Optional
-;    dq .frame_buffer_end - .frame_buffer  ; Size
-;    dq 80   ; Width
-;    dq 25   ; Height
-;    dq 32   ; Depth idk
+;align 8
+.tag_info_start:
+    dw 1
+    dw 1
+    dd .tag_info_end - .tag_info_start
 
-;.frame_buffer_end:
+    dd 5
+.tag_info_end:
+    dd 0
+    dd 0
+    dd 8
+
+;align 8
+.tag_frame_buffer_start:
+    dw 5    ; Type (framebuffer)
+    dw 0    ; Flags. Optional
+    ;dw 1    ; Flags. Optional
+    dd .tag_frame_buffer_end - .tag_frame_buffer_start  ; Size
+    dd 80   ; Width
+    dd 25   ; Height
+    dd 0   ; Depth. Zero in text mode
+.tag_frame_buffer_end:
+    dd 0
+    dd 0
+    dd 8
 ;    dw 0
 ;    dw 0
-;    dq 5
+;    dd 5
+
+align 8
+.tag_end_start:
+    dw 0
+    dw 0
+    dd .tag_end_end - .tag_end_start
+.tag_end_end:
 
 .end:
 
@@ -61,29 +82,31 @@ global _start:function (_start.end - _start)
 _start:
 
     ; Now we are in 32-bit real-mode.
-    int 0
 
     ; Map first pagedirectory entry
     ; - Present    (1)
     ; - Read/write (1)
     ; - Kernel     (0)
     ; - Page-table is at page_table1
-    mov ecx, (page_table1 - 0xC0000000 + 2)
+    ;mov ecx, (page_table1 - 0xC0000000 + 2)
+    mov ecx, (page_table1 - 0xC0000000 + 3)
     mov [page_directory - 0xC0000000 + 0], ecx
+    mov [page_directory - 0xC0000000 + KERNEL_PAGE_INDEX*4], ecx
 
     ; Map higher-half
     ; - Present    (1)
     ; - Read/write (1)
     ; - Kernel     (0)
     ; - Page-table is at page_table1
-    mov ecx, (page_table1 - 0xC0000000 + 2)
-    mov [page_directory - 0xC0000000 + KERNEL_PAGE_INDEX*4], ecx
+    ;mov ecx, (page_table1 - 0xC0000000 + 2)
+    ;mov ecx, (page_table1 - 0xC0000000 + 3)
+    ;mov [page_directory - 0xC0000000 + KERNEL_PAGE_INDEX], ecx
 
     ; Fill page table's pages
     mov edi, (page_table1 - 0xC0000000)
     mov esi, 0
-    ;mov ecx, 1023
-    mov ecx, 1024
+    mov ecx, 1023
+    ;mov ecx, 1024
 .table1_1:
     cmp esi, kernelstart
     jl .table1_2
@@ -92,9 +115,11 @@ _start:
     cmp esi, (kernelend - 0xC0000000)
     jge .table1_3
 
-    ; Write page entry which is at edi, and entry is esi | 2
+    ; Write page entry which is at edi, and entry is esi | 2 which is
+    ; read/write | present
     mov edx, esi
-    or edx, 2
+    ;or edx, 2
+    or edx, 3
     mov [edi], edx
 
 .table1_2:
@@ -111,7 +136,8 @@ _start:
     ; Map VGA memory to 0xC03FF000
     ; - Present
     ; - Read/write
-    ;mov (page_table2 - 0xC0000000 + 1023 * 4), (0x000B8000 | 0x003)
+    mov [page_table1 - 0xC0000000 + 1023 * 4], dword (0x000B8000 | 0x003)
+
 
     ; Tell the CPU where the page directory is
     mov eax, (page_directory - 0xC0000000)
@@ -119,8 +145,9 @@ _start:
 
     ; Enable paging
     mov ecx, cr0
+    or ecx, 0x80010000
     ;or ecx, 0x80000001
-    or ecx, 0x80000000
+    ;or ecx, 0x80000000
     mov cr0, ecx
 
     ; Jump into higher-half!
@@ -133,7 +160,7 @@ section .text
 HigherHalf:
 
     ; Unmap identity mapping since it is no longer needed
-    mov [page_directory+0], dword 0
+    ;mov [page_directory+0], dword 0
 
     ; Force a TLB flush
     mov ecx, cr3

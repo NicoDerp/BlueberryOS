@@ -39,13 +39,20 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
     }*/
 
+    //                              0xC0000000
+    //uint16_t* location = (uint16_t*) (0xC00B8000 + 0);
+    //uint16_t* location = (uint16_t*) (0xC03FF000 + 0);
+    //*location = 1;
+
+    (void) eax;
+    /*
     if (eax != 0x36d76289) {
         printf("[ERROR] Failed to verify if bootloader has passed correct information");
     }
+    */
 
     /* Initialize framebuffer first-thing */
     /* Copied from https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#kernel_002ec */
-    struct multiboot_tag* tag;
     /*
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
@@ -63,17 +70,20 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     */
 
+    //terminal_initialize(80, 25, (void*) 0xC00B8000);
+    //terminal_initialize(80, 25, (void*) 0xB8000);
     terminal_initialize(80, 25, (void*) 0xC03FF000);
     //terminal_initialize(80, 25, (void*) 0x003FF000);
 
-    terminal_writestring("ooga");
+    //terminal_writestring("ooga");
 
-    //printf("start\n");
+    printf("start\n");
     for (;;) {}
 
     struct multiboot_tag_module* modules[32];
     size_t moduleCount = 0;
 
+    struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
