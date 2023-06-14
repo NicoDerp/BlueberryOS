@@ -85,6 +85,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("ebx: 0x%x\n", ebx);
     //printf("t: 0x%x\n", tag->type);
 
+    printf("kernelstart: 0x%x\n", KERNEL_START);
+
+    printf("kernelend: 0x%x\n", KERNEL_END);
+
     /*
     struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);

@@ -46,8 +46,6 @@ typedef struct {
 } __attribute__((packed)) test_struct_t;
 
 void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
-    use_system_pagedirectory();
-
     printf("Syscall!\n");
     (void)stack_state;
     (void)test_struct;
@@ -103,7 +101,6 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
 }
 
 void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
-    use_system_pagedirectory();
     //printf("\nInterrupt handler:\n");
 
     //const char* formatted = format_interrupt(interrupt_id);
@@ -189,7 +186,6 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
 }
 
 void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, unsigned int error_code, interrupt_frame_t frame) {
-    use_system_pagedirectory();
     printf("\nException handler:\n");
 
 

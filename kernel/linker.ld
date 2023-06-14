@@ -17,7 +17,7 @@ SECTIONS {
 
     /* First put the multiboot header, as it is required to be put very early
      * in the image, or the bootloader won't recognize the file format */
-    kernelstart = .;
+    _kernelstart = .;
     .multiboot.data : {
         *(.multiboot.data)
     }
@@ -52,7 +52,7 @@ SECTIONS {
         *(.bootstrap_stack)
     }
 
-    kernelend = .;
+    _kernelend = .;
 
 
     /* The compiler may produce other sections, by default it will put them

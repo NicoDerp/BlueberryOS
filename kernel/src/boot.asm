@@ -1,6 +1,6 @@
 
-extern kernelstart
-extern kernelend
+extern _kernelstart
+extern _kernelend
 
 ; Declare some constants for the multiboot header
 MAGIC         equ 0xE85250D6
@@ -101,11 +101,11 @@ _start:
     mov ecx, 1023
     ;mov ecx, 1024
 .table1_1:
-    cmp esi, kernelstart
+    cmp esi, _kernelstart
     jl .table1_2
 
     ; If we have reached kernel_end then end loop
-    cmp esi, (kernelend - 0xC0000000)
+    cmp esi, (_kernelend - 0xC0000000)
     jge .table1_3
 
     ; Write page entry which is at edi, and entry is esi | 2 which is
@@ -152,7 +152,7 @@ section .text
 HigherHalf:
 
     ; Unmap identity mapping since it is no longer needed
-    ;mov [page_directory+0], dword 0
+    mov [page_directory+0], dword 0
 
     ; Force a TLB flush
     ;mov ecx, cr3
