@@ -63,6 +63,7 @@ pagedirectory_t copy_system_pagedirectory(void) {
         }
         */
 
+        // The first won't be present anyways
         pd[i] = page_directory[i];
     }
 

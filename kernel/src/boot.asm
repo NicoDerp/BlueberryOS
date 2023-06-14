@@ -133,8 +133,8 @@ _start:
 
 
     ; Tell the CPU where the page directory is
-    mov eax, (page_directory - 0xC0000000)
-    mov cr3, eax
+    mov ecx, (page_directory - 0xC0000000)
+    mov cr3, ecx
 
     ; Enable paging
     mov ecx, cr0
