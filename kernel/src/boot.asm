@@ -105,7 +105,8 @@ _start:
     jl .table1_2
 
     ; If we have reached kernel_end then end loop
-    cmp esi, (_kernelend - 0xC0000000)
+    ;cmp esi, (_kernelend - 0xC0000000)
+    cmp esi, (0xFFFFFFFF - 0xC0000000)
     jge .table1_3
 
     ; Write page entry which is at edi, and entry is esi | 2 which is

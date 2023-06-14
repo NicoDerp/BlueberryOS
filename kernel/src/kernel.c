@@ -85,9 +85,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("ebx: 0x%x\n", ebx);
     //printf("t: 0x%x\n", tag->type);
 
-    printf("kernelstart: 0x%x\n", KERNEL_START);
-
-    printf("kernelend: 0x%x\n", KERNEL_END);
 
     /*
     struct multiboot_tag* tag;
@@ -177,17 +174,17 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     set_kernel_stack(esp);
     printf("[OK]\n");
 
-    for (;;) {}
-
     //printf("a: %d\n", 1/0);
+    printf("kernelstart: 0x%x\n", KERNEL_START);
+
+    printf("kernelend: 0x%x\n", KERNEL_END);
 
     struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
-        //printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
-        for (;;) {}
+        printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
 
         switch (tag->type)
         {
