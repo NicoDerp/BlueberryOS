@@ -31,6 +31,8 @@ typedef uint32_t* pagetable_t;
 
 typedef uint32_t* pagedirectory_t;
 
+//extern char _page_directory;
+//#define page_directory ((pagedirectory_t) &_page_directory)
 extern uint32_t page_directory[];
 
 extern void loadPageDirectory(pagedirectory_t);

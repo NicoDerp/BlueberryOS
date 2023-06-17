@@ -109,7 +109,7 @@ _start:
     cmp esi, (0xFFFFFFFF - 0xC0000000)
     jge .table1_3
 
-    ; Write page entry which is at edi, and entry is esi | 2 which is
+    ; Write page entry which is at edi, and entry is esi | 3 which is
     ; read/write | present
     mov edx, esi
     or edx, 3
@@ -130,7 +130,6 @@ _start:
     ; - Present
     ; - Read/write
     mov [page_table1 - 0xC0000000 + 1023 * 4], dword (0x000B8000 | 0x003)
-
 
     ; Tell the CPU where the page directory is
     mov ecx, (page_directory - 0xC0000000)

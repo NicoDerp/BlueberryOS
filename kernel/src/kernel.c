@@ -219,7 +219,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("Module size: %d\n", moduleSize);
 
         process_t* process = newProcess("Ooga booga", module);
+        (void) process;
 
+        /*
         printf("Process info:\n");
         printf(" - Name: '%s'\n", process->name);
         printf(" - Id: %d\n", process->id);
@@ -230,8 +232,23 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("   - 0x%x\n", process->pd[2]);
         printf("   - 0x%x\n", process->pd[3]);
         printf("   - 0x%x\n", process->pd[4]);
+        */
 
-        runProcess(process);
+        //printf("present: %d\n", process->pd[768] & 1);
+        printf("present: 0x%x\n", page_directory[768]);
+        //pagetable_t pagetable = (pagetable_t) (process->pd[768] & 0xFFFFF000);
+        pagetable_t pagetable = (pagetable_t) ((page_directory[768] & 0xFFFFF000) + 0xC0000000);
+        printf("p: 0x%x\n", (unsigned int) pagetable);
+        for (size_t j = 0; j < 8; j++) {
+            printf("%d: 0x%x\n", j, pagetable[j]);
+        }
+
+        //loadPageDirectory(process->pd);
+        //loadPageDirectory(page_directory);
+
+        //pagedirectory_t pd = (pagedirectory_t) &((char) page_directory);
+
+        //runProcess(process);
 
         //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
         //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);

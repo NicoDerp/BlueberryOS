@@ -181,9 +181,6 @@ pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
     // Copy kernel's pagedirectory to this pagedirectory
     pagedirectory_t pd = copy_system_pagedirectory();
 
-    // Map first pagetable
-    map_pagetable_pd(pd, 0, 0, true, false);
-
     size_t module_size = module->mod_end - module->mod_start;
 
     // ceil(module_size / FRAME_4KB)
@@ -203,6 +200,7 @@ pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
         map_page_pd(pd, (uint32_t) pageframe + offset, 0x0 + offset, true, false);
         printf("Mapping 0x%x to 0x%x\n", (uint32_t) pageframe + offset, 0x0 + offset);
     }
+
 
     return pd;
 }

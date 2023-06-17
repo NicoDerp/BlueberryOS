@@ -90,6 +90,7 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     // Just in case
     process->name[PROCESS_MAX_NAME_LENGTH] = 0;
 
+
     bool isELF = isModuleELF(module);
     if (isELF) {
         process->pd = loadELFIntoMemory(module);

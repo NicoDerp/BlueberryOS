@@ -25,6 +25,7 @@ flushPaging:
 global loadPageDirectory
 loadPageDirectory:
     mov eax, [esp+4]
+    sub eax, 0xC0000000
     mov cr3, eax
     ret
 

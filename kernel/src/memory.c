@@ -24,6 +24,7 @@ pageframe_t kalloc_frame(void) {
     }
 
     pageframe_t frame = cached_frame_map[cachedIndex];
+    printf("Allocated new frame at 0x%x\n", (unsigned int) frame);
     cachedIndex++;
 
     return frame;
