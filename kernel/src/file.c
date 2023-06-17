@@ -175,13 +175,14 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
 
             // TODO here is risk of buffer overflow
             // Same as mod 1024 but better
-            uint32_t offset = program->vaddr & 0x03FF;
+            //uint32_t offset = program->vaddr & 0x03FF;
 
             // Set pageframe to zero with size of memsz
             memset(pageframe, 0, program->memsz);
 
             // Copy program header data to pageframe
-            memcpy(pageframe+offset, data, program->filesz);
+            //memcpy(pageframe+offset, data, program->filesz);
+            memcpy(pageframe + program->offset, data, program->filesz);
 
             /*
             printf("Program header %d\n", i);

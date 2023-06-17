@@ -246,7 +246,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
         //pagedirectory_t pd = (pagedirectory_t) &((char) page_directory);
 
-        //runProcess(process);
+        runProcess(process);
     }
 
     if (moduleCount == 0) {
