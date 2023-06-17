@@ -2,6 +2,7 @@
 BITS 32
 
 section .text
+global main
 main:
     mov eax, 1    ; SYS_write
     mov ebx, 1    ; STDOUT_FILENO
@@ -11,7 +12,7 @@ main:
 .loop:
     jmp .loop
 
-;section .data
+section .data
 str:
     db "Hello world!", 0
 

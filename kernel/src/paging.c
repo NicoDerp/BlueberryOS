@@ -122,10 +122,11 @@ void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool k
 
 void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel) {
 
-    //uint32_t physicalPTI = physicalAddr / FRAME_4MB;
+    uint32_t physicalPTI = physicalAddr / FRAME_4MB;
     uint32_t virtualPTI = virtualAddr / FRAME_4MB;
 
     // Same as mod 1024 but better
+    uint32_t physicalPI = (physicalAddr / FRAME_4KB) & 0x03FF;
     uint32_t virtualPI = (virtualAddr / FRAME_4KB) & 0x03FF;
 
     pagetable_t pagetable;
@@ -147,8 +148,8 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
 
     unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
 
-    // Sets address and attributes for all pages in pagetable
-    pagetable[virtualPI] = physicalAddr | flags;
+    // Sets address and attributes for page
+    pagetable[virtualPI] = (physicalPI * FRAME_4KB + physicalPTI * FRAME_4MB) | flags;
 
     // TODO should I change flags of entire pagetable or keep?
     if (!present) {

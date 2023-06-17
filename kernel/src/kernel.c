@@ -185,40 +185,13 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
     }
 
-    /*
-    change_pagetable(0, false, false);
-
-    unsigned int* y = (unsigned int*) 0x0FFFFF;
-    *y = 5;
-    printf("a: 0x%x, 0x%x\n", y, *y);
-    */
-
     printf("\n\nWelcome to BlueberryOS!\n");
 
     printf("Modules: %d\n", moduleCount);
-    //printf("pd: 0x%x\n", (unsigned int) page_directory);
-
-    /*
-    printf("Before: 0x%x\n", page_directory[0]);
-    printf("Before: 0x%x\n", page_directory[1]);
-    printf("Before: 0x%x\n", page_directory[2]);
-    */
-
-    // For test, identity map
-    //map_pagetable(1, 1, true, false);
 
     //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
 
     // 0xC03FF000
-
-    /*
-    printf("kend: 0x%x\n", KERNEL_END);
-    printf("a: %d\n", FRAME_4MB*769 - KERNEL_END);
-    */
-
-    // Set unused memory for rest of pagetable
-    //memset((void*) (0xC03FF000 + FRAME_4KB), 0, FRAME_4MB*769 - (0xC03FF000 + FRAME_4KB));
-
 
     for (size_t i = 0; i < moduleCount; i++) {
 
@@ -238,20 +211,28 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf(" - Entry point: 0x%x\n", process->entryPoint);
         printf(" - Pagetables:\n");
 
-        for (size_t j = 0; j < 5; j++) {
-            printf("   - 0x%x\n", process->pd[j]);
+        for (size_t j = 0; j < 767; j++) {
             if (process->pd[j] & 1) {
+                printf("   - %d: 0x%x\n", j, process->pd[j]);
                 pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
-                for (size_t k = 0; k < 5; k++) {
-                    printf("     - Page: 0x%x\n", pagetable[k]);
+                for (size_t k = 0; k < 1024; k++) {
+                    if (pagetable[k] & 1) {
+                        printf("     - Page %d: 0x%x\n", k, pagetable[k]);
+                    }
                 }
             }
         }
 
         loadPageDirectory(process->pd);
 
-        char* byte = (char*) 0x0;
-        printf("byte 0: 0x%x\n", ((unsigned int) byte[1]) & 0xFF);
+        //printf("test\n");
+
+        /*
+        char* byte = (char*) (0x08049098);
+        for (size_t j = 0; j < 10; j++) {
+            printf("byte %d: 0x%x, '%c'\n", j, ((unsigned int) byte[j]) & 0xFF, byte[j]);
+        }
+        */
 
         /*
         pagetable_t pagetable = (pagetable_t) ((process->pd[0] & 0xFFFFF000) + 0xC0000000);
@@ -265,23 +246,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
         //pagedirectory_t pd = (pagedirectory_t) &((char) page_directory);
 
-        runProcess(process);
-
-        //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
-        //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);
-
-        /*
-        printf("Contents:\n");
-        for (size_t j = 0; j < moduleSize-16; j++) {
-            printf("0x%x: 0x%x\n", j, *((uint8_t*) (0x1024+j)));
-        }
-        */
-
-        /*
-        module_func_t module_func = (module_func_t) FRAME_4MB;
-        printf("Running:\n");
-        module_func();
-        */
+        //runProcess(process);
     }
 
     if (moduleCount == 0) {
@@ -293,73 +258,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     for (;;) {};
 
     /*
-    extern pagedirectory_t page_directory;
-    printf("Before: 0x%x\n", page_directory[1]);
-    printf("a: 0x%x\n", *((uint8_t*) 0x1000));
-
-    map_pagetable(0, 1, true, true);
-
-    printf("Before: 0x%x\n", page_directory[1]);
-    printf("a: 0x%x\n", *((uint8_t*) 0x1000));
-
-    unmap_pagetable(1);
-
-    printf("After: 0x%x\n", page_directory[1]);
-    */
-
-
-    //change_pagetable_vaddr(0, true, false);
-
-    //printf("a: 0x%x\n", *((uint8_t*) 0x5000));
-
-    //map_pagetable(0x5, 0x5, true, false);
-    /*
-    unmap_pagetable(0x4);
-    unmap_pagetable(0x5);
-    unmap_pagetable(0x6);
-    */
-
-    /*
-    printf("Value: 0x%x\n", *((uint8_t*) (FRAME_4MB+0)));
-    printf("Value: 0x%x\n", *((uint8_t*) (FRAME_4MB+1)));
-    */
-
-    // For test user-process, map virtual addr 0 to physical addr 4MB
-    //map_pagetable(FRAME_4MB/FRAME_4KB, 0, true, false);
-
-    printf("Before: 0x%x\n", page_directory[0]);
-    printf("Before: 0x%x\n", page_directory[1]);
-    printf("Before: 0x%x\n", page_directory[2]);
-
-    /*
-    uint32_t stack_ptr = (uint32_t) kalloc_frame();
-    uint32_t virtual_stack_ptr = FRAME_4MB + 0x1000;
-    uint32_t virtual_stack_top = virtual_stack_ptr + 0xF00;
-
-    map_page(stack_ptr, virtual_stack_ptr, true, false);
-    printf("User process info:\n");
-    printf(" - Code starting at 0x%x\n", FRAME_4MB);
-    printf(" - Physical stack at 0x%x\n", stack_ptr);
-    printf(" - Virtual stack at 0x%x\n", virtual_stack_ptr);
-    printf(" - Virtual stack-top at 0x%x\n", virtual_stack_top);
-
-    // test
-    map_page(FRAME_4MB, 0x0, true, false);
-
-    enter_usermode(FRAME_4MB, virtual_stack_top);
-    */
-
-    /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     printf("Out: %d\n", a);
     */
-
-    /*
-    pageframe_t frame = kalloc_frame();
-    printf("frame: 0x%x\n", frame);
-    kfree_frame(frame);
-    */
-
 
     for (;;) {
         asm("hlt");

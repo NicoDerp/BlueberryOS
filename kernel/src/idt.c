@@ -317,9 +317,14 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
             printf(" - Fault resulted from violation of SGX-specific access-control requirements\n");
         }
 
-        // If page is trying to be read by kernel
-        if (!(error_code & 0x04)) {
+        // Ensure that the error wasn't because of an instruction fetch
+        if (!(error_code & 0x10)) {
+            // If page is trying to be read by user
+            if (error_code & 0x04) {
 
+            } else {
+
+            }
         }
 
         __asm__ volatile ("cli; hlt"); // Completely hangs the computer

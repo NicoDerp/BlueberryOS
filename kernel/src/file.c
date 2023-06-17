@@ -2,6 +2,7 @@
 #include <kernel/file.h>
 #include <kernel/memory.h>
 #include <kernel/paging.h>
+#include <kernel/errors.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -119,7 +120,7 @@ bool isModuleELF(struct multiboot_tag_module* module) {
 
     // Check if file is executable
     if (elf_header.type != 0x02) {
-        printf("Unable to load file: ELF is not executable\n");
+        printf("Unable to load file: ELF is not executable. Type is 0x%x\n", elf_header.type);
         return false;
     }
 
@@ -135,7 +136,8 @@ bool isModuleELF(struct multiboot_tag_module* module) {
 
 pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
 
-    pagedirectory_t pd = new_pagedirectory(true, false);
+    // Copy kernel's pagedirectory to this pagedirectory
+    pagedirectory_t pd = copy_system_pagedirectory();
 
     elf_header_t* elf_header = (elf_header_t*) module->mod_start;
 
@@ -146,9 +148,14 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
     }
     */
 
+    printf("offset is %d bytes\n", elf_header->programTable);
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
         program_header_t* program = getProgramEntry(elf_header, i);
-        printf("Type: %d, vaddr: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->memsz, program->align);
+        printf("Type: %d, vaddr: 0x%x, filesz: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->align);
+
+        if (program->filesz > FRAME_4KB) {
+            kerror("Can't load ELF because it contains a section over 4KB!\n");
+        }
 
         // Check if program header is loadable
         if (program->type == 0x01) {
@@ -158,18 +165,36 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
                 return pd;
             }
 
+            if (program->vaddr >= 0xC0000000) {
+                printf("[ERROR] Failed to load ELF becuase file goes into kernel-reserved space\n");
+            }
+
             // Allocate memory for program header
             pageframe_t pageframe = kalloc_frame();
             void* data = (void*) module->mod_start + program->offset;
+
+            // TODO here is risk of buffer overflow
+            // Same as mod 1024 but better
+            uint32_t offset = program->vaddr & 0x03FF;
 
             // Set pageframe to zero with size of memsz
             memset(pageframe, 0, program->memsz);
 
             // Copy program header data to pageframe
-            memcpy(pageframe, data, program->filesz);
+            memcpy(pageframe+offset, data, program->filesz);
+
+            /*
+            printf("Program header %d\n", i);
+            for (size_t j = 0; j < 60; j++) {
+                printf(" - %d: 0x%x, '%c'\n", j, ((char*) pageframe)[j], ((char*) pageframe)[j]);
+            }
+            */
+
+            bool writable = program->flags & 0x2;
 
             // Map page
-            map_page_pd(pd, p_to_v((uint32_t) pageframe), program->vaddr, true, false);
+            map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false);
+            printf("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
         }
     }
 
@@ -195,9 +220,6 @@ pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
 
         // Copy data to pageframe
         memcpy((void*) ((uint32_t) pageframe + offset), (void*) (module->mod_start + offset), module_size);
-
-        char* byte = (char*) pageframe;
-        printf("byte 0: 0x%x\n", ((unsigned int) byte[1]) & 0xFF);
 
         // Map page
         map_page_pd(pd, v_to_p((uint32_t) pageframe + offset), 0x0 + offset, true, false);

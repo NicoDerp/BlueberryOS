@@ -24,8 +24,8 @@ LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -lgcc
 
 ASM = nasm
-#ASMFLAGS = -felf32
-ASMFLAGS = -fbin
+ASMFLAGS = -felf32
+#ASMFLAGS = -fbin
 
 
 SRC_C = src/test.c
@@ -40,17 +40,18 @@ OBJ = $(OBJ_C) $(OBJ_ASM)
 
 #$(CC) -MD -c $^ -o $@ $(CFLAGS) -Wl,--oformat=binary
 #%.c.o: %.c
-#%.c.o: %.c
-%.c.mod: %.c
-	$(CC) -MD $^ -o $@ $(CFLAGS) $(LIBS)
+%.c.o: %.c
+#%.c.mod: %.c
+	$(CC) -c -MD $^ -o $@ $(CFLAGS) $(LIBS)
 
 #$(ASM) -f bin $< -o $@
-#%.asm.o: %.asm
-%.asm.mod: %.asm
+%.asm.o: %.asm
+#%.asm.mod: %.asm
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
-#%.mod: %.o
-#	$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $< $(LIBS)
+#$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $< $(#LIBS)
+%.mod: %.o
+	$(CC) -e main -o $@ $(CFLAGS) $(LFLAGS) $< $(LIBS)
 
 .PHONY: all clean build rebuild check run run-bochs install
 .SUFFIXES: .o .c .asm
@@ -60,7 +61,7 @@ all: build
 build: $(OBJ)
 
 clean:
-	rm -rf $(OBJ) $(OBJ:.mod=.d)
+	rm -rf $(OBJ) $(OBJ:.mod=.d) $(OBJ:.mod=.o)
 
 rebuild: clean build
 
