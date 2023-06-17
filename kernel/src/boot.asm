@@ -99,15 +99,15 @@ _start:
     mov edi, (page_table1 - 0xC0000000)
     mov esi, 0
     mov ecx, 1023
-    ;mov ecx, 1024
 .table1_1:
     cmp esi, _kernelstart
     jl .table1_2
 
     ; If we have reached kernel_end then end loop
     ;cmp esi, (_kernelend - 0xC0000000)
-    cmp esi, (0xFFFFFFFF - 0xC0000000)
-    jge .table1_3
+    ;cmp esi, (0xFFFFFFFF - 0xC0000000)
+    ;cmp esi, (4096 * 1023)
+    ;jge .table1_3
 
     ; Write page entry which is at edi, and entry is esi | 3 which is
     ; read/write | present

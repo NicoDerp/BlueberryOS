@@ -105,10 +105,13 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     initialize_tss(&process->tss);
 
     process->physical_stack = (uint32_t) kalloc_frame();
-    process->virtual_stack = 4*FRAME_4KB;
+    memset((void*) process->physical_stack, 0, FRAME_4KB);
+
+    process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + 0xF00;
 
-    map_page_pd(process->pd, process->physical_stack, process->virtual_stack, true, false);
+    printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+    map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
 
     return process;
 }

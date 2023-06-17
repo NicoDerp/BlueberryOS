@@ -169,7 +169,7 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
             memcpy(pageframe, data, program->filesz);
 
             // Map page
-            map_page_pd(pd, (uint32_t) pageframe, program->vaddr, true, false);
+            map_page_pd(pd, p_to_v((uint32_t) pageframe), program->vaddr, true, false);
         }
     }
 
@@ -196,9 +196,12 @@ pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
         // Copy data to pageframe
         memcpy((void*) ((uint32_t) pageframe + offset), (void*) (module->mod_start + offset), module_size);
 
+        char* byte = (char*) pageframe;
+        printf("byte 0: 0x%x\n", ((unsigned int) byte[1]) & 0xFF);
+
         // Map page
-        map_page_pd(pd, (uint32_t) pageframe + offset, 0x0 + offset, true, false);
-        printf("Mapping 0x%x to 0x%x\n", (uint32_t) pageframe + offset, 0x0 + offset);
+        map_page_pd(pd, v_to_p((uint32_t) pageframe + offset), 0x0 + offset, true, false);
+        printf("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe + offset), 0x0 + offset);
     }
 
 

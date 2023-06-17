@@ -103,7 +103,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
 
-    struct multiboot_tag_module* modules[32];
+    struct multiboot_tag_module modules[32];
     size_t moduleCount = 0;
 
 #if VERBOSE == 1
@@ -133,14 +133,17 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 #endif
                 break;
             case MULTIBOOT_TAG_TYPE_MODULE:
+                struct multiboot_tag_module* tag_module = (struct multiboot_tag_module*) tag;
+
 #if VERBOSE == 1
                 printf("Module at 0x%x-0x%x. Command line '%s'\n",
-                ((struct multiboot_tag_module *) tag)->mod_start,
-                ((struct multiboot_tag_module *) tag)->mod_end,
-                ((struct multiboot_tag_module *) tag)->cmdline);
+                    tag_module->mod_start + 0xC0000000,
+                    tag_module->mod_end + 0xC0000000,
+                    tag_module->cmdline + 0xC0000000);
 #endif
+                size_t mod_size = tag_module->mod_end - tag_module->mod_start;
 
-                modules[moduleCount++] = (struct multiboot_tag_module*) tag;
+                memcpy(&modules[moduleCount++], tag_module, mod_size);
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
 #if VERBOSE == 1
@@ -206,49 +209,63 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
 
+    // 0xC03FF000
+
+    /*
+    printf("kend: 0x%x\n", KERNEL_END);
+    printf("a: %d\n", FRAME_4MB*769 - KERNEL_END);
+    */
+
+    // Set unused memory for rest of pagetable
+    //memset((void*) (0xC03FF000 + FRAME_4KB), 0, FRAME_4MB*769 - (0xC03FF000 + FRAME_4KB));
+
+
     for (size_t i = 0; i < moduleCount; i++) {
 
-        printf("after1\n");
-        struct multiboot_tag_module* module = modules[i];
-        printf("loc: 0x%x\n", (unsigned int) &module);
-        module->mod_start += 0xC0000000;
-        printf("after2\n");
-        module->mod_end += 0xC0000000;
+        struct multiboot_tag_module module = modules[i];
+        module.mod_start = p_to_v(module.mod_start);
+        module.mod_end = p_to_v(module.mod_end);
 
-        size_t moduleSize = module->mod_end - module->mod_start;
+        size_t moduleSize = module.mod_end - module.mod_start;
         printf("Module size: %d\n", moduleSize);
 
-        process_t* process = newProcess("Ooga booga", module);
+        process_t* process = newProcess("Ooga booga", &module);
         (void) process;
 
-        /*
         printf("Process info:\n");
         printf(" - Name: '%s'\n", process->name);
         printf(" - Id: %d\n", process->id);
         printf(" - Entry point: 0x%x\n", process->entryPoint);
         printf(" - Pagetables:\n");
-        printf("   - 0x%x\n", process->pd[0]);
-        printf("   - 0x%x\n", process->pd[1]);
-        printf("   - 0x%x\n", process->pd[2]);
-        printf("   - 0x%x\n", process->pd[3]);
-        printf("   - 0x%x\n", process->pd[4]);
-        */
 
-        //printf("present: %d\n", process->pd[768] & 1);
-        printf("present: 0x%x\n", page_directory[768]);
-        //pagetable_t pagetable = (pagetable_t) (process->pd[768] & 0xFFFFF000);
-        pagetable_t pagetable = (pagetable_t) ((page_directory[768] & 0xFFFFF000) + 0xC0000000);
+        for (size_t j = 0; j < 5; j++) {
+            printf("   - 0x%x\n", process->pd[j]);
+            if (process->pd[j] & 1) {
+                pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
+                for (size_t k = 0; k < 5; k++) {
+                    printf("     - Page: 0x%x\n", pagetable[k]);
+                }
+            }
+        }
+
+        loadPageDirectory(process->pd);
+
+        char* byte = (char*) 0x0;
+        printf("byte 0: 0x%x\n", ((unsigned int) byte[1]) & 0xFF);
+
+        /*
+        pagetable_t pagetable = (pagetable_t) ((process->pd[0] & 0xFFFFF000) + 0xC0000000);
         printf("p: 0x%x\n", (unsigned int) pagetable);
         for (size_t j = 0; j < 8; j++) {
             printf("%d: 0x%x\n", j, pagetable[j]);
         }
+        */
 
-        //loadPageDirectory(process->pd);
         //loadPageDirectory(page_directory);
 
         //pagedirectory_t pd = (pagedirectory_t) &((char) page_directory);
 
-        //runProcess(process);
+        runProcess(process);
 
         //memcpy((void*) 0x1024, (void*) module->mod_start, moduleSize);
         //memcpy((void*) FRAME_4MB, (void*) module->mod_start, moduleSize);

@@ -7,7 +7,7 @@ main:
     mov ebx, 1    ; STDOUT_FILENO
     mov ecx, str  ; &str
     mov edx, 12   ; len(str)
-    ;int 30h       ; syscall
+    int 30h       ; syscall
 .loop:
     jmp .loop
 

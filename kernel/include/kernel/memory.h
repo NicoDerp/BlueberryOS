@@ -10,8 +10,8 @@ extern unsigned int _kernelstart;
 
 #define FRAME_MAP_SIZE 32
 
-#define FRAME_4KB 0x1000
-#define FRAME_4MB 0x400000
+#define FRAME_4KB ((unsigned int) 0x1000)
+#define FRAME_4MB ((unsigned int) 0x400000)
 
 #define FRAME_SIZE FRAME_4KB
 #define MAX_FRAMES (FRAME_SIZE / FRAME_MAP_SIZE)

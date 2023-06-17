@@ -268,6 +268,8 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
          */
 
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
+
+        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
     } else if (interrupt_id == INT_PAGE_FAULT) {
         printf("\nError breakdown:\n");
 
@@ -314,9 +316,16 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
         if (error_code & 0x8000) {
             printf(" - Fault resulted from violation of SGX-specific access-control requirements\n");
         }
-    }
 
-    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+        // If page is trying to be read by kernel
+        if (!(error_code & 0x04)) {
+
+        }
+
+        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    } else {
+        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    }
 }
 
 void idt_initialize(void) {

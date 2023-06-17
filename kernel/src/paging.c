@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <stdio.h>
 
@@ -85,7 +86,7 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
 
     // Check if page-table is present
     if (pd[virtualIndex] & 1) {
-        pagetable = (pagetable_t) ((pd[virtualIndex] & 0xFFFFF000) + 0xC0000000);
+        pagetable = (pagetable_t) p_to_v(pd[virtualIndex] & 0xFFFFF000);
         printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
@@ -108,7 +109,7 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
         pagetable[i] = (physicalIndex * FRAME_4MB + i * FRAME_4KB) | flags;
     }
 
-    pd[virtualIndex] = ((unsigned int) pagetable - 0xC0000000) | flags;
+    pd[virtualIndex] = v_to_p((unsigned int) pagetable) | flags;
 }
 
 void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel) {
@@ -121,18 +122,18 @@ void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool k
 
 void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel) {
 
-    uint32_t physicalPTI = physicalAddr / FRAME_4MB;
+    //uint32_t physicalPTI = physicalAddr / FRAME_4MB;
     uint32_t virtualPTI = virtualAddr / FRAME_4MB;
 
     // Same as mod 1024 but better
-    uint32_t physicalPI = (physicalAddr / FRAME_4KB) & 0x03FF;
+    uint32_t virtualPI = (virtualAddr / FRAME_4KB) & 0x03FF;
 
     pagetable_t pagetable;
     bool present = pd[virtualPTI] & 1;
 
     // Check if page-table is present
     if (present) {
-        pagetable = (pagetable_t) ((pd[virtualPTI] & 0xFFFFF000) + 0xC0000000);
+        pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
 
         printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
@@ -141,21 +142,17 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
 
         printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
 
-        /*
-        malloc(&pagetable, 0, FRAME_4KB);
-        unsigned int flags = page_directory[virtualIndex] & 0x3;
-        page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
-        */
+        memset(pagetable, 0, FRAME_4KB);
     }
 
     unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
 
     // Sets address and attributes for all pages in pagetable
-    pagetable[physicalPI] = (physicalPTI * FRAME_4MB + physicalPI * FRAME_4KB) | flags;
+    pagetable[virtualPI] = physicalAddr | flags;
 
     // TODO should I change flags of entire pagetable or keep?
     if (!present) {
-        pd[virtualPTI] = ((unsigned int) pagetable - 0xC0000000) | flags;
+        pd[virtualPTI] = v_to_p((unsigned int) pagetable) | flags;
     }
 }
 
@@ -164,7 +161,7 @@ void unmap_page(void* virtualaddr) {
     uint32_t pdindex = (uint32_t) virtualaddr >> 22;
     uint32_t ptindex = (uint32_t) virtualaddr >> 12 & 0x03FF;
 
-    pagetable_t pagetable = (pagetable_t) ((page_directory[pdindex] & 0xFFFFF000) + 0xC0000000);
+    pagetable_t pagetable = (pagetable_t) p_to_v(page_directory[pdindex] & 0xFFFFF000);
 
     // Set page or entry to not present
     pagetable[ptindex] = 0x00000000;
@@ -176,7 +173,7 @@ void unmap_pagetable(size_t index) {
 
     // If the page is present then free
     if (page_directory[index] & 1) {
-        kfree_frame((void*) ((page_directory[index] & 0xFFFFF000) + 0xC0000000));
+        kfree_frame((void*) p_to_v(page_directory[index] & 0xFFFFF000));
     }
 
     // Set the page-table to not present

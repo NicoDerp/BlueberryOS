@@ -27,6 +27,9 @@ typedef struct {
 } pagetable_t;
 */
 
+#define p_to_v(n) ((n) + 0xC0000000)
+#define v_to_p(n) ((n) - 0xC0000000)
+
 typedef uint32_t* pagetable_t;
 
 typedef uint32_t* pagedirectory_t;
