@@ -38,6 +38,7 @@ global syscall3
 syscall3:
     push edi
     push ebx
+    ;push edi
 
     mov eax, [esp+4+2*4]
     mov edi, [esp+8+2*4]
@@ -46,6 +47,7 @@ syscall3:
     mov edx, [edi+8]
     int 48
 
+    ;pop edi
     pop ebx
     pop edi
     ret

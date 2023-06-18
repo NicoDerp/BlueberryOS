@@ -80,18 +80,18 @@ isr_stub_%+%1:
 %macro syc_stub 1
 isr_stub_%+%1:
 
+    pushad
+
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
 
-    pushad
-
     cld
     call syscall_handler
 
-    popad
-
     add esp, 12     ; 'pop' interrupt-id and 2*test-number
+
+    popad
 
     iret
 %endmacro

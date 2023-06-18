@@ -45,13 +45,17 @@ typedef struct {
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
-void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
+//void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
+void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack_state_t stack_state, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
     printf("Syscall!\n");
     (void)stack_state;
     (void)test_struct;
     (void)frame;
     (void)interrupt_id;
+    (void)esp;
+    (void)ss;
 
+    /*
     printf("edi: '0x%x'\n", stack_state.edi);
     printf("esi: '0x%x'\n", stack_state.esi);
     printf("ebp: '0x%x'\n", stack_state.ebp);
@@ -66,6 +70,7 @@ void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsig
 
     printf("esp: 0x%x\n", esp);
     printf("ss: 0x%x\n", ss);
+    */
 
     switch (stack_state.eax) {
         case (SYS_exit):
