@@ -45,21 +45,27 @@ typedef struct {
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
-void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
+void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
     printf("Syscall!\n");
     (void)stack_state;
     (void)test_struct;
     (void)frame;
     (void)interrupt_id;
 
-    printf("edi: '%d'\n", stack_state.edi);
-    printf("esi: '%d'\n", stack_state.esi);
-    printf("ebp: '%d'\n", stack_state.ebp);
-    printf("esp: '%d'\n", stack_state.esp);
-    printf("ebx: '%d'\n", stack_state.ebx);
-    printf("edx: '%d'\n", stack_state.edx);
-    printf("ecx: '%d'\n", stack_state.ecx);
-    printf("eax: '%d'\n", stack_state.eax);
+    printf("edi: '0x%x'\n", stack_state.edi);
+    printf("esi: '0x%x'\n", stack_state.esi);
+    printf("ebp: '0x%x'\n", stack_state.ebp);
+    printf("esp: '0x%x'\n", stack_state.esp);
+    printf("ebx: '0x%x'\n", stack_state.ebx);
+    printf("edx: '0x%x'\n", stack_state.edx);
+    printf("ecx: '0x%x'\n", stack_state.ecx);
+    printf("eax: '0x%x'\n", stack_state.eax);
+
+    extern tss_t sys_tss;
+    printf("esp0: 0x%x\n", sys_tss.esp0);
+
+    printf("esp: 0x%x\n", esp);
+    printf("ss: 0x%x\n", ss);
 
     switch (stack_state.eax) {
         case (SYS_exit):

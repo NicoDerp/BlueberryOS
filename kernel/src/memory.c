@@ -24,6 +24,10 @@ pageframe_t kalloc_frame(void) {
     }
 
     pageframe_t frame = cached_frame_map[cachedIndex];
+    if ((unsigned int) frame >= (0xC03FF000-FRAME_4KB)) {
+        kerror("Allocated frame goes into framebuffer\n");
+    }
+
     //printf("Allocated new frame at 0x%x\n", (unsigned int) frame);
     cachedIndex++;
 

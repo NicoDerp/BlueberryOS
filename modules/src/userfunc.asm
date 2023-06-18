@@ -8,7 +8,9 @@ main:
     mov ebx, 1    ; STDOUT_FILENO
     mov ecx, str  ; &str
     mov edx, 12   ; len(str)
+    push eax
     int 30h       ; syscall
+    pop eax
 .loop:
     jmp .loop
 

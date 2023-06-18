@@ -24,7 +24,7 @@ isr_stub_%+%1:
     mov eax, cr2
     push eax
 
-    ;cld
+    cld
     call exception_handler
 
     popad
@@ -48,7 +48,7 @@ isr_stub_%+%1:
     mov eax, cr2
     push eax
 
-    ;cld
+    cld
     call exception_handler
 
     popad
@@ -67,7 +67,7 @@ isr_stub_%+%1:
     
     pushad
 
-    ;cld
+    cld
     call interrupt_handler
 
     popad
@@ -86,7 +86,7 @@ isr_stub_%+%1:
 
     pushad
 
-    ;cld
+    cld
     call syscall_handler
 
     popad

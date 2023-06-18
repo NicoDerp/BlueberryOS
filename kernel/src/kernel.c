@@ -90,6 +90,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     paging_initialize();
     printf("[OK]\n");
 
+    struct multiboot_tag_module modules[32];
+    size_t moduleCount = 0;
+
     printf("Setting up Kernel Stack ...");
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
@@ -102,9 +105,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
 
 
-
-    struct multiboot_tag_module modules[32];
-    size_t moduleCount = 0;
 
 #if VERBOSE == 1
     printf("kernelstart: 0x%x\n", KERNEL_START);
@@ -193,6 +193,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     // 0xC03FF000
 
+    if (moduleCount == 0) {
+        printf("No modules!\n");
+        for (;;) {};
+    }
+
     for (size_t i = 0; i < moduleCount; i++) {
 
         struct multiboot_tag_module module = modules[i];
@@ -209,6 +214,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf(" - Name: '%s'\n", process->name);
         printf(" - Id: %d\n", process->id);
         printf(" - Entry point: 0x%x\n", process->entryPoint);
+        printf(" - Stack: 0x%x\n", process->physical_stack);
         printf(" - Pagetables:\n");
 
         for (size_t j = 0; j < 767; j++) {
@@ -247,11 +253,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         //pagedirectory_t pd = (pagedirectory_t) &((char) page_directory);
 
         runProcess(process);
-    }
-
-    if (moduleCount == 0) {
-        printf("No modules!\n");
-        return;
     }
 
 
