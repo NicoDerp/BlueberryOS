@@ -47,7 +47,7 @@ typedef struct {
 
 //void syscall_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
 void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack_state_t stack_state, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
-    printf("Syscall!\n");
+    //printf("Syscall!\n");
     (void)stack_state;
     (void)test_struct;
     (void)frame;
@@ -85,19 +85,19 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_write):
             {
-                printf("Write!\n");
+                //printf("Write!\n");
 
-                int fd = stack_state.ebx;
-                const void* buf = (const void*) stack_state.ecx;
-                int count = stack_state.edx;
+                unsigned int fd = stack_state.ebx;
+                unsigned int buf = stack_state.ecx;
+                unsigned int count = stack_state.edx;
 
-                printf("fd: %d\nbuf: 0x%x\ncount: %d\n", fd, (unsigned int) buf, count);
+                //printf("fd: %u\nbuf: 0x%x\ncount: %u\n", fd, buf, count);
 
                 if (fd == STDOUT_FILENO) {
-                    if (count == 1) {
-                        terminal_writechar((char) ((int) buf & 0xFF));
+                    if (count == 1 && buf < 0xFF) {
+                        terminal_writechar((char) buf);
                     } else {
-                        terminal_write(buf, count);
+                        terminal_write((void*) buf, count);
                     }
                 } else {
                     printf("Invalid fd '%d'\n", fd);
