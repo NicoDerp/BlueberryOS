@@ -7,10 +7,11 @@ flush_tss:
     ret
 
 
+; enter_usermode(code_addr, new_stack_pointer, registers)
 global enter_usermode
 enter_usermode:
     ; backup stack pointer for use
-    mov ebp, esp
+    mov ecx, esp
     ;cli
 
     mov ax, (4 * 8) | 3
@@ -22,7 +23,8 @@ enter_usermode:
     ;mov eax, esp
     push (4 * 8) | 3
 
-    mov eax, [ebp+8]
+    ; Stack pointer
+    mov eax, [ecx+8]
     push eax
 
     pushf
@@ -36,9 +38,18 @@ enter_usermode:
     ;push 400000h
 
     ; Why clear eax?
+    ; Code address
     xor eax, eax
-    mov eax, [ebp+4]
+    mov eax, [ecx+4]
     push eax
+
+    mov eax, [ecx+12]
+    mov ebx, [ecx+16]
+    mov edx, [ecx+20]
+    mov ebp, [ecx+24]
+    mov esi, [ecx+28]
+    mov edi, [ecx+32]
+    mov ecx, [ecx+36]
 
     ;push 0h
     ;push 20480

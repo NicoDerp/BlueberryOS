@@ -45,9 +45,20 @@ typedef struct {
 } __attribute__((packed)) tss_t;
 
 typedef struct {
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t edx;
+    uint32_t ebp;
+    uint32_t esi;
+    uint32_t edi;
+    uint32_t ecx;
+} regs_t;
+
+typedef struct {
+    regs_t regs;
+    uint32_t esp;
     char name[PROCESS_MAX_NAME_LENGTH+1];
     pagedirectory_t pd;
-    tss_t tss;
     uint32_t entryPoint;
     uint32_t physical_stack;
     uint32_t virtual_stack;
@@ -55,19 +66,19 @@ typedef struct {
     int id;
 } process_t;
 
+
+extern void flush_tss(void);
+
 void tss_initialize(void);
 //void install_tss(struct GDT* source);
 void install_tss(uint8_t* entryBytes);
 void set_kernel_stack(uint32_t esp);
 void use_system_tss(void);
 
+process_t* getCurrentProcess(void);
 process_t* newProcess(char* name, struct multiboot_tag_module* module);
 void runProcess(process_t* processID);
 void switchProcess(void);
-
-extern void enter_usermode(uint32_t addr, uint32_t stack_ptr);
-extern void flush_tss(void);
-
 
 #endif /* KERNEL_USERMODE_H */
 

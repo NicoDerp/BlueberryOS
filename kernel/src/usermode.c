@@ -7,11 +7,14 @@
 #include <stdio.h>
 
 
+extern void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
+
 void initialize_tss(tss_t* tss);
+
 
 process_t processes[PROCESSES_MAX];
 bool processUsed[PROCESSES_MAX];
-size_t currentProcess;
+size_t currentProcessID;
 
 tss_t sys_tss;
 uint32_t kesp = 0;
@@ -61,6 +64,9 @@ void install_tss(uint8_t* gdt) {
     install_tss_(&sys_tss);
 }
 
+process_t* getCurrentProcess(void) {
+    return &processes[currentProcessID];
+}
 
 process_t* newProcess(char* name, struct multiboot_tag_module* module) {
 
@@ -102,8 +108,6 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
         process->entryPoint = 0x0;
     }
 
-    initialize_tss(&process->tss);
-
     process->physical_stack = (uint32_t) kalloc_frame();
     memset((void*) process->physical_stack, 0, FRAME_4KB);
 
@@ -118,7 +122,7 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
 
 void runProcess(process_t* process) {
 
-    currentProcess = process->id;
+    currentProcessID = process->id;
 
     // Load process's TSS
     /*
@@ -132,7 +136,7 @@ void runProcess(process_t* process) {
     loadPageDirectory(process->pd);
 
     // Enter usermode
-    enter_usermode(process->entryPoint, process->virtual_stack_top);
+    enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
 }
 
 void switchProcess(void) {
@@ -141,10 +145,10 @@ void switchProcess(void) {
 
     process_t* process;
     bool found = false;
-    size_t i = currentProcess + 1;
+    size_t i = currentProcessID + 1;
 
     // Find next process to run
-    while (i != currentProcess) {
+    while (i != currentProcessID) {
         if (i == PROCESSES_MAX) {
             i = 0;
         }
@@ -164,11 +168,15 @@ void switchProcess(void) {
         return;
     }
 
-    // Switch context
-
     // Run new process
-    runProcess(process);
+    currentProcessID = process->id;
 
+    // Load process's page directory
+    loadPageDirectory(process->pd);
+
+    // Enter usermode
+    enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
+    //enter_usermode(process->entryPoint, process->esp, process->regs);
 }
 
 void set_kernel_stack(uint32_t esp) {

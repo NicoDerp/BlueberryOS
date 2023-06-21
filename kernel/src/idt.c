@@ -110,6 +110,21 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         case (SYS_yield):
             {
                 printf("\nYield!\n");
+
+                // Save registers
+                process_t* process = getCurrentProcess();
+                process->regs.eax = stack_state.eax;
+                process->regs.ebx = stack_state.ebx;
+                process->regs.ecx = stack_state.ecx;
+                process->regs.edx = stack_state.edx;
+                process->regs.ebp = stack_state.ebp;
+                process->regs.edi = stack_state.edi;
+                process->regs.esi = stack_state.esi;
+                process->esp = esp;
+
+                //memset(&process->regs, 0, sizeof(regs_t));
+
+                // Switch to next process
                 switchProcess();
             }
 
