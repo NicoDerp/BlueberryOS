@@ -64,7 +64,7 @@ typedef struct {
     uint32_t physical_stack;
     uint32_t virtual_stack;
     uint32_t virtual_stack_top;
-    int id;
+    size_t id;
 } process_t;
 
 
@@ -76,8 +76,10 @@ void install_tss(uint8_t* entryBytes);
 void set_kernel_stack(uint32_t esp);
 void use_system_tss(void);
 
+process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 process_t* newProcess(char* name, struct multiboot_tag_module* module);
+void terminateProcess(process_t* process, int status);
 void runProcess(process_t* processID);
 void switchProcess(void);
 

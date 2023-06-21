@@ -64,6 +64,36 @@ void install_tss(uint8_t* gdt) {
     install_tss_(&sys_tss);
 }
 
+process_t* findNextProcess(void) {
+
+    process_t* process;
+    bool found = false;
+    size_t i = currentProcessID + 1;
+
+    // Find next process to run
+    while (i != currentProcessID) {
+        if (i == PROCESSES_MAX) {
+            i = 0;
+        }
+
+        // Process for that ID is active
+        if (processUsed[i]) {
+            process = &processes[i];
+            found = true;
+            break;
+        }
+
+        i++;
+    }
+
+    if (!found) {
+        printf("[ERROR] No current processes?? Idk what to do now\n");
+        return (process_t*) -1;
+    }
+
+    return process;
+}
+
 process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
@@ -123,6 +153,28 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     return process;
 }
 
+void terminateProcess(process_t* process, int status) {
+
+    (void) status;
+
+    bool switchProcess = (process->id == currentProcessID);
+
+    processUsed[currentProcessID] = false;
+
+    // Don't need to clear process because it will get initialized
+    // memset(process, 0, sizeof(process_t))
+
+    if (!switchProcess) {
+        return;
+    }
+
+    process_t* nextProcess = findNextProcess();
+    if (nextProcess != (process_t*) -1) {
+        currentProcessID = nextProcess->id;
+    }
+
+}
+
 void runProcess(process_t* process) {
 
     currentProcessID = process->id;
@@ -146,30 +198,9 @@ void switchProcess(void) {
 
     // Simple round robin
 
-    process_t* process;
-    bool found = false;
-    size_t i = currentProcessID + 1;
+    process_t* process = findNextProcess();
 
-    // Find next process to run
-    while (i != currentProcessID) {
-        if (i == PROCESSES_MAX) {
-            i = 0;
-        }
-
-        // Process for that ID is active
-        if (processUsed[i]) {
-            process = &processes[i];
-            found = true;
-            break;
-        }
-
-        i++;
-    }
-
-    if (!found) {
-        printf("[ERROR] No process to switch to??");
-        return;
-    }
+    printf("Next process is process '%s' with id %d\n", process->name, process->id);
 
     // Run new process
     currentProcessID = process->id;

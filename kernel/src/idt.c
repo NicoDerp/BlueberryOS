@@ -80,6 +80,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 int status = stack_state.ebx;
 
                 printf("Status: '%d'\n", status);
+
+                process_t* process = getCurrentProcess();
+                terminateProcess(process, status);
             }
 
             break;

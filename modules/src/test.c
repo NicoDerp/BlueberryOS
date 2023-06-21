@@ -3,6 +3,8 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include <stdlib.h>
+
 void main(void) {
     for (size_t i = 0; i < 10; i++) {
         printf("Loop %d\n", i);
@@ -12,6 +14,7 @@ void main(void) {
     //syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
 
+    exit(0);
     for (;;) {}
 }
 
