@@ -123,8 +123,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 process->eip = frame.eip;
                 process->esp = esp;
 
-                //memset(&process->regs, 0, sizeof(regs_t));
-
                 // Switch to next process
                 switchProcess();
             }

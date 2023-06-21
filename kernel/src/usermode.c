@@ -114,6 +114,9 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + 0xF00;
 
+    process->eip = process->entryPoint;
+    process->esp = process->virtual_stack_top;
+
     printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
 
@@ -175,7 +178,6 @@ void switchProcess(void) {
     loadPageDirectory(process->pd);
 
     // Enter usermode
-    //enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
     enter_usermode(process->eip, process->esp, process->regs);
 }
 
