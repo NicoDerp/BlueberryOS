@@ -37,6 +37,7 @@ FREEOBJS =\
 	stdlib/abort.o \
 	stdlib/itoa.o \
 	stdlib/uitoa.o \
+	stdlib/exit.o \
 	string/memcmp.o \
 	string/memcpy.o \
 	string/memmove.o \
@@ -46,6 +47,8 @@ FREEOBJS =\
 	string/strncmp.o \
 	unistd/syscall.o \
 	unistd/syscall_asm.o \
+	unistd/write.o \
+	unistd/yield.o \
 
 HOSTEDOBJS =
 

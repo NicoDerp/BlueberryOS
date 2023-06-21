@@ -63,6 +63,7 @@ void use_system_tss(void);
 
 process_t* newProcess(char* name, struct multiboot_tag_module* module);
 void runProcess(process_t* processID);
+void switchProcess(void);
 
 extern void enter_usermode(uint32_t addr, uint32_t stack_ptr);
 extern void flush_tss(void);

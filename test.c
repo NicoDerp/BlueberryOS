@@ -1,7 +1,13 @@
 
-#include <kernel/tty.h>
+#include <stdio.h>
+
+int myfunc(void);
 
 void main(void) {
-    terminal_write("Lesh goo");
+    int a;
+
+    a = myfunc();
+
+    printf("a: %d\n", a);
 }
 

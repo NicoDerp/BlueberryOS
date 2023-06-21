@@ -3,15 +3,16 @@
 #include <sys/syscall.h>
 #include <stdarg.h>
 
-extern void syscall0(int, ...);
-extern void syscall1(int, ...);
-extern void syscall2(int, ...);
-extern void syscall3(int, ...);
+extern int syscall0(int, ...);
+extern int syscall1(int, ...);
+extern int syscall2(int, ...);
+extern int syscall3(int, ...);
 
-typedef void (*function_t)(int, ...);
+typedef int (*function_t)(int, ...);
 function_t lookup[] = {
     syscall1, /* SYS_exit */
     syscall3, /* SYS_write */
+    syscall0, /* SYS_yield */
 };
 
 
@@ -26,32 +27,12 @@ int syscall(long unsigned int number, ...) {
     }
 
     va_list argptr;
+    int result;
+
     va_start(argptr, number);
-
     lookup[number](number, argptr);
-
-    /*
-    switch (lookup[number]) {>
-        case 0:
-            syscall0(number);
-            break;
-
-        case 1:
-            int arg1 = va_arg(argptr, int);
-            syscall1(number, arg1);
-            break
-
-        case 2:
-            syscall2(number, arg1, arg2);
-            break
-
-        case 3:
-            syscall3(number, arg1, arg2, arg3);
-            break
-    }
-    */
     va_end(argptr);
 
-    return 0;
+    return result;
 }
 

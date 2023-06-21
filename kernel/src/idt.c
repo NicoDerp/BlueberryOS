@@ -81,6 +81,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 printf("Status: '%d'\n", status);
             }
+
             break;
 
         case (SYS_write):
@@ -102,6 +103,14 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 } else {
                     printf("Invalid fd '%d'\n", fd);
                 }
+            }
+
+            break;
+
+        case (SYS_yield):
+            {
+                printf("\nYield!\n");
+                switchProcess();
             }
 
             break;

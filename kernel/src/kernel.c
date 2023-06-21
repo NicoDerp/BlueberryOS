@@ -200,60 +200,40 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     for (size_t i = 0; i < moduleCount; i++) {
 
-        struct multiboot_tag_module module = modules[i];
-        module.mod_start = p_to_v(module.mod_start);
-        module.mod_end = p_to_v(module.mod_end);
+        struct multiboot_tag_module* module = &modules[i];
+        module->mod_start = p_to_v(module->mod_start);
+        module->mod_end = p_to_v(module->mod_end);
 
-        size_t moduleSize = module.mod_end - module.mod_start;
-        printf("Module size: %d\n", moduleSize);
+        size_t moduleSize = module->mod_end - module->mod_start;
+        printf("Module %d size: %d\n", i, moduleSize);
+    }
 
-        process_t* process = newProcess("Ooga booga", &module);
-        (void) process;
+    process_t* process = newProcess("Ooga booga 1", &modules[0]);
 
-        printf("Process info:\n");
-        printf(" - Name: '%s'\n", process->name);
-        printf(" - Id: %d\n", process->id);
-        printf(" - Entry point: 0x%x\n", process->entryPoint);
-        printf(" - Stack: 0x%x\n", process->physical_stack);
-        printf(" - Pagetables:\n");
+    if (moduleCount > 1) {
+        newProcess("Ooga booga 2", &modules[1]);
+    }
 
-        for (size_t j = 0; j < 767; j++) {
-            if (process->pd[j] & 1) {
-                printf("   - %d: 0x%x\n", j, process->pd[j]);
-                pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
-                for (size_t k = 0; k < 1024; k++) {
-                    if (pagetable[k] & 1) {
-                        printf("     - Page %d: 0x%x\n", k, pagetable[k]);
-                    }
+    printf("Process info:\n");
+    printf(" - Name: '%s'\n", process->name);
+    printf(" - Id: %d\n", process->id);
+    printf(" - Entry point: 0x%x\n", process->entryPoint);
+    printf(" - Stack: 0x%x\n", process->physical_stack);
+    printf(" - Pagetables:\n");
+
+    for (size_t j = 0; j < 767; j++) {
+        if (process->pd[j] & 1) {
+            printf("   - %d: 0x%x\n", j, process->pd[j]);
+            pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
+            for (size_t k = 0; k < 1024; k++) {
+                if (pagetable[k] & 1) {
+                    printf("     - Page %d: 0x%x\n", k, pagetable[k]);
                 }
             }
         }
-
-        loadPageDirectory(process->pd);
-
-        //printf("test\n");
-
-        /*
-        char* byte = (char*) (0x08049098);
-        for (size_t j = 0; j < 10; j++) {
-            printf("byte %d: 0x%x, '%c'\n", j, ((unsigned int) byte[j]) & 0xFF, byte[j]);
-        }
-        */
-
-        /*
-        pagetable_t pagetable = (pagetable_t) ((process->pd[0] & 0xFFFFF000) + 0xC0000000);
-        printf("p: 0x%x\n", (unsigned int) pagetable);
-        for (size_t j = 0; j < 8; j++) {
-            printf("%d: 0x%x\n", j, pagetable[j]);
-        }
-        */
-
-        //loadPageDirectory(page_directory);
-
-        //pagedirectory_t pd = (pagedirectory_t) &((char) page_directory);
-
-        runProcess(process);
     }
+
+    runProcess(process);
 
 
     for (;;) {};

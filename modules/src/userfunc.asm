@@ -9,6 +9,9 @@ main:
     mov ecx, str  ; &str
     mov edx, 12   ; len(str)
     int 30h       ; syscall
+
+    mov eax, 2
+    int 30h
 .loop:
     jmp .loop
 

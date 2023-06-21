@@ -9,9 +9,9 @@
 
 void initialize_tss(tss_t* tss);
 
-process_t processList[PROCESSES_MAX];
+process_t processes[PROCESSES_MAX];
 bool processUsed[PROCESSES_MAX];
-int currentProcess;
+size_t currentProcess;
 
 tss_t sys_tss;
 uint32_t kesp = 0;
@@ -70,7 +70,7 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
         if (!processUsed[i]) {
             found = true;
             processUsed[i] = true;
-            process = &processList[i];
+            process = &processes[i];
             process->id = i;
             break;
         }
@@ -133,6 +133,42 @@ void runProcess(process_t* process) {
 
     // Enter usermode
     enter_usermode(process->entryPoint, process->virtual_stack_top);
+}
+
+void switchProcess(void) {
+
+    // Simple round robin
+
+    process_t* process;
+    bool found = false;
+    size_t i = currentProcess + 1;
+
+    // Find next process to run
+    while (i != currentProcess) {
+        if (i == PROCESSES_MAX) {
+            i = 0;
+        }
+
+        // Process for that ID is active
+        if (processUsed[i]) {
+            process = &processes[i];
+            found = true;
+            break;
+        }
+
+        i++;
+    }
+
+    if (!found) {
+        printf("[ERROR] No process to switch to??");
+        return;
+    }
+
+    // Switch context
+
+    // Run new process
+    runProcess(process);
+
 }
 
 void set_kernel_stack(uint32_t esp) {
