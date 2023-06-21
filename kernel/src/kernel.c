@@ -236,8 +236,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     runProcess(process);
 
 
-    for (;;) {};
-
     /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     printf("Out: %d\n", a);

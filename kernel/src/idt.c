@@ -120,6 +120,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 process->regs.ebp = stack_state.ebp;
                 process->regs.edi = stack_state.edi;
                 process->regs.esi = stack_state.esi;
+                process->eip = frame.eip;
                 process->esp = esp;
 
                 //memset(&process->regs, 0, sizeof(regs_t));

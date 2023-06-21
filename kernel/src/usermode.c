@@ -175,8 +175,8 @@ void switchProcess(void) {
     loadPageDirectory(process->pd);
 
     // Enter usermode
-    enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
-    //enter_usermode(process->entryPoint, process->esp, process->regs);
+    //enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
+    enter_usermode(process->eip, process->esp, process->regs);
 }
 
 void set_kernel_stack(uint32_t esp) {

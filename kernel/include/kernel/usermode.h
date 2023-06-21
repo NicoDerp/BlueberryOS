@@ -57,6 +57,7 @@ typedef struct {
 typedef struct {
     regs_t regs;
     uint32_t esp;
+    uint32_t eip;
     char name[PROCESS_MAX_NAME_LENGTH+1];
     pagedirectory_t pd;
     uint32_t entryPoint;
