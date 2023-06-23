@@ -1,5 +1,5 @@
 
-# Bluberry OS
+# Blueberry OS
 
 ## An operating system created from scratch in C and x86 assembly
 
