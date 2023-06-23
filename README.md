@@ -15,6 +15,7 @@ This is very in-development and just a hobby-project.
 - [x] Libc with syscalls
 - [x] Usermode
 - [x] ELF-parsing
+- [ ] Higher-half kernel
 - [ ] Multiple processes
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
