@@ -1,5 +1,5 @@
 
-# Bluberry OS
+# Blueberry OS
 
 ## An operating system created from scratch in C and x86 assembly
 
@@ -15,6 +15,7 @@ This is very in-development and just a hobby-project.
 - [x] Libc with syscalls
 - [x] Usermode
 - [x] ELF-parsing
+- [x] Higher-half kernel
 - [ ] Multiple processes
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
