@@ -11,7 +11,8 @@ main:
     mov edx, 13   ; len(str)
     int 30h       ; syscall
 
-    mov eax, 2    ; SYS_yield
+    mov eax, 0    ; SYS_exit
+    mov ebx, 0    ; status 0
     int 30h       ; syscall
 
     jmp .loop

@@ -87,8 +87,12 @@ process_t* findNextProcess(void) {
     }
 
     if (!found) {
-        printf("[ERROR] No current processes?? Idk what to do now\n");
-        return (process_t*) -1;
+        if (!processUsed[currentProcessID]) {
+            printf("[ERROR] No current processes?? Idk what to do now\n");
+            return (process_t*) -1;
+        }
+
+        process = &processes[currentProcessID];
     }
 
     return process;
@@ -157,22 +161,12 @@ void terminateProcess(process_t* process, int status) {
 
     (void) status;
 
-    bool switchProcess = (process->id == currentProcessID);
-
-    processUsed[currentProcessID] = false;
+    processUsed[process->id] = false;
 
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
 
-    if (!switchProcess) {
-        return;
-    }
-
-    process_t* nextProcess = findNextProcess();
-    if (nextProcess != (process_t*) -1) {
-        currentProcessID = nextProcess->id;
-    }
-
+    // TODO free memory and shit
 }
 
 void runProcess(process_t* process) {

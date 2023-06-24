@@ -83,6 +83,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 process_t* process = getCurrentProcess();
                 terminateProcess(process, status);
+
+                // Switch to next process
+                switchProcess();
             }
 
             break;
