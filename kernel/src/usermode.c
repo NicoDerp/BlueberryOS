@@ -95,7 +95,7 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcess(char* name, struct multiboot_tag_module* module) {
+process_t* newProcess(char* name, struct multiboot_tag_module* module, int argCount, const char** args) {
 
     process_t* process;
     bool found = false;
@@ -147,15 +147,21 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     process->esp = process->virtual_stack_top;
 
 
-    size_t argc = 0;
+    if (argCount >= MAX_ARGS) {
+        printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
+        for (;;) {}
+    }
 
-    uint32_t strPointers[10];
+    uint32_t strPointers[argCount];
 
     // Push args
-    strPointers[argc++] = processPushStr(process, "Hei");
+    for (int i = 0; i < argCount; i++) {
+        printf("Pushing str[%d] as '%s'\n", i, args[i]);
+        strPointers[i] = processPushStr(process, args[i]);
+    }
 
     // Push str pointer
-    for (size_t i = 0; i < argc; i++) {
+    for (int i = 0; i < argCount; i++) {
         printf("Pushing argv[%d] as 0x%x\n", i, strPointers[i]);
         processPush(process, strPointers[i]);
         //printf("a: '%s'\n", (char*) (strPointers[i] + process->physical_stack - process->virtual_stack_top));
@@ -164,7 +170,7 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     processPush(process, process->esp);
 
     // Push argc
-    processPush(process, argc);
+    processPush(process, argCount);
 
     return process;
 }
@@ -223,11 +229,16 @@ uint32_t processPush(process_t* process, uint32_t value) {
     return process->esp + 4;
 }
 
-uint32_t processPushStr(process_t* process, char* str) {
+uint32_t processPushStr(process_t* process, const char* str) {
 
     uint32_t ret;
     uint32_t offset = process->virtual_stack_top - process->esp;
-    size_t len = strlen(str);
+    size_t len = strlen(str) + 1;
+
+    if (len >= MAX_ARG_LENGTH) {
+        printf("[ERROR] Can't push arg with length %d because it exceeds limit of %d\n", len, MAX_ARG_LENGTH);
+        for (;;) {}
+    }
 
     memcpy((void*) (process->physical_stack + STACK_TOP_OFFSET - offset - len), str, len);
     process->esp -= len;

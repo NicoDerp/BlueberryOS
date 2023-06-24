@@ -207,14 +207,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("Module %d size: %d\n", i, moduleSize);
     }
 
-    process_t* process = newProcess("Ooga booga 1", &modules[0]);
+    const char* args[2];
+    args[0] = "Ooga";
+    args[1] = "Booga";
+
+    process_t* process = newProcess("Ooga booga 1", &modules[0], 2, args);
 
     if (moduleCount > 1) {
-        newProcess("Ooga booga 2", &modules[1]);
+        newProcess("Ooga booga 2", &modules[1], 2, args);
     }
 
     if (moduleCount > 2) {
-        newProcess("Ooga booga 3", &modules[2]);
+        newProcess("Ooga booga 3", &modules[2], 2, args);
     }
 
     printf("Process info:\n");

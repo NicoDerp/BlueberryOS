@@ -16,6 +16,9 @@
 #define STACK_TOP_OFFSET 0xF00
 #define STACK_TOP_INDEX (STACK_TOP_OFFSET/4-1)
 
+#define MAX_ARGS 64
+#define MAX_ARG_LENGTH 256
+
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
     uint32_t esp0;     // The stack pointer to load when changing to kernel mode.
@@ -82,12 +85,12 @@ void use_system_tss(void);
 
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
-process_t* newProcess(char* name, struct multiboot_tag_module* module);
+process_t* newProcess(char* name, struct multiboot_tag_module* module, int argCount, const char** args);
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void switchProcess(void);
 uint32_t processPush(process_t* process, uint32_t value);
-uint32_t processPushStr(process_t* process, char* str);
+uint32_t processPushStr(process_t* process, const char* str);
 
 #endif /* KERNEL_USERMODE_H */
 
