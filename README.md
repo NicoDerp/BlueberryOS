@@ -16,7 +16,8 @@ This is very in-development and just a hobby-project.
 - [x] Usermode
 - [x] ELF-parsing
 - [x] Higher-half kernel
-- [ ] Multiple processes
+- [x] Multiple processes
+- [ ] Clock to switch between processes
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit

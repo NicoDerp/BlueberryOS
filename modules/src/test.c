@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 void main(void) {
-    for (size_t i = 0; i < 10; i++) {
+    for (size_t i = 0; i < 3; i++) {
         printf("Loop %d\n", i);
         yield();
     }
