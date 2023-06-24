@@ -13,6 +13,8 @@
 #define PROCESSES_MAX 32
 
 #define PROCESS_TIME 0x00F0
+#define STACK_TOP_OFFSET 0xF00
+#define STACK_TOP_INDEX (STACK_TOP_OFFSET/4-1)
 
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
@@ -82,8 +84,9 @@ process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 process_t* newProcess(char* name, struct multiboot_tag_module* module);
 void terminateProcess(process_t* process, int status);
-void runProcess(process_t* processID);
+void runProcess(process_t* process);
 void switchProcess(void);
+void processPush(process_t* process, uint32_t value);
 
 #endif /* KERNEL_USERMODE_H */
 

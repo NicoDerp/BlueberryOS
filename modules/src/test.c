@@ -5,9 +5,9 @@
 
 #include <stdlib.h>
 
-void main(void) {
+void main(int a, int b) {
     for (size_t i = 0; i < 3; i++) {
-        printf("Loop %d\n", i);
+        printf("Loop %d %d %d\n", i, a, b);
         //yield();
     }
     //putchar('a');

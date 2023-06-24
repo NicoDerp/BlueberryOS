@@ -18,22 +18,16 @@ bool processUsed[PROCESSES_MAX];
 size_t currentProcessID;
 
 tss_t sys_tss;
-uint32_t kesp = 0;
-uint8_t* kgdt;
 
-void tss_initialize(void) {
-    initialize_tss(&sys_tss);
-}
-
-void initialize_tss(tss_t* tss) {
+void tss_initialize() {
 
     // Ensure tss is zeroed
-    memset(tss, 0, sizeof(tss_t));
+    memset(&sys_tss, 0, sizeof(tss_t));
 
-    tss->ss0 = 0x10;  /* Kernel data segment */
-    tss->esp0 = kesp; /* Kernel stack pointer */
+    sys_tss.ss0 = 0x10;  /* Kernel data segment */
+    sys_tss.esp0 = 0x0;  /* Kernel stack pointer */
 
-    tss->cs = 0x08;   /* Kernel code segment */
+    sys_tss.cs = 0x08;   /* Kernel code segment */
 
     /*
     sys_tss.es = 0x13;
@@ -47,22 +41,16 @@ void initialize_tss(tss_t* tss) {
     //sys_tss.iomap = (unsigned short) sizeof(tss_t);
 }
 
-void install_tss_(tss_t* tss) {
+void install_tss(uint8_t* gdt) {
 
     struct GDT source;
 
     source.access_byte = 0x89;
     source.flags = 0x0;
-    source.base = (uint32_t) tss;
+    source.base = (uint32_t) &sys_tss;
     source.limit = sizeof(tss_t);
 
-    gdt_entry(kgdt, source);
-}
-
-void install_tss(uint8_t* gdt) {
-
-    kgdt = gdt;
-    install_tss_(&sys_tss);
+    gdt_entry(gdt, source);
 }
 
 process_t* findNextProcess(void) {
@@ -150,13 +138,16 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     memset((void*) process->physical_stack, 0, FRAME_4KB);
 
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
-    process->virtual_stack_top = process->virtual_stack + 0xF00;
+    process->virtual_stack_top = process->virtual_stack + STACK_TOP_OFFSET;
 
     printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
 
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
+
+    processPush(process, 69);
+    processPush(process, 49);
 
     return process;
 }
@@ -205,20 +196,18 @@ void switchProcess(void) {
     enter_usermode(process->eip, process->esp, process->regs);
 }
 
-void set_kernel_stack(uint32_t esp) {
+void processPush(process_t* process, uint32_t value) {
 
-    kesp = esp;
+    size_t offset = (process->virtual_stack_top - process->esp) / 4;
+    ((uint32_t*) process->physical_stack)[STACK_TOP_INDEX - offset] = value;
+    process->esp -= 4;
+
+}
+
+void set_kernel_stack(uint32_t esp) {
 
     // Setting ss0 just in case
     sys_tss.ss0 = 0x10;  /* Kernel data segment */
     sys_tss.esp0 = esp;
 }
-
-void use_system_tss(void) {
-    
-    install_tss_(&sys_tss);
-    flush_tss();
-
-}
-
 
