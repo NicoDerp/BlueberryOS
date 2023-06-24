@@ -4,17 +4,19 @@
 #include <unistd.h>
 
 #include <stdlib.h>
+#include <string.h>
 
-void main(int a, int b) {
-    for (size_t i = 0; i < 3; i++) {
-        printf("Loop %d %d %d\n", i, a, b);
-        //yield();
+void main(int argc, char** argv) {
+
+    (void) argv;
+    printf("argc: %d\n", argc);
+
+    /*
+    for (int i = 0; i < argc; i++) {
+        printf("arg %d: %d\n", i, argv[0]);
     }
-    //putchar('a');
-    //syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
-    //syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
+    */
+    printf("arg 0: 0x%x\n", argv);
 
-    //exit(0);
-    //for (;;) {}
 }
 

@@ -86,7 +86,8 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module);
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void switchProcess(void);
-void processPush(process_t* process, uint32_t value);
+uint32_t processPush(process_t* process, uint32_t value);
+uint32_t processPushStr(process_t* process, char* str);
 
 #endif /* KERNEL_USERMODE_H */
 
