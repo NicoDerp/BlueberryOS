@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void main(int argc, char** argv) {
+void main(int argc, char* argv[]) {
 
     (void) argv;
     printf("argc: %d\n", argc);
@@ -16,7 +16,7 @@ void main(int argc, char** argv) {
         printf("arg %d: %d\n", i, argv[0]);
     }
     */
-    printf("arg 0: 0x%x\n", argv);
+    printf("arg 0: '%s'\n", argv[0]);
 
 }
 

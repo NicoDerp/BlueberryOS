@@ -152,8 +152,7 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     uint32_t strPointers[10];
 
     // Push args
-    strPointers[argc] = processPushStr(process, "Hei");
-    argc++;
+    strPointers[argc++] = processPushStr(process, "Hei");
 
     // Push str pointer
     for (size_t i = 0; i < argc; i++) {
@@ -161,6 +160,8 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
         processPush(process, strPointers[i]);
         //printf("a: '%s'\n", (char*) (strPointers[i] + process->physical_stack - process->virtual_stack_top));
     }
+
+    processPush(process, process->esp);
 
     // Push argc
     processPush(process, argc);
@@ -224,13 +225,19 @@ uint32_t processPush(process_t* process, uint32_t value) {
 
 uint32_t processPushStr(process_t* process, char* str) {
 
-    uint32_t ret = process->virtual_stack_top - process->esp;
-    size_t len = strlen(str) + 1; // \0
+    uint32_t ret;
+    uint32_t offset = process->virtual_stack_top - process->esp;
+    size_t len = strlen(str);
 
-    memcpy((void*) (process->physical_stack + STACK_TOP_OFFSET - ret - len), str, len);
-    process->esp -= len * 4;
+    memcpy((void*) (process->physical_stack + STACK_TOP_OFFSET - offset - len), str, len);
+    process->esp -= len;
+    //ret = process->esp + 1;
+    ret = process->esp;
 
-    return process->esp + 4;
+    // Align at 4-bytes
+    process->esp -= process->esp % 4;
+
+    return ret;
 }
 
 void set_kernel_stack(uint32_t esp) {
