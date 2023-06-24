@@ -2,6 +2,7 @@
 #include <kernel/usermode.h>
 #include <kernel/file.h>
 #include <kernel/gdt.h>
+#include <kernel/idt.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -71,8 +72,8 @@ process_t* findNextProcess(void) {
     size_t i = currentProcessID + 1;
 
     // Find next process to run
-    while (i != currentProcessID) {
-        if (i == PROCESSES_MAX) {
+    do {
+        if (i >= PROCESSES_MAX) {
             i = 0;
         }
 
@@ -85,15 +86,19 @@ process_t* findNextProcess(void) {
 
         i++;
     }
+    while (i != currentProcessID);
 
     if (!found) {
         if (!processUsed[currentProcessID]) {
             printf("[ERROR] No current processes?? Idk what to do now\n");
+            for (;;) {}
             return (process_t*) -1;
         }
 
         process = &processes[currentProcessID];
     }
+
+    //printf("Found process %d\n", process->id);
 
     return process;
 }
@@ -130,7 +135,6 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     // Just in case
     process->name[PROCESS_MAX_NAME_LENGTH] = 0;
 
-
     bool isELF = isModuleELF(module);
     if (isELF) {
         process->pd = loadELFIntoMemory(module);
@@ -148,11 +152,11 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module) {
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + 0xF00;
 
-    process->eip = process->entryPoint;
-    process->esp = process->virtual_stack_top;
-
     printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
+
+    process->eip = process->entryPoint;
+    process->esp = process->virtual_stack_top;
 
     return process;
 }
@@ -173,14 +177,6 @@ void runProcess(process_t* process) {
 
     currentProcessID = process->id;
 
-    // Load process's TSS
-    /*
-    install_tss_(&process->tss);
-    flush_tss();
-    */
-
-    // Maybe need to reload GDT also, not sure
-
     // Load process's page directory
     loadPageDirectory(process->pd);
 
@@ -190,17 +186,20 @@ void runProcess(process_t* process) {
 
 void switchProcess(void) {
 
+    //printf("Next process\n");
     // Simple round robin
 
     process_t* process = findNextProcess();
 
-    printf("Next process is process '%s' with id %d\n", process->name, process->id);
+    //printf("Next process is process '%s' with id %d\n", process->name, process->id);
 
-    // Run new process
     currentProcessID = process->id;
 
     // Load process's page directory
     loadPageDirectory(process->pd);
+
+    // Reset PIT count
+    pit_set_count(PROCESS_TIME);
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);

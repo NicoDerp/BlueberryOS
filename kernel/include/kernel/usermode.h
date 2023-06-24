@@ -12,6 +12,8 @@
 #define PROCESS_MAX_NAME_LENGTH 128
 #define PROCESSES_MAX 32
 
+#define PROCESS_TIME 0x00F0
+
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
     uint32_t esp0;     // The stack pointer to load when changing to kernel mode.

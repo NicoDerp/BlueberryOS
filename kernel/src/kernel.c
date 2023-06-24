@@ -8,6 +8,7 @@
 #include <kernel/paging.h>
 #include <kernel/memory.h>
 #include <kernel/file.h>
+#include <kernel/io.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -187,8 +188,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("\n\nWelcome to BlueberryOS!\n");
 
-    printf("Modules: %d\n", moduleCount);
-
     //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
 
     // 0xC03FF000
@@ -214,6 +213,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         newProcess("Ooga booga 2", &modules[1]);
     }
 
+    if (moduleCount > 2) {
+        newProcess("Ooga booga 3", &modules[2]);
+    }
+
     printf("Process info:\n");
     printf(" - Name: '%s'\n", process->name);
     printf(" - Id: %d\n", process->id);
@@ -233,8 +236,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
     }
 
-    runProcess(process);
+    printf("Modules: %d\n", moduleCount);
 
+    // Enable PIT interrupt
+    irq_clear_mask(IRQ_TIMER);
 
     /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);

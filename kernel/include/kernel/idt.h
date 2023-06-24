@@ -31,15 +31,28 @@
 #define ICW4_BUF_MASTER	0x0C		/* Buffered mode/master */
 #define ICW4_SFNM	0x10		/* Special fully nested (not) */
 
+#define IRQ_TIMER       0
+#define IRQ_KEYBOARD    1
+#define IRQ_CASCADE     2
+#define IRQ_COM2        3
+#define IRQ_COM1        4
+#define IRQ_LPT2        5
+#define IRQ_FLOPPY      6
+#define IRQ_LPT1        7
+#define IRQ_CMOS        8
+#define IRQ_MOUSE       12
+#define IRQ_FPU         13
+#define IRQ_PRIMARY_DISK 14
+#define IRQ_SECONDARY_DISK 15
 
 #define INT_INVALID_OPCODE      0x06  /* 6 */
 #define INT_DOUBLE_FAULT        0x08  /* 8 */
 #define INT_GENERAL_PROTECTION  0x0D  /* 13 */
 #define INT_PAGE_FAULT          0x0E  /* 14 */
 
-#define INT_TIMER               IDT_IRQ_OFFSET + 0x00  /* 0 */
-#define INT_KEYBOARD            IDT_IRQ_OFFSET + 0x01  /* 1 */
-#define INT_MOUSE               IDT_IRQ_OFFSET + 0x02  /* 12 */
+#define INT_TIMER               IDT_IRQ_OFFSET + IRQ_TIMER     /* 0 */
+#define INT_KEYBOARD            IDT_IRQ_OFFSET + IRQ_KEYBOARD  /* 1 */
+#define INT_MOUSE               IDT_IRQ_OFFSET + IRQ_MOUSE     /* 12 */
 
 #define INT_SYSCALL             0x30  /* 48 */
 
@@ -65,6 +78,9 @@ typedef struct {
 
 
 void idt_initialize(void);
+void irq_set_mask(unsigned char line);
+void irq_clear_mask(unsigned char line);
+void pit_set_count(unsigned count);
 
 typedef struct {
     unsigned int edi;

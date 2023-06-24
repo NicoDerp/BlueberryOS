@@ -50,8 +50,8 @@ OBJ = $(OBJ_C) $(OBJ_ASM)
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
 #$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $< $(#LIBS)
-%.mod: %.o
-	$(CC) -e main -o $@ $(CFLAGS) $(LFLAGS) $< $(LIBS)
+%.mod: %.o link.asm.o
+	$(CC) -o $@ $(CFLAGS) $(LFLAGS) $< link.asm.o $(LIBS)
 
 .PHONY: all clean build rebuild check run run-bochs install
 .SUFFIXES: .o .c .asm
@@ -61,7 +61,7 @@ all: build
 build: $(OBJ)
 
 clean:
-	rm -rf $(OBJ) $(OBJ:.mod=.d) $(OBJ:.mod=.o)
+	rm -rf $(OBJ) $(OBJ:.mod=.d) $(OBJ:.mod=.o) link.asm.o link.asm.d
 
 rebuild: clean build
 
@@ -69,5 +69,5 @@ install: $(OBJ)
 	mkdir -p ../kernel/isodir/modules
 	cp -f --preserve=timestamps $(OBJ) ../kernel/isodir/modules/.
 
--include $(OBJS:.mod=.d)
+-include $(OBJS:.mod=.d) link.d
 

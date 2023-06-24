@@ -28,6 +28,8 @@ extern void* isr_stub_table[];
 
 //static bool vectors[32];
 
+size_t tickCounter = 0;
+
 const char* format_interrupt(uint8_t id) {
     if      (id == INT_INVALID_OPCODE)     { return "INVALID_OPCODE";     }
     else if (id == INT_DOUBLE_FAULT)       { return "DOUBLE_FAULT";       }
@@ -75,11 +77,11 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
     switch (stack_state.eax) {
         case (SYS_exit):
             {
-                printf("Exit!\n");
+                //printf("Exit!\n");
 
                 int status = stack_state.ebx;
 
-                printf("Status: '%d'\n", status);
+                //printf("Status: '%d'\n", status);
 
                 process_t* process = getCurrentProcess();
                 terminateProcess(process, status);
@@ -115,19 +117,25 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_yield):
             {
-                printf("\nYield!\n");
+                //printf("\nYield!\n");
 
-                // Save registers
-                process_t* process = getCurrentProcess();
-                process->regs.eax = stack_state.eax;
-                process->regs.ebx = stack_state.ebx;
-                process->regs.ecx = stack_state.ecx;
-                process->regs.edx = stack_state.edx;
-                process->regs.ebp = stack_state.ebp;
-                process->regs.edi = stack_state.edi;
-                process->regs.esi = stack_state.esi;
-                process->eip = frame.eip;
-                process->esp = esp;
+                // Don't know why kernel would call yield but just in case
+                if (ss & 0x3) {
+                    // Save registers
+                    process_t* process = getCurrentProcess();
+                    process->regs.eax = stack_state.eax;
+                    process->regs.ebx = stack_state.ebx;
+                    process->regs.ecx = stack_state.ecx;
+                    process->regs.edx = stack_state.edx;
+                    process->regs.ebp = stack_state.ebp;
+                    process->regs.edi = stack_state.edi;
+                    process->regs.esi = stack_state.esi;
+                    process->eip = frame.eip;
+                    process->esp = esp;
+                } else {
+                    printf("[INFO] Kernel called yield through syscall??");
+                    for (;;) {}
+                }
 
                 // Switch to next process
                 switchProcess();
@@ -140,7 +148,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
     }
 }
 
-void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
+//void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, interrupt_frame_t frame) {
+void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, stack_state_t stack_state, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
     //printf("\nInterrupt handler:\n");
 
     //const char* formatted = format_interrupt(interrupt_id);
@@ -148,6 +157,7 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
     (void)stack_state;
     (void)test_struct;
     (void)frame;
+    (void)ss;
 
     unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
 
@@ -222,6 +232,37 @@ void interrupt_handler(stack_state_t stack_state, test_struct_t test_struct, uns
         }
 
         PIC_sendEOI(irq);
+    } else if (interrupt_id == INT_TIMER) {
+        tickCounter += 1;
+
+        PIC_sendEOI(irq);
+
+        if (tickCounter == 3) {
+            //printf("Task switch!\n");
+            tickCounter = 0;
+
+            // Only save registers if we came from userspace
+            if (ss & 0x3) {
+                //printf("Saving regs\n");
+                // Save registers
+                process_t* process = getCurrentProcess();
+                process->regs.eax = stack_state.eax;
+                process->regs.ebx = stack_state.ebx;
+                process->regs.ecx = stack_state.ecx;
+                process->regs.edx = stack_state.edx;
+                process->regs.ebp = stack_state.ebp;
+                process->regs.edi = stack_state.edi;
+                process->regs.esi = stack_state.esi;
+                process->eip = frame.eip;
+                process->esp = esp;
+            }
+
+            // Switch to next process
+            switchProcess();
+        }
+    } else {
+        printf("Unknown IRQ %d\n", interrupt_id);
+        for (;;) {}
     }
 }
 
@@ -391,7 +432,7 @@ void idt_initialize(void) {
 
     //load_idt(idtr);
     __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
-    __asm__ volatile ("sti"); // set the interrupt flag
+    //__asm__ volatile ("sti"); // set the interrupt flag
 
     io_outb(PIC1_DATA, 0xFD);
     io_outb(PIC2_DATA, 0xFF);
@@ -450,4 +491,44 @@ void PIC_remap(int offset1, int offset2) {
     io_outb(PIC2_DATA, a2);
 }
 
+void irq_set_mask(unsigned char line) {
+
+    uint16_t port;
+    uint8_t value;
+
+    if (line < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        line -= 8;
+    }
+
+    value = io_inb(port) | (1 << line);
+    io_outb(port, value);
+}
+
+void irq_clear_mask(unsigned char line) {
+
+    uint16_t port;
+    uint8_t value;
+
+    if (line < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        line -= 8;
+    }
+
+    value = io_inb(port) & ~(1 << line);
+    io_outb(port, value);
+}
+
+void pit_set_count(unsigned count) {
+
+    // Disable interrupts
+    cli();
+
+    io_outb(0x40, count & 0xFF);           // Low byte
+    io_outb(0x40, (count & 0xFF00) >> 8);  // High byte
+}
 

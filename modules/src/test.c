@@ -8,13 +8,13 @@
 void main(void) {
     for (size_t i = 0; i < 3; i++) {
         printf("Loop %d\n", i);
-        yield();
+        //yield();
     }
     //putchar('a');
     //syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     //syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
 
-    exit(0);
-    for (;;) {}
+    //exit(0);
+    //for (;;) {}
 }
 

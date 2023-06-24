@@ -17,7 +17,7 @@ This is very in-development and just a hobby-project.
 - [x] ELF-parsing
 - [x] Higher-half kernel
 - [x] Multiple processes
-- [ ] Clock to switch between processes
+- [x] Preemptive os
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit
