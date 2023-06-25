@@ -18,8 +18,8 @@ This is very in-development and just a hobby-project.
 - [x] Higher-half kernel
 - [x] Multiple processes
 - [x] Preemptive os
+- [x] Filesystem (with initrd)
 - [ ] Shell
-- [ ] Filesystem (with initrd)
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit
