@@ -370,6 +370,9 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
 
         if (error_code & 0x04) {
             printf(" - Fault happened in user-mode\n");
+
+            process_t* process = getCurrentProcess();
+            printf(" - Current process has id '%d' and name '%s'\n", process->id, process->name);
         } else {
             printf(" - Fault happened in kernel-mode\n");
         }

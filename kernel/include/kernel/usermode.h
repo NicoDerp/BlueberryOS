@@ -96,7 +96,7 @@ void use_system_tss(void);
 
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
-process_t* newProcess(file_t* file, int argCount, const char** args);
+process_t* newProcess(file_t* file, const char* args[]);
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void switchProcess(void);

@@ -95,7 +95,7 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcess(file_t* file, int argCount, const char** args) {
+process_t* newProcess(file_t* file, const char* args[]) {
 
     process_t* process;
     bool found = false;
@@ -146,6 +146,10 @@ process_t* newProcess(file_t* file, int argCount, const char** args) {
     process->esp = process->virtual_stack_top;
 
 
+    int argCount;
+    for (argCount = 0; args[argCount] != 0; argCount++) {}
+
+    //printf("argCount: %d\n", argCount);
     if (argCount >= MAX_ARGS) {
         printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
         for (;;) {}
@@ -153,20 +157,28 @@ process_t* newProcess(file_t* file, int argCount, const char** args) {
 
     uint32_t strPointers[argCount];
 
-    // Push args
+    // Push strings
     for (int i = 0; i < argCount; i++) {
         printf("Pushing str[%d] as '%s'\n", i, args[i]);
         strPointers[i] = processPushStr(process, args[i]);
     }
 
-    // Push str pointer
+    // Push string pointers
     for (int i = 0; i < argCount; i++) {
-        printf("Pushing argv[%d] as 0x%x\n", i, strPointers[i]);
-        processPush(process, strPointers[i]);
+        int j = argCount - i - 1;
+        printf("Pushing argv[%d] as 0x%x\n", j, strPointers[j]);
+        processPush(process, strPointers[j]);
         //printf("a: '%s'\n", (char*) (strPointers[i] + process->physical_stack - process->virtual_stack_top));
     }
 
-    processPush(process, process->esp);
+    uint32_t esp = process->esp;
+
+    // argv must be zero-terminated
+    processPush(process, 0);
+
+    printf("esp: 0x%x\n", esp);
+    // argv
+    processPush(process, esp);
 
     // Push argc
     processPush(process, argCount);

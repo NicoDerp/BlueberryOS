@@ -212,26 +212,25 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     file_t* file;
     process_t* process;
-    const char* args[2];
-    args[0] = "Ooga";
-    args[1] = "Booga";
+    const char* args[] = {"af", "Booga", 0};
 
     file = getFile("/bin/test");
     if (file == (file_t*) -1) {
         printf("[ERROR] Failed to load application\n");
         for (;;) {}
     }
-    process = newProcess(file, 2, args);
-    printProcessInfo(process);
+    process = newProcess(file, args);
+    //printProcessInfo(process);
 
     file = getFile("/bin/userfunc");
     if (file == (file_t*) -1) {
         printf("[ERROR] Failed to load application\n");
         for (;;) {}
     }
-    process = newProcess(file, 2, args);
-    printProcessInfo(process);
+    //process = newProcess(file, args);
+    //printProcessInfo(process);
 
+    (void) process;
 
 
     // Enable PIT interrupt
