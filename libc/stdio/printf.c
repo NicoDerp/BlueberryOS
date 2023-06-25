@@ -89,6 +89,16 @@ int printf(const char* restrict format, ...) {
                 format++;
                 written += len;
             }
+            else if (*format == 'o') {
+                unsigned int i = (unsigned int) va_arg(parameters, unsigned int);
+                char buf[64];
+                uitoa(i, buf, 8);
+                size_t len = strlen(buf);
+
+                print(buf, len);
+                format++;
+                written += len;
+            }
             else if (*format == 's') {
                 const char* s = va_arg(parameters, const char*);
                 size_t len = strlen(s);

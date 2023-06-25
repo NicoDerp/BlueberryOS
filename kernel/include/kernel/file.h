@@ -12,13 +12,15 @@
 
 #define MAX_DIRECTORIES 32
 #define MAX_FILES       32
+#define MAX_NAME_LENGTH 128
 
 struct directory;
 struct file;
 
 typedef struct directory {
-    char name[128];
-    uint32_t mode;
+    char name[MAX_NAME_LENGTH+1];
+    char mode[4];
+    struct directory* parent;
     struct directory* directories[MAX_DIRECTORIES];
     struct file* files[MAX_FILES];
     uint32_t directoryCount;
@@ -26,9 +28,9 @@ typedef struct directory {
 } directory_t;
 
 typedef struct file {
-    char name[128];
+    char name[MAX_NAME_LENGTH+1];
+    char mode[4];
     struct directory* parent;
-    uint32_t mode;
     size_t size;
     char* content;
 } file_t;
@@ -60,7 +62,7 @@ typedef struct {
 typedef struct
 {
     char filename[100];
-    unsigned char mode[8];
+    char mode[8];
     unsigned char uid[8];
     unsigned char gid[8];
     unsigned char size[12];

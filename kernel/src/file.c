@@ -267,26 +267,152 @@ file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
     return file;
 }
 
-void parseDirectory(tar_header_t* header, directory_t* parent) {
+directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
-    directory_t* directory = kalloc_frame();
+    for (size_t i = 0; i < parent->directoryCount; i++) {
+        if (strcmp(parent->directories[i]->name, name) == 0) {
+            return parent->directories[i];
+        }
+    }
 
-    parent->directories[parent->directoryCount++] = directory;
-    memcpy(directory->name, header->filename, strlen(header->filename)+1);
-    directory->mode = oct2bin(header->mode, 7);
+    return (directory_t*) -1;
 }
 
-void parseFile(tar_header_t* header, directory_t* parent) {
+directory_t* findParent(tar_header_t* header, size_t* slash) {
+
+    directory_t* parent = &root;
+
+    char name[MAX_NAME_LENGTH+1];
+    size_t ni = 0;
+
+    for (size_t i = 0; header->filename[i] != '\0'; i++) {
+
+        //printf("Checking char '%c'. %d\n", header->filename[i], header->filename[i + 1]);
+        if (header->filename[i] == '/') {
+            name[ni] = '\0';
+            ni = 0;
+
+            printf("name: '%s'\n", name);
+
+            // Directory since it end with /0
+            if (header->filename[i+1] == '\0') {
+                printf("Directory, so stopping. Got parent: %s\n", parent->name);
+                return parent;
+            }
+
+            *slash = i + 1;
+
+            if (strcmp(name, "initrd") == 0) {
+                parent = &root;
+            } else {
+                directory_t* p = getDirectoryFromParent(parent, name);
+                if (p == (directory_t*) -1) {
+                    printf("[ERROR] Directory '%s' not found in parent '%s'\n", name, parent->name);
+                    for (;;) {}
+                }
+
+                parent = p;
+            }
+
+
+        } else {
+            if (ni >= MAX_NAME_LENGTH) {
+                printf("[ERROR] Max name length reached\n");
+                for (;;) {}
+            }
+
+            name[ni++] = header->filename[i];
+        }
+    }
+
+    return parent;
+}
+
+void parseDirectory(tar_header_t* header) {
+
+    // TODO LOT smaller
+    directory_t* directory = kalloc_frame();
+    memset(directory, 0, sizeof(directory_t));
+
+    printf("Parsing dir: %s\n", header->filename);
+
+    size_t slash;
+    directory_t* parent = findParent(header, &slash);
+
+    parent->directories[parent->directoryCount++] = directory;
+
+    directory->parent = parent;
+
+
+    // Ignore slash at the end
+    size_t len = strlen(header->filename + slash) - 1;
+
+    if (len > MAX_NAME_LENGTH) {
+        printf("[ERROR] Filename is too large\n");
+        for (;;) {}
+    }
+
+    memcpy(directory->name, header->filename + slash, len);
+    directory->name[len] = '\0';
+
+    memcpy(directory->mode, header->mode+4, 3);
+    directory->mode[3] = '\0';
+}
+
+void parseFile(tar_header_t* header) {
 
     // TODO LOT smaller
     file_t* file = kalloc_frame();
+    memset(file, 0, sizeof(file_t));
+
+    printf("Parsing file: %s\n", header->filename);
+
+    size_t slash;
+    directory_t* parent = findParent(header, &slash);
 
     parent->files[parent->fileCount++] = file;
     file->parent = parent;
-    memcpy(file->name, header->filename, strlen(header->filename)+1);
-    file->mode = oct2bin(header->mode, 7);
+
+    size_t len = strlen(header->filename + slash);
+    if (len > MAX_NAME_LENGTH) {
+        printf("[ERROR] Filename is too large\n");
+        for (;;) {}
+    }
+
+    memcpy(file->name, header->filename + slash, len+1);
+
+    memcpy(file->mode, header->mode+4, 3);
+    file->mode[3] = '\0';
+
     file->size = oct2bin(header->size, 11);
     file->content = (char*) ((uint32_t) header + 512);
+}
+
+void displayDirectory(directory_t* dir, size_t space) {
+
+    for (size_t i=0;i<space;i++) {putchar(' ');}
+    printf("- %s: d%d, f%d\n", dir->name, dir->directoryCount, dir->fileCount);
+    for (size_t i = 0; i < dir->directoryCount; i++) {
+        
+        directory_t* d = dir->directories[i];
+
+        for (size_t i=0;i<space;i++) {putchar(' ');}
+        displayDirectory(d, space+1);
+    }
+
+    for (size_t i = 0; i < dir->fileCount; i++) {
+
+        file_t* f = dir->files[i];
+
+        for (size_t i=0;i<space;i++) {putchar(' ');}
+        printf(" - %s\n", f->name);
+
+        //for (size_t i=0;i<space;i++) {putchar(' ')}
+        //printf("- mode: %s\n", file->mode);
+
+        //for (size_t i=0;i<space;i++) {putchar(' ')}
+        //printf("- content:\n%s\n", file->content);
+    }
 }
 
 void loadInitrd(struct multiboot_tag_module* module) {
@@ -295,10 +421,13 @@ void loadInitrd(struct multiboot_tag_module* module) {
     size_t offset = 512;
 
     header = (tar_header_t*) (uint32_t) module->mod_start;
-    memcpy(root.name, "/", 2);
-    root.mode = 0;
+    strcpy(root.name, "/");
+    memcpy(root.mode, header->mode+4, 3);
+    root.mode[3] = '\0';
+
     root.directoryCount = 0;
     root.fileCount = 0;
+    printf("mode: %s\n", root.mode);
 
     while (((uint32_t) module->mod_start + offset) <= (uint32_t) module->mod_end) {
 
@@ -309,6 +438,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
             break;
         }
 
+        /*
         printf("Name: '%s'\n", header->filename);
         printf("Size: '%s': '0x%x'\n", header->size, oct2bin(header->size, 11));
         printf("Magic: '%s'\n", header->magic);
@@ -316,15 +446,17 @@ void loadInitrd(struct multiboot_tag_module* module) {
         printf("Prefix: '%s'\n", header->prefix);
         printf("linked: '%s'\n", header->linked);
         printf("type: %s\n", header->typeflag);
+        */
 
         // Normal file
         if (header->typeflag[0] == '0') {
 
-            // TODO get root
-            parseFile(header, &root);
+            // TODO parent
+            parseFile(header);
 
         } else if (header->typeflag[0] == '5') {
 
+            parseDirectory(header);
 
         } else {
             printf("[ERROR] Unsupported tar header type '%s'\n", header->typeflag);
@@ -338,14 +470,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
 
     }
 
-    printf("count: %d\n", root.fileCount);
-    for (size_t i = 0; i < root.fileCount; i++) {
-
-        file_t* file = root.files[i];
-        printf("name: %s\n", file->name);
-        printf("mode: %d\n", file->mode);
-        printf("content:\n%s\n", file->content);
-    }
+    displayDirectory(&root, 0);
 }
 
 unsigned int oct2bin(unsigned char* str, int size) {

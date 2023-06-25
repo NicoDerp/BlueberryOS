@@ -45,6 +45,7 @@ FREEOBJS =\
 	string/strlen.o \
 	string/strcmp.o \
 	string/strncmp.o \
+	string/strcpy.o \
 	unistd/syscall.o \
 	unistd/syscall_asm.o \
 	unistd/write.o \
