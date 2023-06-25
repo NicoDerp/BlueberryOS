@@ -45,7 +45,7 @@ DEPS = $(OBJS:.o=.d)
 
 all: build install
 
-build: link.o $(BINS)
+build: $(BINS)
 
 clean:
 	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d initrd.tar initrd
@@ -64,7 +64,7 @@ install: initrd initrd.tar
 	mkdir -p ../kernel/isodir/boot
 	cp --preserve=timestamps initrd.tar ../kernel/isodir/boot/initrd.tar
 
-$(BINS): $(OBJS)
+$(BINS): $(OBJS) link.o
 
 %.o: %.c
 	$(CC) -c -MD $^ -o $@ $(CFLAGS) $(LIBS)
