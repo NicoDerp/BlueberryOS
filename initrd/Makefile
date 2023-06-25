@@ -27,7 +27,7 @@ ASM = nasm
 ASMFLAGS = -felf32
 
 
-SRC_C = src/test.c src/shell.c
+SRC_C = src/test.c src/shell.c src/loop.c
 SRC_ASM = src/userfunc.asm
 
 OBJ_C = $(SRC_C:.c=.o)
@@ -53,11 +53,11 @@ clean:
 rebuild: clean build
 
 initrd: $(BINS)
+	rm -f initrd.tar
 	mkdir -p initrd/bin
 	cp -f --preserve=timestamps $(BINS) initrd/bin/.
 
 initrd.tar: initrd
-	rm -f initrd.tar
 	tar U -cvf initrd.tar initrd
 
 install: initrd initrd.tar
@@ -79,5 +79,5 @@ $(BINS): $(OBJS) link.o
 #link.o: link.asm
 #	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
--include $(DEPS) link.d
+#-include $(DEPS) link.d
 

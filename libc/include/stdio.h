@@ -4,7 +4,11 @@
 
 #include <sys/cdefs.h>
 
-#define EOF (-1)
+#define stdin  0
+#define stdout 1
+#define stderr 2
+
+#define EOF   (-1)
 
 #ifdef __cplusplus
 extern "C" {

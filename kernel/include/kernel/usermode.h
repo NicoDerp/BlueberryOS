@@ -6,6 +6,7 @@
 #include <kernel/gdt.h>
 #include <kernel/paging.h>
 #include <kernel/file.h>
+#include <kernel/idt.h>
 
 #include <stdint.h>
 
@@ -71,8 +72,15 @@ typedef struct {
     size_t position;
 } fd_t;
 
+typedef enum {
+    RUNNING,
+    BLOCKED_KEYBOARD
+} process_state_t;
+
 typedef struct {
     fd_t fds[MAX_FILE_DESCRIPTORS];
+    process_state_t state;
+    regs_t blocked_regs; // Registers when block happened
     regs_t regs;
     uint32_t esp;
     uint32_t eip;
@@ -100,6 +108,8 @@ process_t* newProcess(file_t* file, const char* args[]);
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void switchProcess(void);
+
+void handleKeyboardBlock(char c);
 
 void printProcessInfo(process_t* process);
 

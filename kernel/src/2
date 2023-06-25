@@ -160,21 +160,12 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 if (fd == STDIN_FILENO) {
                     process_t* process = getCurrentProcess();
+                    printf("On process: %d\n", process->id);
                     process->state = BLOCKED_KEYBOARD;
-
-                    process->blocked_regs.eax = stack_state.eax;
-                    process->blocked_regs.ebx = stack_state.ebx;
-                    process->blocked_regs.ecx = stack_state.ecx;
-                    process->blocked_regs.edx = stack_state.edx;
-                    process->blocked_regs.ebp = stack_state.ebp;
-                    process->blocked_regs.edi = stack_state.edi;
-                    process->blocked_regs.esi = stack_state.esi;
+                    memcpy(&process->stack_state, &stack_state, sizeof(stack_state_t));
 
                     // Save registers
                     saveRegisters(process, &stack_state, &frame, esp);
-
-                    // Number of bytes read
-                    process->regs.eax = 0;
 
                     // Switch to next process
                     switchProcess();
@@ -266,18 +257,13 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         //if (type == KEY_PRESSED) {
         //}
 
-        PIC_sendEOI(irq);
-
         if (scancode < 128) {
             //printf("type: %d, scan: %d\n", type, scancode);
             char key = keyboard_US[scancode];
-            //printf("%c", key);
-
-            process_t* process = getCurrentProcess();
-            saveRegisters(process, &stack_state, &frame, esp);
-            handleKeyboardBlock(key);
+            printf("%c", key);
         }
 
+        PIC_sendEOI(irq);
     } else if (interrupt_id == INT_TIMER) {
         tickCounter += 1;
 

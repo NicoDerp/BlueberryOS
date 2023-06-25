@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-
+#include <unistd.h> 
 
 void main(int argc, char* argv[]) {
 
@@ -10,11 +10,14 @@ void main(int argc, char* argv[]) {
 
     while (true) {
 
-        //char* command;
+        printf(" $ ");
+        char command[6];
         //int proc;
 
-        printf(" $ ");
+        int c = read(stdin, command, 5);
+        command[5] = '\0';
 
+        printf("%s with %d\n", command, c);
     }
 
 }

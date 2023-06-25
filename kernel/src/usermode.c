@@ -61,18 +61,21 @@ process_t* findNextProcess(void) {
 
     // Find next process to run
     do {
+        // Process for that ID is active
+        if (processUsed[i]) {
+            process = &processes[i];
+
+            if (process->state == RUNNING) {
+                found = true;
+                break;
+            }
+        }
+
+        i++;
         if (i >= PROCESSES_MAX) {
             i = 0;
         }
 
-        // Process for that ID is active
-        if (processUsed[i]) {
-            process = &processes[i];
-            found = true;
-            break;
-        }
-
-        i++;
     }
     while (i != currentProcessID);
 
@@ -84,6 +87,10 @@ process_t* findNextProcess(void) {
         }
 
         process = &processes[currentProcessID];
+
+        if (process->state != RUNNING) {
+            printf("[ERROR] Only one process to run and that is blocked\n");
+        }
     }
 
     //printf("Found process %d\n", process->id);
@@ -142,6 +149,7 @@ process_t* newProcess(file_t* file, const char* args[]) {
     printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
 
+    process->state = RUNNING;
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
 
@@ -216,8 +224,6 @@ void switchProcess(void) {
 
     process_t* process = findNextProcess();
 
-    //printf("Next process is process '%s' with id %d\n", process->name, process->id);
-
     currentProcessID = process->id;
 
     // Load process's page directory
@@ -228,6 +234,38 @@ void switchProcess(void) {
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
+}
+
+void handleKeyboardBlock(char c) {
+
+    for (size_t i = 0; i < PROCESSES_MAX; i++) {
+        process_t* process = &processes[i];
+
+        if (process->state == BLOCKED_KEYBOARD) {
+
+            // Quick fix
+            loadPageDirectory(process->pd);
+
+            char* buf = (char*) process->blocked_regs.ecx;
+
+            buf[process->regs.eax] = c;   // Write to buffer
+            process->blocked_regs.edx--;  // Count requested
+            process->regs.eax++;          // Return value: bytes read
+
+            // If counter is zero, then unblock
+            if (process->blocked_regs.edx == 0) {
+                process->state = RUNNING;
+
+                // Loop process
+                if (currentProcessID == 0) {
+                    switchProcess();
+                }
+            }
+        }
+    }
+
+    loadPageDirectory(processes[currentProcessID].pd);
+
 }
 
 void printProcessInfo(process_t* process) {

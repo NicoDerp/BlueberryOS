@@ -214,20 +214,19 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     process_t* process;
     const char* args[] = {"af", "Booga", 0};
 
-    file = getFile("/bin/test");
+    file = getFile("/bin/loop");
     if (file == (file_t*) -1) {
-        printf("[ERROR] Failed to load application\n");
+        printf("[ERROR] Failed to load application /bin/loop\n");
         for (;;) {}
     }
     process = newProcess(file, args);
-    //printProcessInfo(process);
 
-    file = getFile("/bin/userfunc");
+    file = getFile("/bin/shell");
     if (file == (file_t*) -1) {
-        printf("[ERROR] Failed to load application\n");
+        printf("[ERROR] Failed to load application /bin/shell\n");
         for (;;) {}
     }
-    //process = newProcess(file, args);
+    process = newProcess(file, args);
     //printProcessInfo(process);
 
     (void) process;
