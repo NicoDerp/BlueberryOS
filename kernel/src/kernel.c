@@ -209,6 +209,14 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
+    file_t* file = getFile("/initrd/folder2/aa");
+
+    if (file == (file_t*) -1) {
+        printf("[ERROR] Couldn't find file\n");
+        for (;;) {}
+    }
+    printf("%s\n", file->name);
+
     for (;;) {}
 
     const char* args[2];

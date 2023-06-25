@@ -273,6 +273,17 @@ void debuga(const char* s) {
     }
 }
 
+file_t* getFileFromParent(directory_t* parent, char* name) {
+
+    for (size_t i = 0; i < parent->fileCount; i++) {
+        if (strcmp(parent->files[i]->name, name) == 0) {
+            return parent->files[i];
+        }
+    }
+
+    return (file_t*) -1;
+}
+
 directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
     for (size_t i = 0; i < parent->directoryCount; i++) {
@@ -284,36 +295,38 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
     return (directory_t*) -1;
 }
 
-directory_t* findParent(tar_header_t* header, size_t* slash) {
+directory_t* findParent(const char* filename, size_t* slash, bool init) {
 
     directory_t* parent = &root;
 
     char name[MAX_NAME_LENGTH+1];
     size_t ni = 0;
 
-    for (size_t i = 0; header->filename[i] != '\0'; i++) {
+    for (size_t i = 0; filename[i] != '\0'; i++) {
 
         //printf("Checking char '%c'. %d\n", header->filename[i], header->filename[i + 1]);
-        if (header->filename[i] == '/') {
+        if (filename[i] == '/') {
             name[ni] = '\0';
             ni = 0;
 
             // Directory since it end with /0
-            if (header->filename[i+1] == '\0') {
+            if (filename[i+1] == '\0') {
                 //printf("Directory, so stopping. Got parent %s for %s\n", parent->name, name);
                 return parent;
             }
 
             *slash = i + 1;
 
-            if (strcmp(name, "initrd") == 0) {
+            if (strcmp(name, "initrd") == 0 && init) {
+                parent = &root;
+            } else if (strcmp(name, "") == 0) {
                 parent = &root;
             } else {
                 //printf("name so far: %s\n", name);
                 directory_t* p = getDirectoryFromParent(parent, name);
                 if (p == (directory_t*) -1) {
-                    printf("[ERROR] Directory '%s' not found in parent '%s'\n", name, parent->name);
-                    for (;;) {}
+                    //printf("[ERROR] Directory '%s' not found in parent '%s'\n", name, parent->name);
+                    return (directory_t*) -1;
                 }
 
                 parent = p;
@@ -327,7 +340,7 @@ directory_t* findParent(tar_header_t* header, size_t* slash) {
                 for (;;) {}
             }
 
-            name[ni++] = header->filename[i];
+            name[ni++] = filename[i];
         }
     }
 
@@ -343,7 +356,12 @@ void parseDirectory(tar_header_t* header) {
     //printf("Parsing dir: %s\n", header->filename);
 
     size_t slash;
-    directory_t* parent = findParent(header, &slash);
+    directory_t* parent = findParent(header->filename, &slash, true);
+
+    if (parent == (directory_t*) -1) {
+        printf("[ERROR] Failed to find parent of name %s\n", header->filename);
+        for (;;) {}
+    }
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
         printf("[ERROR] Max directories reached\n");
@@ -379,7 +397,12 @@ void parseFile(tar_header_t* header) {
     //printf("Parsing file: %s\n", header->filename);
 
     size_t slash;
-    directory_t* parent = findParent(header, &slash);
+    directory_t* parent = findParent(header->filename, &slash, true);
+
+    if (parent == (directory_t*) -1) {
+        printf("[ERROR] Failed to find parent of name %s\n", header->filename);
+        for (;;) {}
+    }
 
     if (parent->fileCount >= MAX_FILES) {
         printf("[ERROR] Max files reached\n");
@@ -487,6 +510,18 @@ void loadInitrd(struct multiboot_tag_module* module) {
     }
 
     displayDirectory(&root, 0);
+}
+
+file_t* getFile(char* filepath) {
+
+    size_t slash;
+    directory_t* dir = findParent(filepath, &slash, false);
+
+    if (dir == (directory_t*) -1) {
+        return (file_t*) -1;
+    }
+
+    return getFileFromParent(dir, filepath + slash);
 }
 
 unsigned int oct2bin(unsigned char* str, int size) {

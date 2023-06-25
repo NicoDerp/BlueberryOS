@@ -83,6 +83,7 @@ bool isModuleELF(struct multiboot_tag_module* module);
 file_t* loadFileFromMultiboot(struct multiboot_tag_module* module);
 
 void loadInitrd(struct multiboot_tag_module* module);
+file_t* getFile(char* filepath);
 
 pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module);
 pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module);
