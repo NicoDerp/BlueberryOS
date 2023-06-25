@@ -50,6 +50,7 @@ FREEOBJS =\
 	unistd/syscall_asm.o \
 	unistd/write.o \
 	unistd/yield.o \
+	fcntl/open.o \
 
 HOSTEDOBJS =
 

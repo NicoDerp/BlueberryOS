@@ -31,43 +31,60 @@ ASMFLAGS = -felf32
 SRC_C = src/test.c
 SRC_ASM = src/userfunc.asm
 
-OBJ_C = $(SRC_C:.c=.c.mod)
-OBJ_ASM = $(SRC_ASM:.asm=.asm.mod)
+OBJ_C = $(SRC_C:.c=.o)
+OBJ_ASM = $(SRC_ASM:.asm=.o)
+OBJS = $(OBJ_C) $(OBJ_ASM)
 
-OBJ = $(OBJ_C) $(OBJ_ASM)
+BIN_C = $(SRC_C:.c=)
+BIN_ASM = $(SRC_ASM:.asm=)
+BINS = $(BIN_C) $(BIN_ASM)
+
+DEPS = $(OBJ:.o=.d)
+
+
+all: $(BINS) install
+
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
 #$(CC) -MD -c $^ -o $@ $(CFLAGS) -Wl,--oformat=binary
 #%.c.o: %.c
-%.c.o: %.c
 #%.c.mod: %.c
+$(OBJ_C): $(SRC_C)
 	$(CC) -c -MD $^ -o $@ $(CFLAGS) $(LIBS)
 
 #$(ASM) -f bin $< -o $@
-%.asm.o: %.asm
 #%.asm.mod: %.asm
+$(OBJ_ASM): $(SRC_ASM)
+	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
+
+link.o: link.asm
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
 #$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $< $(#LIBS)
-%.mod: %.o link.asm.o
-	$(CC) -o $@ $(CFLAGS) $(LFLAGS) $< link.asm.o $(LIBS)
+$(BINS): $(OBJS) link.o
+	$(CC) -o $@ $(CFLAGS) $(LFLAGS) $< link.o $(LIBS)
 
-.PHONY: all clean build rebuild check run run-bochs install
-.SUFFIXES: .o .c .asm
+.PHONY: all clean build rebuild check install
+.SUFFIXES: .o .c .asm .d
 
-all: build
-
-build: $(OBJ)
+build: $(BINS)
 
 clean:
-	rm -rf $(OBJ) $(OBJ:.mod=.d) $(OBJ:.mod=.o) link.asm.o link.asm.d
+	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d
 
 rebuild: clean build
 
-install: $(OBJ)
-	mkdir -p ../kernel/isodir/modules
-	cp -f --preserve=timestamps $(OBJ) ../kernel/isodir/modules/.
+initrd: $(BINS)
+	mkdir -p initrd/bin
+	cp -f --preserve=timestamps $(BINS) initrd/bin/.
 
--include $(OBJS:.mod=.d) link.d
+initrd.tar: initrd
+	tar U -cvf initrd.tar initrd
+
+install: initrd initrd.tar
+	mkdir -p ../kernel/isodir/boot
+	cp --preserve=timestamps initrd.tar ../kernel/isodir/boot/initrd.tar
+
+-include $(DEPS) link.d
 

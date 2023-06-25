@@ -5,6 +5,7 @@
 #include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
 #include <kernel/paging.h>
+#include <kernel/file.h>
 
 #include <stdint.h>
 
@@ -18,6 +19,8 @@
 
 #define MAX_ARGS 64
 #define MAX_ARG_LENGTH 256
+
+#define MAX_FILE_DESCRIPTORS 64
 
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
@@ -62,6 +65,14 @@ typedef struct {
 } regs_t;
 
 typedef struct {
+    bool used;
+    file_t* file;
+    char mode[4];
+    size_t position;
+} fd_t;
+
+typedef struct {
+    fd_t fds[MAX_FILE_DESCRIPTORS];
     regs_t regs;
     uint32_t esp;
     uint32_t eip;
@@ -85,7 +96,7 @@ void use_system_tss(void);
 
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
-process_t* newProcess(char* name, struct multiboot_tag_module* module, int argCount, const char** args);
+process_t* newProcess(file_t* file, int argCount, const char** args);
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void switchProcess(void);

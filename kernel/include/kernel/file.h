@@ -17,14 +17,26 @@
 struct directory;
 struct file;
 
+typedef enum {
+    NORMAL_DIR,
+    SYMBOLIC_LINK
+} dirtype_t;
+
 typedef struct directory {
     char name[MAX_NAME_LENGTH+1];
     char mode[4];
     struct directory* parent;
+
+    // TODO should be linked. Waste especially if type is SYMBOLIC_LINK
     struct directory* directories[MAX_DIRECTORIES];
     struct file* files[MAX_FILES];
+
     uint32_t directoryCount;
     uint32_t fileCount;
+    dirtype_t type;
+
+    // Only used when type is SYMBOLIC_LINK
+    struct directory* link;
 } directory_t;
 
 typedef struct file {
@@ -34,7 +46,6 @@ typedef struct file {
     size_t size;
     char* content;
 } file_t;
-
 
 typedef struct {
     char magic[4];
@@ -79,14 +90,16 @@ typedef struct
     char prefix[155];
 } tar_header_t;
 
-bool isModuleELF(struct multiboot_tag_module* module);
-file_t* loadFileFromMultiboot(struct multiboot_tag_module* module);
+bool isFileELF(file_t* file);
 
 void loadInitrd(struct multiboot_tag_module* module);
 file_t* getFile(char* filepath);
 
-pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module);
-pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module);
+directory_t* createDirectory(directory_t* parent, char* name, char mode[4]);
+directory_t* createSymbolicDirectory(directory_t* parent, char* name, char mode[4]);
+
+pagedirectory_t loadELFIntoMemory(file_t* file);
+pagedirectory_t loadBinaryIntoMemory(file_t* file);
 
 #endif /* KERNEL_FILE_H */
 

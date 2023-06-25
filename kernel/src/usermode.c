@@ -95,7 +95,7 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcess(char* name, struct multiboot_tag_module* module, int argCount, const char** args) {
+process_t* newProcess(file_t* file, int argCount, const char** args) {
 
     process_t* process;
     bool found = false;
@@ -114,23 +114,22 @@ process_t* newProcess(char* name, struct multiboot_tag_module* module, int argCo
         return (process_t*) -1;
     }
 
-    if (strlen(name) > PROCESS_MAX_NAME_LENGTH) {
+    size_t len = strlen(file->name);
+    if (len > PROCESS_MAX_NAME_LENGTH) {
         printf("[ERROR] Max process name reached!\n");
     }
 
-    memcpy(process->name, name, PROCESS_MAX_NAME_LENGTH);
+    memcpy(process->name, file->name, len);
+    process->name[len] = '\0';
 
-    // Just in case
-    process->name[PROCESS_MAX_NAME_LENGTH] = 0;
-
-    bool isELF = isModuleELF(module);
+    bool isELF = isFileELF(file);
     if (isELF) {
-        process->pd = loadELFIntoMemory(module);
+        process->pd = loadELFIntoMemory(file);
 
-        elf_header_t* elf_header = (elf_header_t*) module->mod_start;
+        elf_header_t* elf_header = (elf_header_t*) file->content;
         process->entryPoint = elf_header->entryPoint;
     } else {
-        process->pd = loadBinaryIntoMemory(module);
+        process->pd = loadBinaryIntoMemory(file);
         process->entryPoint = 0x0;
     }
 

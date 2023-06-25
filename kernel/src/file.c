@@ -99,29 +99,27 @@ static inline char* getSectionName(elf_header_t* elf_header, size_t index) {
     return namesEntry + section->nameOffset;
 }
 
-bool isModuleELF(struct multiboot_tag_module* module) {
-
-    size_t size = module->mod_end - module->mod_start;
+bool isFileELF(file_t* file) {
 
     // 32 bit ELF's header size is 52 bytes
-    if (size < 53) {
+    if (file->size < 53) {
         printf("Module not ELF: Too few bytes for ELF header\n");
         return false;
     }
 
     char magic[] = {0x7F, 'E', 'L', 'F'};
-    if (strncmp((char*) module->mod_start, magic, 4) != 0) {
+    if (strncmp(file->content, magic, 4) != 0) {
         printf("Module not ELF: Incorrect magic\n");
         return false;
     }
 
     // Check if file is 32-bit or 64-bit
-    if (((char*) module->mod_start)[5] != 1) {
+    if (file->content[5] != 1) {
         printf("Unable to load file: Executable is ELF-64\n");
         return false;
     }
 
-    elf_header_t elf_header = *((elf_header_t*) module->mod_start);
+    elf_header_t elf_header = *((elf_header_t*) file->content);
 
     // Check endianness
     if (elf_header.endianness != 1) {
@@ -151,12 +149,12 @@ bool isModuleELF(struct multiboot_tag_module* module) {
 
 }
 
-pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
+pagedirectory_t loadELFIntoMemory(file_t* file) {
 
     // Copy kernel's pagedirectory to this pagedirectory
     pagedirectory_t pd = copy_system_pagedirectory();
 
-    elf_header_t* elf_header = (elf_header_t*) module->mod_start;
+    elf_header_t* elf_header = (elf_header_t*) file->content;
 
     /*
     for (size_t i = 1; i < elf_header->sectionEntryCount; i++) {
@@ -188,7 +186,7 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
 
             // Allocate memory for program header
             pageframe_t pageframe = kalloc_frame();
-            void* data = (void*) module->mod_start + program->offset;
+            void* data = (void*) file->content + program->offset;
 
             // TODO here is risk of buffer overflow
             // Same as mod 1024 but better
@@ -219,15 +217,13 @@ pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module) {
     return pd;
 }
 
-pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
+pagedirectory_t loadBinaryIntoMemory(file_t* file) {
 
     // Copy kernel's pagedirectory to this pagedirectory
     pagedirectory_t pd = copy_system_pagedirectory();
 
-    size_t module_size = module->mod_end - module->mod_start;
-
-    // ceil(module_size / FRAME_4KB)
-    for (size_t i = 0; i < (module_size+FRAME_4KB-1)/FRAME_4KB; i++) {
+    // ceil(file->size / FRAME_4KB)
+    for (size_t i = 0; i < (file->size+FRAME_4KB-1)/FRAME_4KB; i++) {
 
         printf("Allocating new pageframe to copy executable data with index %d\n", i);
 
@@ -237,7 +233,7 @@ pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
         pageframe_t pageframe = kalloc_frame();
 
         // Copy data to pageframe
-        memcpy((void*) ((uint32_t) pageframe + offset), (void*) (module->mod_start + offset), module_size);
+        memcpy((void*) ((uint32_t) pageframe + offset), (void*) (file->content + offset), file->size);
 
         // Map page
         map_page_pd(pd, v_to_p((uint32_t) pageframe + offset), 0x0 + offset, true, false);
@@ -246,31 +242,6 @@ pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module) {
 
 
     return pd;
-}
-
-file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
-
-    // TODO smaller
-    file_t* file = (file_t*) kalloc_frame();
-
-    bool isELF = isModuleELF(module);
-    printf("is elf: %d\n", isELF);
-
-    if (isELF) {
-        //file->type = ELF;
-
-        
-    } else {
-        //file->type = ASCII;
-    }
-
-    return file;
-}
-
-void debuga(const char* s) {
-    for (size_t i = 0; s[i] != '\0'; i++) {
-
-    }
 }
 
 file_t* getFileFromParent(directory_t* parent, char* name) {
@@ -288,7 +259,16 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
     for (size_t i = 0; i < parent->directoryCount; i++) {
         if (strcmp(parent->directories[i]->name, name) == 0) {
-            return parent->directories[i];
+            directory_t* dir = parent->directories[i];
+
+            if (dir->type == NORMAL_DIR) {
+                return dir;
+            } else if (dir->type == SYMBOLIC_LINK) {
+                return dir->link;
+            } else {
+                printf("[ERROR] Unknown directory type %d\n", dir->type);
+                for (;;) {}
+            }
         }
     }
 
@@ -386,6 +366,56 @@ void parseDirectory(tar_header_t* header) {
 
     memcpy(directory->mode, header->mode+4, 3);
     directory->mode[3] = '\0';
+
+
+
+    directory_t* d;
+
+    // Create '.'
+    d = createDirectory(directory, ".", directory->mode);
+    d->type = SYMBOLIC_LINK;
+    d->link = directory;
+
+    // Create '..'
+    d = createDirectory(directory, "..", parent->mode);
+    d->type = SYMBOLIC_LINK;
+    d->link = parent;
+}
+
+directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
+
+    // TODO LOT smaller
+    directory_t* directory = kalloc_frame();
+    memset(directory, 0, sizeof(directory_t));
+
+    if (parent->directoryCount >= MAX_DIRECTORIES) {
+        printf("[ERROR] Max directories reached\n");
+        for (;;) {}
+    }
+
+    parent->directories[parent->directoryCount++] = directory;
+    directory->parent = parent;
+
+
+    size_t len = strlen(name);
+
+    // Ignore slash at the end
+    if (name[len-1] == '/') {
+        len--;
+    }
+
+    if (len > MAX_NAME_LENGTH) {
+        printf("[ERROR] Filename is too large\n");
+        for (;;) {}
+    }
+
+    memcpy(directory->name, name, len);
+    directory->name[len] = '\0';
+
+    memcpy(directory->mode, mode, 3);
+    directory->mode[3] = '\0';
+
+    return directory;
 }
 
 void parseFile(tar_header_t* header) {

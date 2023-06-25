@@ -186,14 +186,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
     }
 
-    printf("\n\nWelcome to BlueberryOS!\n");
-
-    //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
-
-    // 0xC03FF000
-
     if (moduleCount == 0) {
-        printf("No modules!\n");
+        printf("[FATAL] No initrd found!\n");
         for (;;) {};
     }
 
@@ -209,7 +203,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
-    file_t* file = getFile("/initrd/folder2/aa");
+    file_t* file = getFile("/bin/../bin/test");
 
     if (file == (file_t*) -1) {
         printf("[ERROR] Couldn't find file\n");
@@ -217,21 +211,25 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     printf("%s\n", file->name);
 
-    for (;;) {}
+    printf("\n\nWelcome to BlueberryOS!\n");
+
+    //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
+
+    // 0xC03FF000
+
 
     const char* args[2];
     args[0] = "Ooga";
     args[1] = "Booga";
 
-    process_t* process = newProcess("Ooga booga 1", &modules[0], 2, args);
-
-    if (moduleCount > 1) {
-        newProcess("Ooga booga 2", &modules[1], 2, args);
+    file = getFile("/bin/test");
+    if (file == (file_t*) -1) {
+        printf("[ERROR] Failed to load application\n");
+        for (;;) {}
     }
+    process_t* process = newProcess(file, 2, args);
 
-    if (moduleCount > 2) {
-        newProcess("Ooga booga 3", &modules[2], 2, args);
-    }
+    //newProcess("Ooga booga 2", &modules[1], 2, args);
 
     printf("Process info:\n");
     printf(" - Name: '%s'\n", process->name);
