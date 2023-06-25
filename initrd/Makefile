@@ -62,7 +62,7 @@ link.o: link.asm
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
 #$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $< $(#LIBS)
-$(BINS): $(OBJS) link.o
+%: %.o link.o
 	$(CC) -o $@ $(CFLAGS) $(LFLAGS) $< link.o $(LIBS)
 
 .PHONY: all clean build rebuild check install
@@ -71,7 +71,7 @@ $(BINS): $(OBJS) link.o
 build: $(BINS)
 
 clean:
-	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d
+	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d initrd.tar
 
 rebuild: clean build
 
@@ -80,6 +80,7 @@ initrd: $(BINS)
 	cp -f --preserve=timestamps $(BINS) initrd/bin/.
 
 initrd.tar: initrd
+	rm -f initrd.tar
 	tar U -cvf initrd.tar initrd
 
 install: initrd initrd.tar

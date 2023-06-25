@@ -203,14 +203,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
-    file_t* file = getFile("/bin/../bin/test");
-
-    if (file == (file_t*) -1) {
-        printf("[ERROR] Couldn't find file\n");
-        for (;;) {}
-    }
-    printf("%s\n", file->name);
-
     printf("\n\nWelcome to BlueberryOS!\n");
 
     //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
@@ -218,6 +210,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     // 0xC03FF000
 
 
+    file_t* file;
+    process_t* process;
     const char* args[2];
     args[0] = "Ooga";
     args[1] = "Booga";
@@ -227,30 +221,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("[ERROR] Failed to load application\n");
         for (;;) {}
     }
-    process_t* process = newProcess(file, 2, args);
+    process = newProcess(file, 2, args);
+    printProcessInfo(process);
 
-    //newProcess("Ooga booga 2", &modules[1], 2, args);
-
-    printf("Process info:\n");
-    printf(" - Name: '%s'\n", process->name);
-    printf(" - Id: %d\n", process->id);
-    printf(" - Entry point: 0x%x\n", process->entryPoint);
-    printf(" - Stack: 0x%x\n", process->physical_stack);
-    printf(" - Pagetables:\n");
-
-    for (size_t j = 0; j < 767; j++) {
-        if (process->pd[j] & 1) {
-            printf("   - %d: 0x%x\n", j, process->pd[j]);
-            pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
-            for (size_t k = 0; k < 1024; k++) {
-                if (pagetable[k] & 1) {
-                    printf("     - Page %d: 0x%x\n", k, pagetable[k]);
-                }
-            }
-        }
+    file = getFile("/bin/userfunc");
+    if (file == (file_t*) -1) {
+        printf("[ERROR] Failed to load application\n");
+        for (;;) {}
     }
+    process = newProcess(file, 2, args);
+    printProcessInfo(process);
 
-    printf("Modules: %d\n", moduleCount);
+
 
     // Enable PIT interrupt
     irq_clear_mask(IRQ_TIMER);

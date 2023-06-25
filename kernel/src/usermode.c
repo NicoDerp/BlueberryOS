@@ -218,6 +218,28 @@ void switchProcess(void) {
     enter_usermode(process->eip, process->esp, process->regs);
 }
 
+void printProcessInfo(process_t* process) {
+
+    printf("Process info:\n");
+    printf(" - Name: '%s'\n", process->name);
+    printf(" - Id: %d\n", process->id);
+    printf(" - Entry point: 0x%x\n", process->entryPoint);
+    printf(" - Stack: 0x%x\n", process->physical_stack);
+    printf(" - Pagetables:\n");
+
+    for (size_t j = 0; j < 767; j++) {
+        if (process->pd[j] & 1) {
+            printf("   - %d: 0x%x\n", j, process->pd[j]);
+            pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
+            for (size_t k = 0; k < 1024; k++) {
+                if (pagetable[k] & 1) {
+                    printf("     - Page %d: 0x%x\n", k, pagetable[k]);
+                }
+            }
+        }
+    }
+}
+
 uint32_t processPush(process_t* process, uint32_t value) {
 
     uint32_t ret = (process->virtual_stack_top - process->esp);
