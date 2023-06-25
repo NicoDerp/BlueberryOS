@@ -1,13 +1,12 @@
 
 #include <stdio.h>
-
-int myfunc(void);
+#include <string.h>
 
 void main(void) {
-    int a;
 
-    a = myfunc();
+    char* a = "folder/";
+    char* b = "folder2/";
 
-    printf("a: %d\n", a);
+    printf("%d\n", strcmp(a, b));
 }
 

@@ -267,6 +267,12 @@ file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
     return file;
 }
 
+void debuga(const char* s) {
+    for (size_t i = 0; s[i] != '\0'; i++) {
+
+    }
+}
+
 directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
     for (size_t i = 0; i < parent->directoryCount; i++) {
@@ -292,11 +298,9 @@ directory_t* findParent(tar_header_t* header, size_t* slash) {
             name[ni] = '\0';
             ni = 0;
 
-            printf("name: '%s'\n", name);
-
             // Directory since it end with /0
             if (header->filename[i+1] == '\0') {
-                printf("Directory, so stopping. Got parent: %s\n", parent->name);
+                //printf("Directory, so stopping. Got parent %s for %s\n", parent->name, name);
                 return parent;
             }
 
@@ -305,6 +309,7 @@ directory_t* findParent(tar_header_t* header, size_t* slash) {
             if (strcmp(name, "initrd") == 0) {
                 parent = &root;
             } else {
+                //printf("name so far: %s\n", name);
                 directory_t* p = getDirectoryFromParent(parent, name);
                 if (p == (directory_t*) -1) {
                     printf("[ERROR] Directory '%s' not found in parent '%s'\n", name, parent->name);
@@ -312,6 +317,7 @@ directory_t* findParent(tar_header_t* header, size_t* slash) {
                 }
 
                 parent = p;
+                //printf("got parent: '%s'\n", parent->name);
             }
 
 
@@ -334,10 +340,15 @@ void parseDirectory(tar_header_t* header) {
     directory_t* directory = kalloc_frame();
     memset(directory, 0, sizeof(directory_t));
 
-    printf("Parsing dir: %s\n", header->filename);
+    //printf("Parsing dir: %s\n", header->filename);
 
     size_t slash;
     directory_t* parent = findParent(header, &slash);
+
+    if (parent->directoryCount >= MAX_DIRECTORIES) {
+        printf("[ERROR] Max directories reached\n");
+        for (;;) {}
+    }
 
     parent->directories[parent->directoryCount++] = directory;
 
@@ -365,10 +376,15 @@ void parseFile(tar_header_t* header) {
     file_t* file = kalloc_frame();
     memset(file, 0, sizeof(file_t));
 
-    printf("Parsing file: %s\n", header->filename);
+    //printf("Parsing file: %s\n", header->filename);
 
     size_t slash;
     directory_t* parent = findParent(header, &slash);
+
+    if (parent->fileCount >= MAX_FILES) {
+        printf("[ERROR] Max files reached\n");
+        for (;;) {}
+    }
 
     parent->files[parent->fileCount++] = file;
     file->parent = parent;
@@ -392,26 +408,26 @@ void displayDirectory(directory_t* dir, size_t space) {
 
     for (size_t i=0;i<space;i++) {putchar(' ');}
     printf("- %s: d%d, f%d\n", dir->name, dir->directoryCount, dir->fileCount);
-    for (size_t i = 0; i < dir->directoryCount; i++) {
-        
-        directory_t* d = dir->directories[i];
-
-        for (size_t i=0;i<space;i++) {putchar(' ');}
-        displayDirectory(d, space+1);
-    }
 
     for (size_t i = 0; i < dir->fileCount; i++) {
 
         file_t* f = dir->files[i];
 
         for (size_t i=0;i<space;i++) {putchar(' ');}
-        printf(" - %s\n", f->name);
+        printf("  - %s\n", f->name);
 
         //for (size_t i=0;i<space;i++) {putchar(' ')}
         //printf("- mode: %s\n", file->mode);
 
         //for (size_t i=0;i<space;i++) {putchar(' ')}
         //printf("- content:\n%s\n", file->content);
+    }
+
+    for (size_t i = 0; i < dir->directoryCount; i++) {
+        
+        directory_t* d = dir->directories[i];
+
+        displayDirectory(d, space+2);
     }
 }
 
@@ -427,7 +443,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
 
     root.directoryCount = 0;
     root.fileCount = 0;
-    printf("mode: %s\n", root.mode);
+    //printf("mode: %s\n", root.mode);
 
     while (((uint32_t) module->mod_start + offset) <= (uint32_t) module->mod_end) {
 
@@ -466,7 +482,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
         uint32_t size = oct2bin(header->size, 11);
         offset += 512 + (-size % 512) + size;
 
-        printf("offset: %d\n", offset);
+        //printf("offset: %d\n", offset);
 
     }
 
