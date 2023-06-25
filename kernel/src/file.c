@@ -12,6 +12,15 @@
 #include <stdio.h>
 
 
+unsigned int oct2bin(unsigned char *str, int size);
+
+
+ #define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
+
 typedef struct {
     uint32_t nameOffset;
     uint32_t type;
@@ -33,7 +42,7 @@ typedef struct {
     uint32_t filesz;
     uint32_t memsz;
     uint32_t flags;
-    uint32_t align; /* TODO */
+    uint32_t align;
 } program_header_t;
 
 typedef struct {
@@ -44,6 +53,14 @@ typedef struct {
     char other;
     uint16_t sectionIndex;
 } symbol_table_t;
+
+
+
+
+directory_t root;
+
+
+
 
 static inline section_header_t* getSectionHeader(elf_header_t* elf_header) {
     return (section_header_t*) ((int) elf_header + elf_header->sectionTable);
@@ -240,13 +257,109 @@ file_t* loadFileFromMultiboot(struct multiboot_tag_module* module) {
     printf("is elf: %d\n", isELF);
 
     if (isELF) {
-        file->type = ELF;
+        //file->type = ELF;
 
         
     } else {
-        file->type = ASCII;
+        //file->type = ASCII;
     }
 
     return file;
 }
+
+void parseDirectory(tar_header_t* header, directory_t* parent) {
+
+    directory_t* directory = kalloc_frame();
+
+    parent->directories[parent->directoryCount++] = directory;
+    memcpy(directory->name, header->filename, strlen(header->filename)+1);
+    directory->mode = oct2bin(header->mode, 7);
+}
+
+void parseFile(tar_header_t* header, directory_t* parent) {
+
+    // TODO LOT smaller
+    file_t* file = kalloc_frame();
+
+    parent->files[parent->fileCount++] = file;
+    file->parent = parent;
+    memcpy(file->name, header->filename, strlen(header->filename)+1);
+    file->mode = oct2bin(header->mode, 7);
+    file->size = oct2bin(header->size, 11);
+    file->content = (char*) ((uint32_t) header + 512);
+}
+
+void loadInitrd(struct multiboot_tag_module* module) {
+
+    tar_header_t* header;
+    size_t offset = 512;
+
+    header = (tar_header_t*) (uint32_t) module->mod_start;
+    memcpy(root.name, "/", 2);
+    root.mode = 0;
+    root.directoryCount = 0;
+    root.fileCount = 0;
+
+    while (((uint32_t) module->mod_start + offset) <= (uint32_t) module->mod_end) {
+
+        header = (tar_header_t*) (uint32_t) (module->mod_start + offset);
+
+        if (memcmp(header->magic, "ustar", 5) != 0) {
+            // EOF
+            break;
+        }
+
+        printf("Name: '%s'\n", header->filename);
+        printf("Size: '%s': '0x%x'\n", header->size, oct2bin(header->size, 11));
+        printf("Magic: '%s'\n", header->magic);
+        printf("Version: '%s'\n", header->version);
+        printf("Prefix: '%s'\n", header->prefix);
+        printf("linked: '%s'\n", header->linked);
+        printf("type: %s\n", header->typeflag);
+
+        // Normal file
+        if (header->typeflag[0] == '0') {
+
+            // TODO get root
+            parseFile(header, &root);
+
+        } else if (header->typeflag[0] == '5') {
+
+
+        } else {
+            printf("[ERROR] Unsupported tar header type '%s'\n", header->typeflag);
+            for (;;) {}
+        }
+
+        uint32_t size = oct2bin(header->size, 11);
+        offset += 512 + (-size % 512) + size;
+
+        printf("offset: %d\n", offset);
+
+    }
+
+    printf("count: %d\n", root.fileCount);
+    for (size_t i = 0; i < root.fileCount; i++) {
+
+        file_t* file = root.files[i];
+        printf("name: %s\n", file->name);
+        printf("mode: %d\n", file->mode);
+        printf("content:\n%s\n", file->content);
+    }
+}
+
+unsigned int oct2bin(unsigned char* str, int size) {
+    unsigned int n = 0;
+    unsigned char* c = str;
+    while (size-- > 0) {
+        n *= 8;
+        n += *c - '0';
+        c++;
+    }
+
+    return n;
+}
+
+
+
 

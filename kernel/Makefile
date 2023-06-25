@@ -52,11 +52,15 @@ OBJ = $(OBJ_C) $(OBJ_ASM)
 $(BIN): $(OBJ)
 	$(CC) -T linker.ld -o $@ $(CFLAGS) $(LFLAGS) $^ $(LIBS)
 
+initrd.tar: initrd
+	tar U -cvf initrd.tar initrd
+
 # Making iso
-$(ISO): $(BIN) modules
+$(ISO): $(BIN) modules initrd.tar
 	mkdir -p isodir/boot/grub
 	cp $(BIN) isodir/boot/$(BIN)
 	cp grub.cfg isodir/boot/grub/grub.cfg
+	cp initrd.tar isodir/boot/initrd.tar
 	grub-mkrescue -o $(ISO) isodir
 
 .PHONY: all clean rebuild check run run-bochs install modules
@@ -65,7 +69,7 @@ $(ISO): $(BIN) modules
 all: $(ISO)
 
 clean:
-	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir
+	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir initrd.tar
 
 rebuild: clean all
 

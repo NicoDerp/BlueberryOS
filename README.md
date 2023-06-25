@@ -19,7 +19,7 @@ This is very in-development and just a hobby-project.
 - [x] Multiple processes
 - [x] Preemptive os
 - [ ] Shell
-- [ ] Filesystem
+- [ ] Filesystem (with initrd)
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit

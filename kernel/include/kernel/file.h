@@ -8,16 +8,31 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef enum {
-    ASCII,
-    ELF
-} filetype_t;
 
-typedef struct {
-    char* name;
-    filetype_t type;
+
+#define MAX_DIRECTORIES 32
+#define MAX_FILES       32
+
+struct directory;
+struct file;
+
+typedef struct directory {
+    char name[128];
+    uint32_t mode;
+    struct directory* directories[MAX_DIRECTORIES];
+    struct file* files[MAX_FILES];
+    uint32_t directoryCount;
+    uint32_t fileCount;
+} directory_t;
+
+typedef struct file {
+    char name[128];
+    struct directory* parent;
+    uint32_t mode;
+    size_t size;
     char* content;
 } file_t;
+
 
 typedef struct {
     char magic[4];
@@ -42,9 +57,30 @@ typedef struct {
     uint16_t sectionNamesIndex;
 } elf_header_t;
 
+typedef struct
+{
+    char filename[100];
+    unsigned char mode[8];
+    unsigned char uid[8];
+    unsigned char gid[8];
+    unsigned char size[12];
+    unsigned char mtime[12];
+    unsigned char checksum[8];
+    unsigned char typeflag[1];
+    char linked[100];
+    char magic[6];
+    char version[2];
+    char ownerName[32];
+    char groupName[32];
+    char deviceMajor[8];
+    char deviceMinor[8];
+    char prefix[155];
+} tar_header_t;
 
 bool isModuleELF(struct multiboot_tag_module* module);
 file_t* loadFileFromMultiboot(struct multiboot_tag_module* module);
+
+void loadInitrd(struct multiboot_tag_module* module);
 
 pagedirectory_t loadELFIntoMemory(struct multiboot_tag_module* module);
 pagedirectory_t loadBinaryIntoMemory(struct multiboot_tag_module* module);

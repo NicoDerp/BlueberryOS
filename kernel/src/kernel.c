@@ -207,6 +207,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("Module %d size: %d\n", i, moduleSize);
     }
 
+    loadInitrd(&modules[0]);
+
+    for (;;) {}
+
     const char* args[2];
     args[0] = "Ooga";
     args[1] = "Booga";

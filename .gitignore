@@ -3,5 +3,6 @@
 *.d
 *.swp
 *.mod
+*.tar
 sysroot
 
