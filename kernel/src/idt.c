@@ -265,8 +265,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 int result = overwriteArgs(process, file, argv);
-                printf("after\n");
-                for (;;){}
 
                 if (result == -1) {
 
@@ -389,7 +387,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         PIC_sendEOI(irq);
 
         if (tickCounter == 3) {
-            printf("Task switch!\n");
+            //printf("Task switch!\n");
             tickCounter = 0;
 
             /*

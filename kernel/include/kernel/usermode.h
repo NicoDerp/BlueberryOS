@@ -118,8 +118,8 @@ process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 
 process_t* newProcessAt(file_t* file, uint32_t pid);
-process_t* newProcessArgs(file_t* file, const char* args[]);
-void setProcessArgs(process_t* process, const char* args[]);
+process_t* newProcessArgs(file_t* file, char* args[]);
+void setProcessArgs(process_t* process, char* args[]);
 int overwriteArgs(process_t* process, char* filename, const char* args[]);
 
 void terminateProcess(process_t* process, int status);

@@ -101,7 +101,7 @@ process_t* getCurrentProcess(void) {
 
 process_t* newProcessAt(file_t* file, uint32_t pid) {
 
-    VERBOSE("Creating new process with id %d\n", index);
+    VERBOSE("Creating new process with id %d\n", pid);
 
     if (pid >= PROCESSES_MAX) {
         printf("[ERROR] Can't create process with pid outside maximum limit\n");
@@ -174,7 +174,7 @@ process_t* newProcess(file_t* file) {
     return newProcessAt(file, index);
 }
 
-process_t* newProcessArgs(file_t* file, const char* args[]) {
+process_t* newProcessArgs(file_t* file, char* args[]) {
 
     process_t* process = newProcess(file);
     setProcessArgs(process, args);
@@ -182,7 +182,7 @@ process_t* newProcessArgs(file_t* file, const char* args[]) {
     return process;
 }
 
-void setProcessArgs(process_t* process, const char* args[]) {
+void setProcessArgs(process_t* process, char* args[]) {
 
     int argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
@@ -275,9 +275,6 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
 
     VERBOSE("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
 
-    // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
-    freeUserPagedirectory(oldPD);
-
     process->state = RUNNING;
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
@@ -285,9 +282,33 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
     process->initialized = true;
     process->parent = (process_t*) 0;
 
+    uint32_t argCount;
+    for (argCount = 0; args[argCount] != 0; argCount++) {}
+
+    // Hack to not have to lookup in pagedirectory
+    char argsCopy[MAX_ARG_LENGTH+1][argCount];
+    char* argPointers[argCount+1];
+
+    for (size_t i = 0; i < argCount; i++) {
+        size_t len = strlen(args[i]);
+        if (len > MAX_ARG_LENGTH) {
+            printf("[ERROR] Argument is over max length\n");
+            for (;;) {}
+        }
+
+        memcpy(argsCopy[i], args[i], len);
+        argPointers[i] = argsCopy[i];
+    }
+
+    argPointers[argCount] = NULL;
+
 
     // Add args
-    setProcessArgs(process, args);
+    loadPageDirectory(process->pd);
+    setProcessArgs(process, argPointers);
+
+    // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
+    freeUserPagedirectory(oldPD);
 
     return 0;
 }
