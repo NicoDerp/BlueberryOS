@@ -8,7 +8,7 @@ extern unsigned int _kernelstart;
 #define KERNEL_END ((unsigned int) &_kernelend)
 #define KERNEL_START ((unsigned int) &_kernelstart)
 
-#define FRAME_MAP_SIZE 32
+#define FRAME_MAP_SIZE 64
 
 #define FRAME_4KB ((unsigned int) 0x1000)
 #define FRAME_4MB ((unsigned int) 0x400000)

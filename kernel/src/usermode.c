@@ -214,10 +214,6 @@ void terminateProcess(process_t* process, int status) {
 
 void runProcess(process_t* process) {
 
-    // Disable IRQ_TIMER
-    bool prevMask = irq_read_mask(IRQ_TIMER);
-    irq_set_mask(IRQ_TIMER);
-
     currentProcessID = process->id;
 
     // Load process's page directory
@@ -226,18 +222,11 @@ void runProcess(process_t* process) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
-    // Restore mask
-    irq_write_mask(IRQ_TIMER, prevMask);
-
     // Enter usermode
     enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
 }
 
 void forkProcess(process_t* parent) {
-
-    // Disable IRQ_TIMER
-    bool prevMask = irq_read_mask(IRQ_TIMER);
-    irq_set_mask(IRQ_TIMER);
 
     if (parent->childrenCount >= MAX_CHILDREN) {
         printf("[ERROR] Max children reached for process %d\n", parent->id);
@@ -266,20 +255,12 @@ void forkProcess(process_t* parent) {
     child->regs.eax = 0;
 
     // TODO in future also copy pagedirectory for things like malloc
-
-    // Restore mask
-    irq_write_mask(IRQ_TIMER, prevMask);
 }
 
 void switchProcess(void) {
 
     //printf("Next process\n");
     // Simple round robin
-
-    // Disable IRQ_TIMER
-    bool prevMask = irq_read_mask(IRQ_TIMER);
-    irq_set_mask(IRQ_TIMER);
-
 
     process_t* process = findNextProcess();
     currentProcessID = process->id;
@@ -290,18 +271,11 @@ void switchProcess(void) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
-    // Restore mask
-    irq_write_mask(IRQ_TIMER, prevMask);
-
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
 }
 
 void handleKeyboardBlock(char c) {
-
-    // Disable IRQ_TIMER
-    bool prevMask = irq_read_mask(IRQ_TIMER);
-    irq_set_mask(IRQ_TIMER);
 
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
         process_t* process = &processes[i];
@@ -330,9 +304,6 @@ void handleKeyboardBlock(char c) {
     }
 
     loadPageDirectory(processes[currentProcessID].pd);
-
-    // Restore mask
-    irq_write_mask(IRQ_TIMER, prevMask);
 }
 
 void printProcessInfo(process_t* process) {

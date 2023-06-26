@@ -27,6 +27,8 @@ static idtr_t idtr;
 // Table of all exceptions. Defined in idt.asm
 extern void* isr_stub_table[];
 
+bool maskBackup;
+
 //static bool vectors[32];
 
 size_t tickCounter = 0;
@@ -610,6 +612,16 @@ void irq_clear_mask(unsigned char line) {
 
     value = io_inb(port) & ~(1 << line);
     io_outb(port, value);
+}
+
+void irq_store_mask(unsigned char line) {
+
+    maskBackup = irq_read_mask(line);
+}
+
+void irq_restore_mask(unsigned char line) {
+
+    irq_write_mask(line, maskBackup);
 }
 
 void pit_set_count(unsigned count) {

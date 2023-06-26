@@ -203,7 +203,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
-    for (;;){}
     printf("\nWelcome to BlueberryOS!\n");
 
     //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
@@ -221,7 +220,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("[ERROR] Failed to load application /bin/loop\n");
         for (;;) {}
     }
-    process = newProcessArgs(file, args);
+    //process = newProcessArgs(file, args);
 
     file = getFile("/bin/test");
     if (file == (file_t*) -1) {
@@ -229,7 +228,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         for (;;) {}
     }
     newProcessArgs(file, args);
-    newProcessArgs(file, args);
+    //newProcessArgs(file, args);
 
     /*
     file = getFile("/bin/shell");

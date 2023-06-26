@@ -86,6 +86,9 @@ void pit_set_count(unsigned count);
 bool irq_read_mask(unsigned char line);
 void irq_write_mask(unsigned char line, bool value);
 
+void irq_store_mask(unsigned char line);
+void irq_restore_mask(unsigned char line);
+
 typedef struct {
     unsigned int edi;
     unsigned int esi;

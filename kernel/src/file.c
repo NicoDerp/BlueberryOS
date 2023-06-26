@@ -242,8 +242,15 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
             for (;;) {}
         }
 
+        uint32_t size;
+        if (i == (file->size+FRAME_4KB-1)/FRAME_4KB-1) {
+            size = file->size % FRAME_4KB;
+        } else {
+            size = FRAME_4KB;
+        }
+
         // Copy data to pageframe
-        memcpy((void*) ((uint32_t) pageframe + offset), (void*) (file->content + offset), file->size);
+        memcpy((void*) ((uint32_t) pageframe + offset), (void*) (file->content + offset), size);
 
         // Map page
         map_page_pd(pd, v_to_p((uint32_t) pageframe + offset), 0x0 + offset, true, false);
@@ -476,7 +483,7 @@ void parseFile(tar_header_t* header) {
 
     // TODO very risky. Not guaranteed consecutive
     // ceil(file->size / FRAME_4KB)
-    //printf("Size is %d, looping %d times\n", filesize);
+    printf("Size is %d, looping %d times\n", filesize);
     for (size_t i = 0; i < (filesize+FRAME_4KB-1)/FRAME_4KB; i++) {
 
         pageframe_t pf = kalloc_frame();
@@ -484,6 +491,9 @@ void parseFile(tar_header_t* header) {
             file->content = (char*) pf;
         }
 
+        printf("0x%x\n", pf);
+
+        /*
         uint32_t offset = i*FRAME_4KB;
 
         if ((uint32_t) pf != (uint32_t) file->content + offset) {
@@ -491,8 +501,17 @@ void parseFile(tar_header_t* header) {
             for (;;) {}
         }
 
-        memcpy((void*) ((uint32_t) file->content + offset), (void*) ((uint32_t) header + offset + 512), FRAME_4KB);
+        uint32_t size;
+        if (i == (filesize+FRAME_4KB-1)/FRAME_4KB-1) {
+            size = filesize % FRAME_4KB;
+        } else {
+            size = FRAME_4KB;
+        }
+        */
+
     }
+
+    memcpy((void*) file->content, (void*) ((uint32_t) header + 512), filesize);
 }
 
 void displayDirectory(directory_t* dir, size_t space) {
