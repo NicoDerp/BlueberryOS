@@ -184,6 +184,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     printf("Invalid fd '%d'\n", fd);
                 }
             }
+
             break;
 
         case (SYS_fork):
@@ -194,6 +195,10 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 forkProcess(process);
+
+                // Since we have changed registers in current process we
+                //  can't simply iret, but also load registers
+                runCurrentProcess();
             }
             break;
 
@@ -225,6 +230,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Switch to next process
                 switchProcess();
             }
+
             break;
 
         default:

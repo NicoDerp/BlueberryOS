@@ -121,6 +121,7 @@ void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void forkProcess(process_t* parent);
 void switchProcess(void);
+void runCurrentProcess(void);
 
 void handleKeyboardBlock(char c);
 

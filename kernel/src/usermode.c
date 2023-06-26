@@ -275,6 +275,7 @@ void forkProcess(process_t* parent) {
     child->parent = parent;
     child->esp = parent->esp;
     child->eip = parent->eip;
+    child->indexInParent = index;
     parent->children[index] = child;
 
     parent->regs.eax = child->id;
@@ -303,6 +304,19 @@ void switchProcess(void) {
     enter_usermode(process->eip, process->esp, process->regs);
 }
 
+void runCurrentProcess(void) {
+
+    process_t* process = &processes[currentProcessID];
+
+    if (!process->initialized) {
+        printf("[ERROR] Kernel tried to execute non-initialized currently running process\n");
+        for (;;) {}
+    }
+
+    // Enter usermode
+    enter_usermode(process->eip, process->esp, process->regs);
+}
+
 void handleKeyboardBlock(char c) {
 
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
@@ -323,10 +337,26 @@ void handleKeyboardBlock(char c) {
             if (process->blocked_regs.edx == 0) {
                 process->state = RUNNING;
 
+                if (process->parent && process->parent->state == BLOCKED_WAITPID) {
+                    process->parent->state = RUNNING;
+
+                    // Sucess
+                    process->parent->regs.eax = process->id;
+
+                    int* status = (int*) process->parent->blocked_regs.ebx;
+                    if (status != NULL) {
+                        printf("[INFO] Status from waitpid used but is unimplemented\n");
+                        loadPageDirectory(process->parent->pd);
+                        *status = 0; // TODO unimplemented WIFEXITED n shi
+                    }
+                }
+
                 // Loop process
+                /*
                 if (currentProcessID == 0) {
                     switchProcess();
                 }
+                */
             }
         }
     }

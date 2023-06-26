@@ -36,7 +36,7 @@ void main(int argc, char* argv[]) {
         printf("I am parent and child is %d\n", pid);
         printf("Waiting for child...\n");
         wait(NULL);
-        printf("Done waiting!\n");
+        printf("Done waiting for child! Got return value: %d\n", ret);
         exit(0);
     }
 
