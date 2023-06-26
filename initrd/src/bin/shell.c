@@ -43,19 +43,6 @@ void main(int argc, char* argv[]) {
     char history[MAX_LINE_LENGTH][HISTORY_SIZE];
     size_t historyCount = 0;
 
-
-    char* parsedArgs[MAX_ARGS];
-    parsedArgs[0] = "/bin/test";
-    parsedArgs[1] = "ooga";
-    parsedArgs[2] = "boga";
-    parsedArgs[3] = NULL;
-
-    execvp(parsedArgs[0], parsedArgs);
-
-    printf("After execvp\n");
-
-    for (;;) {}
-
     while (true) {
 
         printf(" $ ");
@@ -186,7 +173,15 @@ void main(int argc, char* argv[]) {
         } else if (strncmp(cmd, "echo ", 5) == 0) {
             printf("%s\n", cmd+5);
         } else {
-            printf("%s: command not found\n", cmd);
+            char* parsedArgs[MAX_ARGS];
+            parsedArgs[0] = "/bin/test";
+            parsedArgs[1] = "ooga";
+            parsedArgs[2] = "boga";
+            parsedArgs[3] = NULL;
+
+            if (execvp(parsedArgs[0], parsedArgs) == -1) {
+                printf("%s: command not found\n", cmd);
+            }
         }
     }
 

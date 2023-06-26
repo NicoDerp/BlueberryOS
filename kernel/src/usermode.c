@@ -101,7 +101,7 @@ process_t* getCurrentProcess(void) {
 
 process_t* newProcessAt(file_t* file, uint32_t pid) {
 
-    VERBOSE("Creating new process with id %d\n", pid);
+    VERBOSE("newProcessAt: Creating new process with id %d\n", pid);
 
     if (pid >= PROCESSES_MAX) {
         printf("[ERROR] Can't create process with pid outside maximum limit\n");
@@ -142,7 +142,7 @@ process_t* newProcessAt(file_t* file, uint32_t pid) {
 
     map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
 
-    VERBOSE("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+    VERBOSE("newProcessAt: Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
 
     process->state = RUNNING;
     process->eip = process->entryPoint;
@@ -187,7 +187,8 @@ void setProcessArgs(process_t* process, char* args[]) {
     int argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
 
-    printf("argCount: %d\n", argCount);
+    VERBOSE("setProcessArgs: argCount %d\n", argCount);
+
     if (argCount >= MAX_ARGS) {
         printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
         for (;;) {}
@@ -197,7 +198,7 @@ void setProcessArgs(process_t* process, char* args[]) {
 
     // Push strings
     for (int i = 0; i < argCount; i++) {
-        VERBOSE("Pushing str[%d] as '%s'\n", i, args[i]);
+        VERBOSE("setProcessArgs: Pushing str[%d] as '%s'\n", i, args[i]);
 
         strPointers[i] = processPushStr(process, args[i]);
     }
@@ -206,7 +207,7 @@ void setProcessArgs(process_t* process, char* args[]) {
     for (int i = 0; i < argCount; i++) {
         int j = argCount - i - 1;
 
-        VERBOSE("Pushing argv[%d] as 0x%x\n", j, strPointers[j]);
+        VERBOSE("setProcessArgs: Pushing argv[%d] as 0x%x\n", j, strPointers[j]);
 
         processPush(process, strPointers[j]);
 
@@ -223,7 +224,7 @@ void setProcessArgs(process_t* process, char* args[]) {
     // Push argc
     processPush(process, argCount);
 
-    VERBOSE("Pushing argCount as %d\n", argCount);
+    VERBOSE("setProcessArgs: Pushing argCount as %d\n", argCount);
 }
 
 int overwriteArgs(process_t* process, char* filename, const char** args) {
@@ -275,7 +276,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
 
-    VERBOSE("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+    VERBOSE("overwriteArgs: Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
 
     process->state = RUNNING;
     process->eip = process->entryPoint;
@@ -286,7 +287,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
-    VERBOSE("Argcount: %d\n", argCount);
+    VERBOSE("overwriteArgs: argCount: %d\n", argCount);
 
     // Hack to not have to lookup in pagedirectory
     //char argsCopy[MAX_ARG_LENGTH+1][argCount];

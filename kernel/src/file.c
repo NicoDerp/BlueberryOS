@@ -164,10 +164,11 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
     }
     */
 
+    VERBOSE("loadELFIntoMemory: ELF file has %d program header entries\n", elf_header->programEntryCount);
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
         program_header_t* program = getProgramEntry(elf_header, i);
 
-        VERBOSE("Type: %d, vaddr: 0x%x, filesz: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->align);
+        VERBOSE("loadELFIntoMemory: %d va: 0x%x, filesz: 0x%x, memsz: 0x%x, offset: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->offset);
 
         if (program->filesz > FRAME_4KB) {
             printf("[ERROR] Can't load ELF because it contains a section over 4KB!\n");
@@ -180,24 +181,29 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
             if (program->memsz > FRAME_4KB) {
                 printf("[ERROR] Can't load program header %d, because it is bigger than 4KB\n");
+                for (;;) {}
                 return pd;
             }
 
             if (program->vaddr >= 0xC0000000) {
                 printf("[ERROR] Failed to load ELF becuase file goes into kernel-reserved space\n");
+                for (;;) {}
+                return pd;
+            }
+
+            if (program->memsz > FRAME_4KB) {
+                printf("[ERROR] Can't load ELF program section because its size (%d) is greater than 4KB (4096)\n", program->memsz);
+                for (;;) {}
+                return pd;
             }
 
             // Allocate memory for program header
             pageframe_t pageframe = kalloc_frame();
-            void* data = (void*) file->content + program->offset;
+            void* data = (void*) ((uint32_t) file->content + program->offset);
 
             // TODO here is risk of buffer overflow
             // Same as mod 1024 but better
             //uint32_t offset = program->vaddr & 0x03FF;
-
-            if (program->memsz > FRAME_4KB) {
-                printf("[ERROR] Can't load ELF program section because its size (%d) is greater than 4KB (4096)\n", program->memsz);
-            }
 
             // Set pageframe to zero with size of memsz
             memset(pageframe, 0, program->memsz);
@@ -213,12 +219,23 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             }
             */
 
+            // Though this meant writable in memory, but probably not
             bool writable = program->flags & 0x2;
 
-            // Map page
-            map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false);
+            VERBOSE("loadELFIntoMemory: Flags in program header: %d, %d\n", program->flags, writable);
 
-            VERBOSE("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
+            // Map page
+            //map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false);
+            //map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, true, false);
+
+            // Set table to readwrite, but page can vary
+            map_page_wtable_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false, true, false);
+
+            VERBOSE("loadELFIntoMemory: Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
+        } else {
+            printf("[ERROR] Non-supported program header type %d\n", program->type);
+            for (;;) {}
+            return pd;
         }
     }
 

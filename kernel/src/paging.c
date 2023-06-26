@@ -100,12 +100,12 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
     if (pd[virtualIndex] & 1) {
         pagetable = (pagetable_t) p_to_v(pd[virtualIndex] & 0xFFFFF000);
 
-        VERBOSE("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+        VERBOSE("map_pagetable_pd: Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
 
-        VERBOSE("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+        VERBOSE("map_pagetable_pd: Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
 
         /*
         malloc(&pagetable, 0, FRAME_4KB);
@@ -121,6 +121,72 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
         //pagetable[i] = (physicalIndex * FRAME_4KB + i) | flags;
         pagetable[i] = (physicalIndex * FRAME_4MB + i * FRAME_4KB) | flags;
     }
+
+    pd[virtualIndex] = v_to_p((unsigned int) pagetable) | flags;
+}
+
+void map_page_wtable_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool pwritable, bool pkernel, bool twritable, bool tkernel) {
+
+    uint32_t physicalPTI = physicalAddr / FRAME_4MB;
+    uint32_t virtualPTI = virtualAddr / FRAME_4MB;
+
+    // Same as mod 1024 but better
+    uint32_t physicalPI = (physicalAddr / FRAME_4KB) & 0x03FF;
+    uint32_t virtualPI = (virtualAddr / FRAME_4KB) & 0x03FF;
+
+    pagetable_t pagetable;
+    bool present = pd[virtualPTI] & 1;
+
+    // Check if page-table is present
+    if (present) {
+        pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
+
+        VERBOSE("map_page_wtable_pd: Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+    } else {
+        // Allocate new pagetable if it isn't present
+        pagetable = (pagetable_t) kalloc_frame();
+
+        VERBOSE("map_page_wtable_pd: Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+
+        memset(pagetable, 0, FRAME_4KB);
+    }
+
+    unsigned int pflags = (!pkernel << 2) | (pwritable << 1) | 1;
+    unsigned int tflags = (!tkernel << 2) | (twritable << 1) | 1;
+
+    VERBOSE("map_page_wtable_pd: Mapping 0x%x(p) to 0x%x(v). rw%d, k%d\n", physicalPTI*FRAME_4MB+physicalPI*FRAME_4KB, virtualPTI*FRAME_4MB+virtualPI*FRAME_4KB, pwritable, pkernel);
+    VERBOSE("map_page_wtable_pd: Setting pagetable flags rw%d and k%d\n", twritable, tkernel);
+
+    // Sets address and attributes for page
+    pagetable[virtualPI] = (physicalPI * FRAME_4KB + physicalPTI * FRAME_4MB) | pflags;
+
+    // Update pagetable and also set pagetable flags
+    pd[virtualPTI] = v_to_p((unsigned int) pagetable) | tflags;
+}
+
+void set_pagetable_flags_pd(pagedirectory_t pd, size_t virtualIndex, bool writable, bool kernel) {
+
+    pagetable_t pagetable;
+
+    // Check if page-table is present
+    if (pd[virtualIndex] & 1) {
+        pagetable = (pagetable_t) p_to_v(pd[virtualIndex] & 0xFFFFF000);
+
+        VERBOSE("set_pagetable_flags_pd: Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+    } else {
+        // Allocate new pagetable if it isn't present
+        pagetable = (pagetable_t) kalloc_frame();
+
+        VERBOSE("[warning] set_pagetable_flags_pd: Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+
+        /*
+        malloc(&pagetable, 0, FRAME_4KB);
+        unsigned int flags = page_directory[virtualIndex] & 0x3;
+        page_directory[virtualIndex] = ((unsigned int) pagetable) | flags;
+        */
+    }
+
+    unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
 
     pd[virtualIndex] = v_to_p((unsigned int) pagetable) | flags;
 }
@@ -149,17 +215,19 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
     if (present) {
         pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
 
-        VERBOSE("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+        VERBOSE("map_page_pd: Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
 
-        VERBOSE("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+        VERBOSE("map_page_pd: Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
 
         memset(pagetable, 0, FRAME_4KB);
     }
 
     unsigned int flags = (!kernel << 2) | (writable << 1) | 1;
+
+    VERBOSE("map_page_pd: Mapping 0x%x(p) to 0x%x(v). rw%d, k%d\n", physicalPTI*FRAME_4MB+physicalPI*FRAME_4KB, virtualPTI*FRAME_4MB+virtualPI*FRAME_4KB, writable, kernel);
 
     // Sets address and attributes for page
     pagetable[virtualPI] = (physicalPI * FRAME_4KB + physicalPTI * FRAME_4MB) | flags;

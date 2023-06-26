@@ -29,6 +29,7 @@ ASMFLAGS = -felf32
 
 SRC_C = src/sbin/loop.c \
 		src/bin/test.c \
+		src/bin/test2.c \
 		src/bin/shell.c \
 
 SRC_ASM = src/bin/userfunc.asm \

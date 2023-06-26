@@ -2,11 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 
-void main(void) {
-
-    char* a = "folder/";
-    char* b = "folder2/";
-
-    printf("%d\n", strcmp(a, b));
+int main ()
+{
+    char str[] ="/bin/test ooga booga dooga";
+    char* pch;
+    printf ("Splitting string \"%s\" into tokens:\n",str);
+    pch = strtok (str," ,.-");
+    while (pch != NULL)
+    {
+        printf ("%s\n",pch);
+        printf ("%s\n",str);
+        pch = strtok (NULL, " ,.-");
+    }
+    return 0;
 }
 

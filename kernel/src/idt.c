@@ -422,7 +422,6 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
     printf("\nException handler:\n");
 
-
     const char* formatted = format_interrupt(interrupt_id);
 
     (void)stack_state;
@@ -514,6 +513,36 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
         printf(" - Fault happened because of operation at 0x%x\n", cr2);
         
+        pagedirectory_t pd;
+        if (error_code & 0x04) {
+            pd = getCurrentProcess()->pd;
+        } else {
+            pd = page_directory;
+        }
+
+        uint32_t virtualPTI = cr2 / FRAME_4MB;
+        uint32_t virtualPI = (cr2 / FRAME_4KB) & 0x03FF;
+
+        printf(" - PTI: %d, PI: %d\n", virtualPTI, virtualPI);
+
+        bool present = pd[virtualPTI] & 0x1;
+        bool rw = (pd[virtualPTI] & 0x2) > 0;
+        bool kernel = !(pd[virtualPTI] & 0x4);
+
+        printf(" - Pagetable is 0x%x with flags p%d rw%d and k%d\n", pd[virtualPTI], present, rw, kernel);
+        if (pd[virtualPTI] & 1) {
+            pagetable_t pagetable = (pagetable_t) p_to_v((pd[virtualPTI] & 0xFFFFF000));
+            uint32_t page = pagetable[virtualPI];
+
+            present = page & 0x1;
+            rw = (page & 0x2) > 0;
+            kernel = !(page & 0x4);
+
+            printf(" - Page is 0x%x with flags p%d rw%d and k%d\n", page, present, rw, kernel);
+        } else {
+            printf(" - Pagetable not present\n");
+        }
+
         if (error_code & 0x01) {
             printf(" - Page was present\n");
         } else {
