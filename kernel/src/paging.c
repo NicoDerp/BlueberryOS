@@ -76,7 +76,9 @@ pagedirectory_t copy_system_pagedirectory(void) {
 void freeUserPagedirectory(pagedirectory_t pd) {
 
     for (size_t i = 0; i < 768; i++) {
-        kfree_frame((void*) p_to_v(page_directory[i] & 0xFFFFF000));
+        if (pd[i] & 1) {
+            kfree_frame((void*) p_to_v(pd[i] & 0xFFFFF000));
+        }
     }
 
     kfree_frame(pd);

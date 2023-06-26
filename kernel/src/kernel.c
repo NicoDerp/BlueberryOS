@@ -209,7 +209,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     newProcessArgs(file, args);
 
-    file = getFile("/bin/shell");
+    //file = getFile("/bin/shell");
+    file = getFile("/bin/test");
     if (!file) {
         printf("[ERROR] Failed to load application /bin/shell\n");
         for (;;) {}
