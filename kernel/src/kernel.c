@@ -220,9 +220,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("[ERROR] Failed to load application /bin/loop\n");
         for (;;) {}
     }
-    //process = newProcessArgs(file, args);
+    process = newProcessArgs(file, args);
 
-    file = getFile("/bin/test");
+    file = getFile("/bin/userfunc");
     if (file == (file_t*) -1) {
         printf("[ERROR] Failed to load application /bin/shell\n");
         for (;;) {}
@@ -252,7 +252,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     */
 
     for (;;) {
-        asm("hlt");
     }
 
 }

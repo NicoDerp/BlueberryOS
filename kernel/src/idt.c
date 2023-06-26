@@ -110,7 +110,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_write):
             {
-                //printf("Write!\n");
+                printf("Write!\n");
 
                 unsigned int fd = stack_state.ebx;
                 unsigned int buf = stack_state.ecx;
@@ -136,7 +136,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 //printf("\nYield!\n");
 
                 // Don't know why kernel would call yield but just in case
-                if (ss & 0x3) {
+                //if (ss & 0x3) {
+                if (!(frame.cs & 0x3)) {
                     // Save registers
                     process_t* process = getCurrentProcess();
                     saveRegisters(process, &stack_state, &frame, esp);
@@ -153,7 +154,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_read):
             {
-                if (!(ss & 0x3)) {
+                //if (!(ss & 0x3)) {
+                if (!(frame.cs & 0x3)) {
                     printf("[INFO] Kernel called read through syscall\n");
                     for (;;) {}
                 }
@@ -287,7 +289,12 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 
             process_t* process = getCurrentProcess();
             if (process->initialized) {
-                saveRegisters(process, &stack_state, &frame, esp);
+                // Only save registers if we came from userspace
+                if (frame.cs & 0x3) { // TODO or ss?
+                    saveRegisters(process, &stack_state, &frame, esp);
+                }
+
+                // Good change no processes are initialized if current isn't
                 handleKeyboardBlock(key);
             }
         }
@@ -301,12 +308,22 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             //printf("Task switch!\n");
             tickCounter = 0;
 
+            /*
+            printf(" - cs: 0x%x\n", frame.cs);
+
+            uint32_t cs;
+            asm volatile("mov %%cs, %0" : "=r"(cs));
+            printf(" - current cs: 0x%x\n", cs);
+            */
+
             // Only save registers if we came from userspace
-            if (ss & 0x3) {
-                //printf("Saving regs\n");
+            if (frame.cs & 0x3) {
                 // Save registers
                 process_t* process = getCurrentProcess();
-                saveRegisters(process, &stack_state, &frame, esp);
+                if (process->initialized) {
+                    //printf("Saving regs\n");
+                    saveRegisters(process, &stack_state, &frame, esp);
+                }
             }
 
             // Switch to next process

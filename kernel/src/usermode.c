@@ -153,6 +153,7 @@ process_t* newProcess(file_t* file) {
     process->childrenCount = 0;
     process->initialized = true;
 
+    printf("eip: 0x%x\n", process->eip);
     return process;
 }
 
@@ -204,7 +205,7 @@ void terminateProcess(process_t* process, int status) {
 
     (void) status;
 
-    process->initialized = true;
+    process->initialized = false;
 
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
@@ -264,6 +265,8 @@ void switchProcess(void) {
 
     process_t* process = findNextProcess();
     currentProcessID = process->id;
+
+    //printf("Found next process: %d, %s\n", process->id, process->name);
 
     // Load process's page directory
     loadPageDirectory(process->pd);
