@@ -90,17 +90,39 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
     printf("ss: 0x%x\n", ss);
     */
 
+    /*
+    {
+        process_t* p = getCurrentProcess();
+        printf("\nSyscall %d from %d %s\n", stack_state.eax, p->id, p->name);
+    }
+    */
+
     switch (stack_state.eax) {
         case (SYS_exit):
             {
+                if (!(frame.cs & 0x3)) {
+                    printf("[INFO] Kernel called exit syscall?\n");
+                    for (;;) {}
+                }
+
                 //printf("Exit!\n");
 
                 int status = stack_state.ebx;
 
                 //printf("Status: '%d'\n", status);
 
+
+                /*
+    extern process_t processes[];
+    printf("\n0: %s, %d\n", processes[0].name, processes[0].initialized);
+    printf("1: %s, %d\n", processes[1].name, processes[1].initialized);
+    for (;;) {}
+    */
+
                 process_t* process = getCurrentProcess();
+                printf("process called exit: %d %s\n", process->id, process->name);
                 terminateProcess(process, status);
+                for (;;){}
 
                 // Switch to next process
                 switchProcess();
@@ -136,13 +158,13 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Don't know why kernel would call yield but just in case
                 //if (ss & 0x3) {
                 if (!(frame.cs & 0x3)) {
-                    // Save registers
-                    process_t* process = getCurrentProcess();
-                    saveRegisters(process, &stack_state, &frame, esp);
-                } else {
-                    printf("[INFO] Kernel called yield through syscall\n");
+                    printf("[INFO] Kernel called yield syscall?\n");
                     for (;;) {}
                 }
+
+                // Save registers
+                process_t* process = getCurrentProcess();
+                saveRegisters(process, &stack_state, &frame, esp);
 
                 // Switch to next process
                 switchProcess();
@@ -154,7 +176,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             {
                 //if (!(ss & 0x3)) {
                 if (!(frame.cs & 0x3)) {
-                    printf("[INFO] Kernel called read through syscall\n");
+                    printf("[INFO] Kernel called read syscall syscall?\n");
                     for (;;) {}
                 }
 
@@ -189,6 +211,11 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_fork):
             {
+                if (!(frame.cs & 0x3)) {
+                    printf("[ERROR] Kernel called fork syscall?\n");
+                    for (;;) {}
+                }
+
                 process_t* process = getCurrentProcess();
 
                 // Save registers
@@ -371,7 +398,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         PIC_sendEOI(irq);
 
         if (tickCounter == 3) {
-            //printf("Task switch!\n");
+            printf("Task switch!\n");
             tickCounter = 0;
 
             /*
@@ -384,6 +411,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 
             // Only save registers if we came from userspace
             if (frame.cs & 0x3) {
+
                 // Save registers
                 process_t* process = getCurrentProcess();
                 if (process->initialized) {

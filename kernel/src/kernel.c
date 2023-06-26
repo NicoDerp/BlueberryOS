@@ -216,7 +216,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         for (;;) {}
     }
     process_t* process = newProcessArgs(file, args);
-    //newProcessArgs(file, args);
 
     /*
     file = getFile("/bin/shell");
@@ -235,7 +234,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     irq_clear_mask(IRQ_TIMER);
 
     // Skip waiting
-    runProcess(process);
+    //runProcess(process);
 
     /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);

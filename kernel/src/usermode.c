@@ -101,6 +101,8 @@ process_t* getCurrentProcess(void) {
 
 process_t* newProcessAt(file_t* file, uint32_t pid) {
 
+    VERBOSE("Creating new process with id %d\n", index);
+
     if (pid >= PROCESSES_MAX) {
         printf("[ERROR] Can't create process with pid outside maximum limit\n");
         for (;;) {}
@@ -109,10 +111,13 @@ process_t* newProcessAt(file_t* file, uint32_t pid) {
     process_t* process = &processes[pid];
     memset(process, 0, sizeof(process_t));
 
+    process->id = pid;
+
     size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
         printf("[ERROR] Max process name reached!\n");
         len = PROCESS_MAX_NAME_LENGTH;
+        for (;;) {}
     }
 
     memcpy(process->name, file->fullpath, len);
@@ -162,6 +167,7 @@ process_t* newProcess(file_t* file) {
 
     if (!found) {
         printf("[ERROR] Max processes reached!\n");
+        for (;;) {}
         return (process_t*) 0;
     }
 
@@ -367,6 +373,15 @@ void switchProcess(void) {
     currentProcessID = process->id;
 
     //printf("Found next process: %d, %s\n", process->id, process->name);
+    /*
+    for (size_t i = 0; i < PROCESSES_MAX; i++) {
+        process_t* p = &processes[i];
+        if (p->initialized) {
+            printf("%d: %d %s\n", i, p->id, p->name);
+        }
+    }
+    for (;;){}
+    */
 
     // Load process's page directory
     loadPageDirectory(process->pd);
