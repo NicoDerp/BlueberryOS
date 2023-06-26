@@ -18,6 +18,9 @@ int printf(const char* __restrict, ...);
 int putchar(int);
 int puts(const char*);
 
+int getc(unsigned int);
+int getchar(void);
+
 #ifdef __cplusplus
 }
 #endif

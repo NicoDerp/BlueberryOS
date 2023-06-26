@@ -17,7 +17,7 @@ int putchar(int ic) {
 #if defined(__is_libk)
 
     char c = (char) ic;
-    terminal_writechar(c);
+    terminal_writechar(c, true);
 
 #else
 

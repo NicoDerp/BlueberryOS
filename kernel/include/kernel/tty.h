@@ -3,6 +3,7 @@
 #define KERNEL_TTY_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 /* Color constants */
 #define VGA_BLACK 0
@@ -23,8 +24,9 @@
 #define VGA_WHITE 15
 
 void terminal_initialize(size_t width, size_t height, void* buffer);
+void terminal_move_cursor(size_t x, size_t y);
 void terminal_write(const char* data, size_t size);
-void terminal_writechar(char c);
+void terminal_writechar(const char c, bool updateCursor);
 void terminal_writestring(const char* data);
 
 #endif /* KERNEL_TTY_H */

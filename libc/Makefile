@@ -34,6 +34,8 @@ FREEOBJS =\
 	stdio/printf.o \
 	stdio/putchar.o \
 	stdio/puts.o \
+	stdio/getc.o \
+	stdio/getchar.o \
 	stdlib/abort.o \
 	stdlib/itoa.o \
 	stdlib/uitoa.o \
@@ -64,10 +66,14 @@ BINARIES = libc.a libk.a # Not ready for libc yet.
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
-.PHONY: all clean install install-headers install-libs
+.PHONY: all build clean install install-headers install-libs
 .SUFFIXES: .o .libk.o .c .asm
 
-all: $(BINARIES)
+all:
+	$(MAKE) -j8 build
+	$(MAKE) install
+
+build: $(BINARIES)
 
 libc.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)

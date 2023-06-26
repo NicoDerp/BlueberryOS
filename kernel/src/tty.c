@@ -4,6 +4,9 @@
 #include <stdint.h>
 
 #include <kernel/tty.h>
+#include <kernel/io.h>
+
+#include <stdio.h>
 
 static size_t VGA_WIDTH = 80;
 static size_t VGA_HEIGHT = 25;
@@ -20,6 +23,17 @@ inline uint16_t vga_entry(unsigned char c, uint8_t color) {
 
 inline uint8_t vga_color(uint8_t fg, uint8_t bg) {
     return bg << 4 | fg;
+}
+
+void enable_cursor(uint8_t cursor_start, uint8_t cursor_end) {
+
+    io_outb(0x3D4, 0x0A);
+    //io_outb(0x3D5, (io_inb(0x3D5) & 0xC0) | cursor_start);
+    io_outb(0x3D5, cursor_start);
+
+    io_outb(0x3D4, 0x0B);
+    //io_outb(0x3D5, (io_inb(0x3D5) & 0xE0) | cursor_end);
+    io_outb(0x3D5, cursor_end);
 }
 
 void terminal_initialize(size_t width, size_t height, void* buffer) {
@@ -39,6 +53,19 @@ void terminal_initialize(size_t width, size_t height, void* buffer) {
             terminal_buffer[index] = vga_entry(' ', vga_color(VGA_LIGHT_GRAY, VGA_BLACK));
         }
     }
+
+    enable_cursor(0, 15);
+}
+
+inline void terminal_move_cursor(size_t x, size_t y) {
+
+    uint16_t pos = y * VGA_WIDTH + x;
+
+    io_outb(0x3D4, 0x0F);
+    io_outb(0x3D5, (uint8_t) (pos & 0xFF));
+
+    io_outb(0x3D4, 0x0E);
+    io_outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
 }
 
 void terminal_scroll_down(void) {
@@ -54,11 +81,11 @@ void terminal_scroll_down(void) {
 
     for (size_t x = 0; x < VGA_WIDTH; x++) {
         const size_t index = (VGA_HEIGHT-1) * VGA_WIDTH + x;
-        terminal_buffer[index] = ' ';
+        terminal_buffer[index] = vga_entry(' ', vga_color(VGA_LIGHT_GRAY, VGA_BLACK));
     }
 }
 
-void terminal_writechar(const char c) {
+void terminal_writechar(const char c, bool updateCursor) {
     if (c == '\0') {
         return;
     }
@@ -69,6 +96,24 @@ void terminal_writechar(const char c) {
 
         if (terminal_row >= VGA_HEIGHT) {
             terminal_scroll_down();
+        }
+
+        if (updateCursor) {
+            terminal_move_cursor(terminal_column, terminal_row);
+        }
+        return;
+    } else if (c == '\b' || c == 27) {
+        terminal_column--;
+
+        if (updateCursor) {
+            terminal_move_cursor(terminal_column, terminal_row);
+        }
+        return;
+    } else if (c == 26) {
+        terminal_column++;
+
+        if (updateCursor) {
+            terminal_move_cursor(terminal_column, terminal_row);
         }
         return;
     }
@@ -85,19 +130,27 @@ void terminal_writechar(const char c) {
             terminal_scroll_down();
         }
     }
+
+    if (updateCursor) {
+        terminal_move_cursor(terminal_column, terminal_row);
+    }
 }
 
 void terminal_write(const char* string, size_t size) {
     for (size_t i = 0; i < size; i++) {
-        terminal_writechar(string[i]);
+        terminal_writechar(string[i], false);
     }
+
+    terminal_move_cursor(terminal_column, terminal_row);
 }
 
 void terminal_writestring(const char* string) {
     size_t i = 0;
     while (string[i] != 0) {
-        terminal_writechar(string[i]);
+        terminal_writechar(string[i], false);
         i++;
     }
+
+    terminal_move_cursor(terminal_column, terminal_row);
 }
 

@@ -118,7 +118,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 if (fd == STDOUT_FILENO) {
                     if (count == 1 && buf < 0xFF) {
-                        terminal_writechar((char) buf);
+                        terminal_writechar((char) buf, true);
                     } else {
                         terminal_write((void*) buf, count);
                     }
@@ -238,15 +238,15 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         0,  /* 69 - Num lock*/
         0,  /* Scroll Lock */
         0,  /* Home key */
-        0,  /* Up Arrow */
+        24,  /* Up Arrow */
         0,  /* Page Up */
       '-',
-        0,  /* Left Arrow */
+        27,  /* Left Arrow */
         0,
-        0,  /* Right Arrow */
+        26,  /* Right Arrow */
       '+',
         0,  /* 79 - End key*/
-        0,  /* Down Arrow */
+        25,  /* Down Arrow */
         0,  /* Page Down */
         0,  /* Insert Key */
         0,  /* Delete Key */
@@ -269,9 +269,8 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         PIC_sendEOI(irq);
 
         if (scancode < 128) {
-            //printf("type: %d, scan: %d\n", type, scancode);
             char key = keyboard_US[scancode];
-            //printf("%c", key);
+            //printf("scan: %d, %d\n", scancode, key);
 
             process_t* process = getCurrentProcess();
             saveRegisters(process, &stack_state, &frame, esp);
