@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <unistd.h>
+
 
 #define MAX_LINE_LENGTH 128
 #define HISTORY_SIZE    8
@@ -17,6 +19,23 @@ void main(int argc, char* argv[]) {
     char cmd[MAX_LINE_LENGTH+1];
     char history[MAX_LINE_LENGTH][HISTORY_SIZE];
     size_t historyCount = 0;
+
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        printf("[ERROR] Fork error!\n");
+        exit(1);
+    } else if (pid == 0) {
+        printf("I am child!\n");
+        exit(0);
+    } else {
+        //printf("I am parent and child is %d\n", pid);
+        printf("I am parent\n");
+        exit(0);
+    }
+
+    for (;;) {}
 
     while (true) {
 

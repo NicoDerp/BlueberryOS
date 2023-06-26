@@ -3,6 +3,7 @@
 #define KERNEL_IDT_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define IDT_IRQ_OFFSET 0x20
 
@@ -81,6 +82,9 @@ void idt_initialize(void);
 void irq_set_mask(unsigned char line);
 void irq_clear_mask(unsigned char line);
 void pit_set_count(unsigned count);
+
+bool irq_read_mask(unsigned char line);
+void irq_write_mask(unsigned char line, bool value);
 
 typedef struct {
     unsigned int edi;

@@ -23,6 +23,9 @@
 
 #define MAX_FILE_DESCRIPTORS 64
 
+#define MAX_CHILDREN 32
+
+
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
     uint32_t esp0;     // The stack pointer to load when changing to kernel mode.
@@ -77,20 +80,27 @@ typedef enum {
     BLOCKED_KEYBOARD
 } process_state_t;
 
-typedef struct {
+struct process;
+
+typedef struct process {
     fd_t fds[MAX_FILE_DESCRIPTORS];
-    process_state_t state;
+    struct process* children[MAX_CHILDREN];
     regs_t blocked_regs; // Registers when block happened
     regs_t regs;
     uint32_t esp;
     uint32_t eip;
     char name[PROCESS_MAX_NAME_LENGTH+1];
     pagedirectory_t pd;
+    process_state_t state;
+    struct process* parent;
+    file_t* file;
+    uint32_t childrenCount;
     uint32_t entryPoint;
     uint32_t physical_stack;
     uint32_t virtual_stack;
     uint32_t virtual_stack_top;
-    size_t id;
+    uint32_t id;
+    bool initialized;
 } process_t;
 
 
@@ -104,9 +114,10 @@ void use_system_tss(void);
 
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
-process_t* newProcess(file_t* file, const char* args[]);
+process_t* newProcessArgs(file_t* file, const char* args[]);
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
+void forkProcess(process_t* parent);
 void switchProcess(void);
 
 void handleKeyboardBlock(char c);

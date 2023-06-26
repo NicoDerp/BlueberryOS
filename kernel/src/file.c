@@ -192,6 +192,10 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             // Same as mod 1024 but better
             //uint32_t offset = program->vaddr & 0x03FF;
 
+            if (program->memsz > FRAME_4KB) {
+                printf("[ERROR] Can't load ELF program section because its size (%d) is greater than 4KB (4096)\n", program->memsz);
+            }
+
             // Set pageframe to zero with size of memsz
             memset(pageframe, 0, program->memsz);
 
@@ -222,6 +226,7 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
     // Copy kernel's pagedirectory to this pagedirectory
     pagedirectory_t pd = copy_system_pagedirectory();
 
+    // TODO very risky. Not guaranteed consecutive
     // ceil(file->size / FRAME_4KB)
     for (size_t i = 0; i < (file->size+FRAME_4KB-1)/FRAME_4KB; i++) {
 
@@ -231,6 +236,11 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
 
         // Allocate memory for data
         pageframe_t pageframe = kalloc_frame();
+
+        if ((uint32_t) pageframe != (uint32_t) file->content + offset) {
+            printf("[ERROR] Can't load binary because frames aren't consequtive\n");
+            for (;;) {}
+        }
 
         // Copy data to pageframe
         memcpy((void*) ((uint32_t) pageframe + offset), (void*) (file->content + offset), file->size);
@@ -420,6 +430,15 @@ directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
 
 void parseFile(tar_header_t* header) {
 
+    uint32_t filesize = oct2bin(header->size, 11);
+
+    /*
+    if (filesize > FRAME_4KB) {
+        printf("[ERROR] File-sizes larger than 4KB (4096) not supported yet. File '%s' has size %d\n", header->filename, filesize);
+        for (;;) {}
+    }
+    */
+
     // TODO LOT smaller
     file_t* file = kalloc_frame();
     memset(file, 0, sizeof(file_t));
@@ -453,8 +472,27 @@ void parseFile(tar_header_t* header) {
     memcpy(file->mode, header->mode+4, 3);
     file->mode[3] = '\0';
 
-    file->size = oct2bin(header->size, 11);
-    file->content = (char*) ((uint32_t) header + 512);
+    file->size = filesize;
+
+    // TODO very risky. Not guaranteed consecutive
+    // ceil(file->size / FRAME_4KB)
+    //printf("Size is %d, looping %d times\n", filesize);
+    for (size_t i = 0; i < (filesize+FRAME_4KB-1)/FRAME_4KB; i++) {
+
+        pageframe_t pf = kalloc_frame();
+        if (i == 0) {
+            file->content = (char*) pf;
+        }
+
+        uint32_t offset = i*FRAME_4KB;
+
+        if ((uint32_t) pf != (uint32_t) file->content + offset) {
+            printf("[ERROR] Can't load file because frames aren't consequtive\n");
+            for (;;) {}
+        }
+
+        memcpy((void*) ((uint32_t) file->content + offset), (void*) ((uint32_t) header + offset + 512), FRAME_4KB);
+    }
 }
 
 void displayDirectory(directory_t* dir, size_t space) {

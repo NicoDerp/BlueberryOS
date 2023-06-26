@@ -11,6 +11,8 @@
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
 
+typedef int pid_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,6 +22,7 @@ int write(int fd, const void* buf, size_t count);
 int read(int fd, void* buf, size_t count);
 
 void yield(void);
+pid_t fork(void);
 
 #ifdef __cplusplus
 }

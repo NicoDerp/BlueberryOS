@@ -53,6 +53,7 @@ FREEOBJS =\
 	unistd/write.o \
 	unistd/yield.o \
 	unistd/read.o \
+	unistd/fork.o \
 	fcntl/open.o \
 
 HOSTEDOBJS =

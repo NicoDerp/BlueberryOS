@@ -9,6 +9,7 @@
 #define SYS_yield 2
 #define SYS_open  3
 #define SYS_read  4
+#define SYS_fork  5
 
 #endif
 

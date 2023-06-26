@@ -14,8 +14,7 @@ void initialize_tss(tss_t* tss);
 
 
 process_t processes[PROCESSES_MAX];
-bool processUsed[PROCESSES_MAX];
-size_t currentProcessID;
+uint32_t currentProcessID;
 
 tss_t sys_tss;
 
@@ -57,18 +56,15 @@ process_t* findNextProcess(void) {
 
     process_t* process;
     bool found = false;
-    size_t i = currentProcessID + 1;
+    uint32_t i = currentProcessID + 1;
 
     // Find next process to run
     do {
-        // Process for that ID is active
-        if (processUsed[i]) {
-            process = &processes[i];
+        process = &processes[i];
 
-            if (process->state == RUNNING) {
-                found = true;
-                break;
-            }
+        if (process->initialized && process->state == RUNNING) {
+            found = true;
+            break;
         }
 
         i++;
@@ -80,7 +76,7 @@ process_t* findNextProcess(void) {
     while (i != currentProcessID);
 
     if (!found) {
-        if (!processUsed[currentProcessID]) {
+        if (!processes[currentProcessID].initialized) {
             printf("[ERROR] No current processes?? Idk what to do now\n");
             for (;;) {}
             return (process_t*) -1;
@@ -102,15 +98,15 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcess(file_t* file, const char* args[]) {
+process_t* newProcess(file_t* file) {
 
     process_t* process;
     bool found = false;
-    for (size_t i = 0; i < PROCESSES_MAX; i++) {
-        if (!processUsed[i]) {
+    for (uint32_t i = 0; i < PROCESSES_MAX; i++) {
+        process = &processes[i];
+
+        if (!process->initialized) {
             found = true;
-            processUsed[i] = true;
-            process = &processes[i];
             process->id = i;
             break;
         }
@@ -124,6 +120,7 @@ process_t* newProcess(file_t* file, const char* args[]) {
     size_t len = strlen(file->name);
     if (len > PROCESS_MAX_NAME_LENGTH) {
         printf("[ERROR] Max process name reached!\n");
+        len = PROCESS_MAX_NAME_LENGTH;
     }
 
     memcpy(process->name, file->name, len);
@@ -152,7 +149,16 @@ process_t* newProcess(file_t* file, const char* args[]) {
     process->state = RUNNING;
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
+    process->file = file;
+    process->childrenCount = 0;
+    process->initialized = true;
 
+    return process;
+}
+
+process_t* newProcessArgs(file_t* file, const char* args[]) {
+
+    process_t* process = newProcess(file);
 
     int argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
@@ -198,7 +204,7 @@ void terminateProcess(process_t* process, int status) {
 
     (void) status;
 
-    processUsed[process->id] = false;
+    process->initialized = true;
 
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
@@ -208,21 +214,9 @@ void terminateProcess(process_t* process, int status) {
 
 void runProcess(process_t* process) {
 
-    currentProcessID = process->id;
-
-    // Load process's page directory
-    loadPageDirectory(process->pd);
-
-    // Enter usermode
-    enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
-}
-
-void switchProcess(void) {
-
-    //printf("Next process\n");
-    // Simple round robin
-
-    process_t* process = findNextProcess();
+    // Disable IRQ_TIMER
+    bool prevMask = irq_read_mask(IRQ_TIMER);
+    irq_set_mask(IRQ_TIMER);
 
     currentProcessID = process->id;
 
@@ -232,11 +226,82 @@ void switchProcess(void) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
+    // Restore mask
+    irq_write_mask(IRQ_TIMER, prevMask);
+
+    // Enter usermode
+    enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
+}
+
+void forkProcess(process_t* parent) {
+
+    // Disable IRQ_TIMER
+    bool prevMask = irq_read_mask(IRQ_TIMER);
+    irq_set_mask(IRQ_TIMER);
+
+    if (parent->childrenCount >= MAX_CHILDREN) {
+        printf("[ERROR] Max children reached for process %d\n", parent->id);
+
+        // Set to indicate error
+        parent->regs.eax = -1;
+        return;
+    }
+
+    process_t* child = newProcess(parent->file);
+
+    // Copy stack
+    memcpy((void*) child->physical_stack, (void*) parent->physical_stack, FRAME_4KB);
+
+    // Copy registers
+    memcpy(&child->regs, &parent->regs, sizeof(regs_t));
+
+    // Copy other parameters
+    child->parent = parent;
+    child->esp = parent->esp;
+    child->eip = parent->eip;
+
+    parent->children[parent->childrenCount++] = child;
+
+    parent->regs.eax = child->id;
+    child->regs.eax = 0;
+
+    // TODO in future also copy pagedirectory for things like malloc
+
+    // Restore mask
+    irq_write_mask(IRQ_TIMER, prevMask);
+}
+
+void switchProcess(void) {
+
+    //printf("Next process\n");
+    // Simple round robin
+
+    // Disable IRQ_TIMER
+    bool prevMask = irq_read_mask(IRQ_TIMER);
+    irq_set_mask(IRQ_TIMER);
+
+
+    process_t* process = findNextProcess();
+    currentProcessID = process->id;
+
+    // Load process's page directory
+    loadPageDirectory(process->pd);
+
+    // Reset PIT count
+    pit_set_count(PROCESS_TIME);
+
+    // Restore mask
+    irq_write_mask(IRQ_TIMER, prevMask);
+
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
 }
 
 void handleKeyboardBlock(char c) {
+
+    // Disable IRQ_TIMER
+    bool prevMask = irq_read_mask(IRQ_TIMER);
+    irq_set_mask(IRQ_TIMER);
 
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
         process_t* process = &processes[i];
@@ -266,6 +331,8 @@ void handleKeyboardBlock(char c) {
 
     loadPageDirectory(processes[currentProcessID].pd);
 
+    // Restore mask
+    irq_write_mask(IRQ_TIMER, prevMask);
 }
 
 void printProcessInfo(process_t* process) {

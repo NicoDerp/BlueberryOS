@@ -184,6 +184,17 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             }
             break;
 
+        case (SYS_fork):
+            {
+                process_t* process = getCurrentProcess();
+
+                // Save registers
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                forkProcess(process);
+            }
+            break;
+
         default:
             printf("Invalid syscall id '%d'\n", stack_state.eax);
     }
@@ -273,8 +284,10 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             //printf("scan: %d, %d\n", scancode, key);
 
             process_t* process = getCurrentProcess();
-            saveRegisters(process, &stack_state, &frame, esp);
-            handleKeyboardBlock(key);
+            if (process->initialized) {
+                saveRegisters(process, &stack_state, &frame, esp);
+                handleKeyboardBlock(key);
+            }
         }
 
     } else if (interrupt_id == INT_TIMER) {
@@ -529,6 +542,42 @@ void PIC_remap(int offset1, int offset2) {
 
     io_outb(PIC1_DATA, a1);
     io_outb(PIC2_DATA, a2);
+}
+
+
+bool irq_read_mask(unsigned char line) {
+
+    uint16_t port;
+
+    if (line < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        line -= 8;
+    }
+
+    return (io_inb(port) & (1 << line)) > 0;
+}
+
+void irq_write_mask(unsigned char line, bool set) {
+
+    uint16_t port;
+    uint8_t value;
+
+    if (line < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        line -= 8;
+    }
+
+    if (set) {
+        value = io_inb(port) | (1 << line);
+    } else {
+        value = io_inb(port) & ~(1 << line);
+    }
+
+    io_outb(port, value);
 }
 
 void irq_set_mask(unsigned char line) {
