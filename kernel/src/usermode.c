@@ -232,8 +232,8 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
         return -1;
     }
 
-    // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
-    freeUserPagedirectory(process->pd);
+    // Backup
+    pagedirectory_t oldPD = process->pd;
 
     memset(process->children, 0, sizeof(process_t*) * MAX_CHILDREN);
     memset(&process->regs, 0, sizeof(regs_t));
@@ -274,6 +274,9 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
     map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
 
     VERBOSE("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+
+    // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
+    freeUserPagedirectory(oldPD);
 
     process->state = RUNNING;
     process->eip = process->entryPoint;

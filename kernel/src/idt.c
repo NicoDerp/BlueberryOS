@@ -111,18 +111,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 //printf("Status: '%d'\n", status);
 
-
-                /*
-    extern process_t processes[];
-    printf("\n0: %s, %d\n", processes[0].name, processes[0].initialized);
-    printf("1: %s, %d\n", processes[1].name, processes[1].initialized);
-    for (;;) {}
-    */
-
                 process_t* process = getCurrentProcess();
                 printf("process called exit: %d %s\n", process->id, process->name);
                 terminateProcess(process, status);
-                for (;;){}
 
                 // Switch to next process
                 switchProcess();
@@ -251,9 +242,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                // Number of bytes read
-                process->regs.eax = 0;
-
                 // Switch to next process
                 switchProcess();
             }
@@ -275,7 +263,10 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 // Save registers incase overwriteArgs fails
                 saveRegisters(process, &stack_state, &frame, esp);
+
                 int result = overwriteArgs(process, file, argv);
+                printf("after\n");
+                for (;;){}
 
                 if (result == -1) {
 
