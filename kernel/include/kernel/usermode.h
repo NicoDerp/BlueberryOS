@@ -98,7 +98,7 @@ typedef struct process {
     uint32_t indexInParent;
     file_t* file;
     uint32_t entryPoint;
-    uint32_t physical_stack;
+    pageframe_t physical_stack;
     uint32_t virtual_stack;
     uint32_t virtual_stack_top;
     uint32_t id;
@@ -116,7 +116,12 @@ void use_system_tss(void);
 
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
+
+process_t* newProcessAt(file_t* file, uint32_t pid);
 process_t* newProcessArgs(file_t* file, const char* args[]);
+void setProcessArgs(process_t* process, const char* args[]);
+int overwriteArgs(process_t* process, char* filename, const char* args[]);
+
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);
 void forkProcess(process_t* parent);

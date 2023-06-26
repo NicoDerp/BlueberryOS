@@ -10,7 +10,29 @@
 
 #define MAX_LINE_LENGTH 128
 #define HISTORY_SIZE    8
+#define MAX_ARGS        8
 
+
+void execArgs(char** args) {
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        printf("[ERROR] Fork error!\n");
+    } else if (pid == 0) {
+        printf("I am child!\n");
+        if (execvp(args[0], args) == -1) {
+            printf("Failed to run program\n");
+        }
+
+        exit(0);
+    } else {
+        printf("I am parent and child is %d\n", pid);
+        printf("Waiting for child...\n");
+        wait(NULL);
+        printf("Done waiting for child!\n");
+    }
+}
 
 void main(int argc, char* argv[]) {
 
@@ -22,23 +44,15 @@ void main(int argc, char* argv[]) {
     size_t historyCount = 0;
 
 
-    pid_t pid = fork();
+    char* parsedArgs[MAX_ARGS];
+    parsedArgs[0] = "/bin/test";
+    parsedArgs[1] = "ooga";
+    parsedArgs[2] = "boga";
+    parsedArgs[3] = NULL;
 
-    if (pid == -1) {
-        printf("[ERROR] Fork error!\n");
-        exit(1);
-    } else if (pid == 0) {
-        printf("I am child!\n");
-        printf("Waiting for input\n");
-        printf("Got char: %c\n", getchar());
-        exit(0);
-    } else {
-        printf("I am parent and child is %d\n", pid);
-        printf("Waiting for child...\n");
-        wait(NULL);
-        printf("Done waiting for child! Got return value: %d\n", ret);
-        exit(0);
-    }
+    execvp(parsedArgs[0], parsedArgs);
+
+    printf("After execvp\n");
 
     for (;;) {}
 

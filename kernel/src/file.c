@@ -3,6 +3,7 @@
 #include <kernel/memory.h>
 #include <kernel/paging.h>
 #include <kernel/errors.h>
+#include <kernel/logging.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -166,9 +167,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
         program_header_t* program = getProgramEntry(elf_header, i);
 
-#ifdef VERBOSE
-        printf("Type: %d, vaddr: 0x%x, filesz: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->align);
-#endif
+        VERBOSE("Type: %d, vaddr: 0x%x, filesz: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->align);
 
         if (program->filesz > FRAME_4KB) {
             printf("[ERROR] Can't load ELF because it contains a section over 4KB!\n");
@@ -219,9 +218,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             // Map page
             map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false);
 
-#ifdef VERBOSE
-            printf("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
-#endif
+            VERBOSE("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
         }
     }
 
@@ -237,9 +234,7 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
     // ceil(file->size / FRAME_4KB)
     for (size_t i = 0; i < (file->size+FRAME_4KB-1)/FRAME_4KB; i++) {
 
-#ifdef VERBOSE
-        printf("Allocating new pageframe to copy executable data with index %d\n", i);
-#endif
+        VERBOSE("Allocating new pageframe to copy executable data with index %d\n", i);
 
         uint32_t offset = i*FRAME_4KB;
 
@@ -264,9 +259,7 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
         // Map page
         map_page_pd(pd, v_to_p((uint32_t) pageframe + offset), 0x0 + offset, true, false);
 
-#ifdef VERBOSE
-        printf("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe + offset), 0x0 + offset);
-#endif
+        VERBOSE("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe + offset), 0x0 + offset);
     }
 
 

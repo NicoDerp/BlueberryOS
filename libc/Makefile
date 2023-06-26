@@ -54,6 +54,7 @@ FREEOBJS =\
 	unistd/yield.o \
 	unistd/read.o \
 	unistd/fork.o \
+	unistd/execvp.o \
 	fcntl/open.o \
 	sys/wait.o \
 

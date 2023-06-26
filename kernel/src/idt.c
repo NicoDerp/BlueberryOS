@@ -233,6 +233,38 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
+        case (SYS_execvp):
+            {
+                //if (!(ss & 0x3)) {
+                if (!(frame.cs & 0x3)) {
+                    printf("[ERROR] Kernel called execvp?\n");
+                    for (;;) {}
+                }
+
+                char* file = (char*) stack_state.ebx;
+                const char** argv = (const char**) stack_state.ecx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers incase overwriteArgs fails
+                saveRegisters(process, &stack_state, &frame, esp);
+                int result = overwriteArgs(process, file, argv);
+
+                if (result == -1) {
+
+                    // Indicate error
+                    process->regs.eax = -1;
+
+                }
+
+                // Since we have changed entire process then we need
+                //  to reload those changes
+                runCurrentProcess();
+            }
+
+            break;
+
+
         default:
             printf("Invalid syscall id '%d'\n", stack_state.eax);
     }
@@ -369,7 +401,8 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
     }
 }
 
-void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_t test_struct, unsigned int interrupt_id, bool has_error, unsigned int error_code, interrupt_frame_t frame) {
+void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int interrupt_id, stack_state_t stack_state, bool has_error, unsigned int error_code, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
+
     printf("\nException handler:\n");
 
 
@@ -404,8 +437,13 @@ void exception_handler(unsigned int cr2, stack_state_t stack_state, test_struct_
     printf(" - eflags: 0x%x\n", frame.eflags);
     printf(" - cs: 0x%x\n", frame.cs);
     printf(" - eip: 0x%x\n", frame.eip);
-    printf(" - esp: 0x%x\n", stack_state.esp);
+    printf(" - current esp: 0x%x\n", stack_state.esp);
     printf(" - faulted from ring %d\n", frame.cs & 0x3);
+
+    if (frame.cs & 0x3) {
+        printf(" - program esp: 0x%x\n", esp);
+        printf(" - program ss: 0x%x\n", ss);
+    }
 
     uint32_t cs;
     asm volatile("mov %%cs, %0" : "=r"(cs));

@@ -1,6 +1,8 @@
 
 #include <kernel/paging.h>
 #include <kernel/memory.h>
+#include <kernel/logging.h>
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -71,6 +73,14 @@ pagedirectory_t copy_system_pagedirectory(void) {
     return pd;
 }
 
+void freeUserPagedirectory(pagedirectory_t pd) {
+
+    for (size_t i = 0; i < 768; i++) {
+        kfree_frame((void*) p_to_v(page_directory[i] & 0xFFFFF000));
+    }
+
+    kfree_frame(pd);
+}
 
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
 
@@ -88,16 +98,12 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
     if (pd[virtualIndex] & 1) {
         pagetable = (pagetable_t) p_to_v(pd[virtualIndex] & 0xFFFFF000);
 
-#ifdef VERBOSE
-        printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
-#endif
+        VERBOSE("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
 
-#ifdef VERBOSE
-        printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
-#endif
+        VERBOSE("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
 
         /*
         malloc(&pagetable, 0, FRAME_4KB);
@@ -141,16 +147,12 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
     if (present) {
         pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
 
-#ifdef VERBOSE
-        printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
-#endif
+        VERBOSE("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
 
-#ifdef VERBOSE
-        printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
-#endif
+        VERBOSE("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
 
         memset(pagetable, 0, FRAME_4KB);
     }

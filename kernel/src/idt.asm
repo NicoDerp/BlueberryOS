@@ -15,11 +15,12 @@ extern syscall_handler
 isr_stub_%+%1:
 
     push dword 1  ; signal that this interrupt has an error
+
+    pushad
+
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
-
-    pushad
 
     mov eax, cr2
     push eax
@@ -38,12 +39,13 @@ isr_stub_%+%1:
 isr_stub_%+%1:
 
     push dword 0  ; error-code
+    
+    pushad
+
     push dword 0  ; signal that this interrupt doesn't have an error
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
-    
-    pushad
 
     mov eax, cr2
     push eax

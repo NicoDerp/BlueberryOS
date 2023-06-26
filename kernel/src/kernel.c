@@ -1,7 +1,5 @@
 
-
-//#define VERBOSE
-
+#include <kernel/logging.h>
 #include <kernel/tty.h>
 
 #include <kernel/multiboot2.h>
@@ -108,63 +106,49 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
 
-#ifdef VERBOSE
-    printf("kernelstart: 0x%x\n", KERNEL_START);
-    printf("kernelend: 0x%x\n", KERNEL_END);
-#endif
+    VERBOSE("kernelstart: 0x%x\n", KERNEL_START);
+    VERBOSE("kernelend: 0x%x\n", KERNEL_END);
 
     struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
-#ifdef VERBOSE
-        printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
-#endif
+        VERBOSE("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
 
         switch (tag->type)
         {
             case MULTIBOOT_TAG_TYPE_CMDLINE:
-#ifdef VERBOSE
-                printf("Command line = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
-#endif
+                VERBOSE("Command line = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
                 break;
             case MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME:
-#ifdef VERBOSE
-                printf("Boot loader name = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
-#endif
+                VERBOSE("Boot loader name = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
                 break;
             case MULTIBOOT_TAG_TYPE_MODULE:
                 struct multiboot_tag_module* tag_module = (struct multiboot_tag_module*) tag;
 
-#ifdef VERBOSE
-                printf("Module at 0x%x-0x%x. Command line '%s'\n",
+                VERBOSE("Module at 0x%x-0x%x. Command line '%s'\n",
                     p_to_v(tag_module->mod_start),
                     p_to_v(tag_module->mod_end),
                     tag_module->cmdline);
-#endif
                 size_t mod_size = tag_module->mod_end - tag_module->mod_start;
 
                 memcpy(&modules[moduleCount++], tag_module, mod_size);
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
-#ifdef VERBOSE
-                printf("mem_lower = %uKB, mem_upper = %uKB\n",
+                VERBOSE("mem_lower = %uKB, mem_upper = %uKB\n",
                   ((struct multiboot_tag_basic_meminfo *) tag)->mem_lower,
                   ((struct multiboot_tag_basic_meminfo *) tag)->mem_upper);
-#endif
                 break;
             case MULTIBOOT_TAG_TYPE_BOOTDEV:
-#ifdef VERBOSE
-                printf("Boot device 0x%x,%u,%u\n",
+                VERBOSE("Boot device 0x%x,%u,%u\n",
                   ((struct multiboot_tag_bootdev *) tag)->biosdev,
                   ((struct multiboot_tag_bootdev *) tag)->slice,
                   ((struct multiboot_tag_bootdev *) tag)->part);
-#endif
                 break;
             case MULTIBOOT_TAG_TYPE_MMAP:
                 {
-#ifdef VERBOSE
+#ifdef _VERBOSE
                     multiboot_memory_map_t *mmap;
 
                     printf("mmap\n");
@@ -204,7 +188,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
+#ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
+#endif
 
     printf("\nWelcome to BlueberryOS!\n");
 

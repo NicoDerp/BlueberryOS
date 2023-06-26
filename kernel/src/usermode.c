@@ -3,6 +3,7 @@
 #include <kernel/file.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
+#include <kernel/logging.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -79,7 +80,7 @@ process_t* findNextProcess(void) {
         if (!processes[currentProcessID].initialized) {
             printf("[ERROR] No current processes?? Idk what to do now\n");
             for (;;) {}
-            return (process_t*) -1;
+            return (process_t*) 0;
         }
 
         process = &processes[currentProcessID];
@@ -98,24 +99,142 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
+process_t* newProcessAt(file_t* file, uint32_t pid) {
+
+    if (pid >= PROCESSES_MAX) {
+        printf("[ERROR] Can't create process with pid outside maximum limit\n");
+        for (;;) {}
+    }
+
+    process_t* process = &processes[pid];
+    memset(process, 0, sizeof(process_t));
+
+    size_t len = strlen(file->fullpath);
+    if (len > PROCESS_MAX_NAME_LENGTH) {
+        printf("[ERROR] Max process name reached!\n");
+        len = PROCESS_MAX_NAME_LENGTH;
+    }
+
+    memcpy(process->name, file->fullpath, len);
+    process->name[len] = '\0';
+
+    bool isELF = isFileELF(file);
+    if (isELF) {
+        process->pd = loadELFIntoMemory(file);
+
+        elf_header_t* elf_header = (elf_header_t*) file->content;
+        process->entryPoint = elf_header->entryPoint;
+    } else {
+        process->pd = loadBinaryIntoMemory(file);
+        process->entryPoint = 0x0;
+    }
+
+    process->physical_stack = kalloc_frame();
+    memset((void*) process->physical_stack, 0, FRAME_4KB);
+
+    process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
+    process->virtual_stack_top = process->virtual_stack + STACK_TOP_OFFSET;
+
+    map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
+
+    VERBOSE("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+
+    process->state = RUNNING;
+    process->eip = process->entryPoint;
+    process->esp = process->virtual_stack_top;
+    process->file = file;
+    process->initialized = true;
+    process->parent = (process_t*) 0;
+
+    return process;
+}
+
 process_t* newProcess(file_t* file) {
 
-    process_t* process;
     bool found = false;
-    for (uint32_t i = 0; i < PROCESSES_MAX; i++) {
-        process = &processes[i];
-
-        if (!process->initialized) {
-            memset(process, 0, sizeof(process_t));
+    uint32_t index;
+    for (index = 0; index < PROCESSES_MAX; index++) {
+        if (!processes[index].initialized) {
             found = true;
-            process->id = i;
             break;
         }
     }
 
     if (!found) {
         printf("[ERROR] Max processes reached!\n");
-        return (process_t*) -1;
+        return (process_t*) 0;
+    }
+
+    return newProcessAt(file, index);
+}
+
+process_t* newProcessArgs(file_t* file, const char* args[]) {
+
+    process_t* process = newProcess(file);
+    setProcessArgs(process, args);
+
+    return process;
+}
+
+void setProcessArgs(process_t* process, const char* args[]) {
+
+    int argCount;
+    for (argCount = 0; args[argCount] != 0; argCount++) {}
+
+    //printf("argCount: %d\n", argCount);
+    if (argCount >= MAX_ARGS) {
+        printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
+        for (;;) {}
+    }
+
+    uint32_t strPointers[argCount];
+
+    // Push strings
+    for (int i = 0; i < argCount; i++) {
+        VERBOSE("Pushing str[%d] as '%s'\n", i, args[i]);
+
+        strPointers[i] = processPushStr(process, args[i]);
+    }
+
+    // Push string pointers
+    for (int i = 0; i < argCount; i++) {
+        int j = argCount - i - 1;
+
+        VERBOSE("Pushing argv[%d] as 0x%x\n", j, strPointers[j]);
+
+        processPush(process, strPointers[j]);
+
+    }
+
+    uint32_t esp = process->esp;
+
+    // argv must be zero-terminated
+    processPush(process, 0);
+
+    // argv
+    processPush(process, esp);
+
+    // Push argc
+    processPush(process, argCount);
+}
+
+int overwriteArgs(process_t* process, char* filename, const char* args[]) {
+
+    // TODO use enviromental variables n shi and current directory
+    file_t* file = getFile(filename);
+    if (!file) {
+        return -1;
+    }
+
+    // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
+    freeUserPagedirectory(process->pd);
+
+    memset(process->children, 0, sizeof(process_t*) * MAX_CHILDREN);
+    memset(&process->regs, 0, sizeof(regs_t));
+
+    if (process->id >= PROCESSES_MAX) {
+        printf("[ERROR] Can't create process with pid outside maximum limit\n");
+        return -1;
     }
 
     size_t len = strlen(file->fullpath);
@@ -138,77 +257,30 @@ process_t* newProcess(file_t* file) {
         process->entryPoint = 0x0;
     }
 
-    process->physical_stack = (uint32_t) kalloc_frame();
+    // Don't allocate new, just use old
+    //process->physical_stack = (uint32_t) kalloc_frame();
+
     memset((void*) process->physical_stack, 0, FRAME_4KB);
 
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + STACK_TOP_OFFSET;
 
-    map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
+    map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
 
-#ifdef VERBOSE
-    printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
-#endif
+    VERBOSE("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
 
     process->state = RUNNING;
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
-    //process->childrenCount = 0;
     process->initialized = true;
-    //process->parent = (process_t*) 0;
+    process->parent = (process_t*) 0;
 
-    return process;
-}
 
-process_t* newProcessArgs(file_t* file, const char* args[]) {
+    // Add args
+    setProcessArgs(process, args);
 
-    process_t* process = newProcess(file);
-
-    int argCount;
-    for (argCount = 0; args[argCount] != 0; argCount++) {}
-
-    //printf("argCount: %d\n", argCount);
-    if (argCount >= MAX_ARGS) {
-        printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
-        for (;;) {}
-    }
-
-    uint32_t strPointers[argCount];
-
-    // Push strings
-    for (int i = 0; i < argCount; i++) {
-#ifdef VERBOSE
-        printf("Pushing str[%d] as '%s'\n", i, args[i]);
-#endif
-
-        strPointers[i] = processPushStr(process, args[i]);
-    }
-
-    // Push string pointers
-    for (int i = 0; i < argCount; i++) {
-        int j = argCount - i - 1;
-
-#ifdef VERBOSE
-        printf("Pushing argv[%d] as 0x%x\n", j, strPointers[j]);
-#endif
-
-        processPush(process, strPointers[j]);
-
-    }
-
-    uint32_t esp = process->esp;
-
-    // argv must be zero-terminated
-    processPush(process, 0);
-
-    // argv
-    processPush(process, esp);
-
-    // Push argc
-    processPush(process, argCount);
-
-    return process;
+    return 0;
 }
 
 void terminateProcess(process_t* process, int status) {
@@ -227,6 +299,8 @@ void terminateProcess(process_t* process, int status) {
     // memset(process, 0, sizeof(process_t))
 
     // TODO free memory and shit
+    freeUserPagedirectory(process->pd);
+    kfree_frame(process->physical_stack);
 }
 
 void runProcess(process_t* process) {
@@ -312,6 +386,9 @@ void runCurrentProcess(void) {
         printf("[ERROR] Kernel tried to execute non-initialized currently running process\n");
         for (;;) {}
     }
+
+    // Load process's page directory
+    loadPageDirectory(process->pd);
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
@@ -407,7 +484,7 @@ uint32_t processPushStr(process_t* process, const char* str) {
         for (;;) {}
     }
 
-    memcpy((void*) (process->physical_stack + STACK_TOP_OFFSET - offset - len), str, len);
+    memcpy((void*) ((uint32_t) process->physical_stack + STACK_TOP_OFFSET - offset - len), str, len);
     process->esp -= len;
     //ret = process->esp + 1;
     ret = process->esp;

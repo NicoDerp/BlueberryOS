@@ -40,7 +40,7 @@ void kfree_frame(pageframe_t frame) {
         index /= FRAME_SIZE;
     }
     if (index >= FRAME_MAP_SIZE) {
-        printf("Index not in correct range\n");
+        printf("[ERROR] Index not in correct range: 0x%x from frame 0x%x\n", index, frame);
         return;
     }
 

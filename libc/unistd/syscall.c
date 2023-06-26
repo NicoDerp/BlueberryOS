@@ -19,6 +19,7 @@ function_t lookup[] = {
     syscall3, /* SYS_read    */
     syscall0, /* SYS_fork    */
     syscall1, /* SYS_waitpid */
+    syscall2, /* SYS_execvp  */
 };
 
 

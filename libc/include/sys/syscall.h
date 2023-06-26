@@ -11,6 +11,7 @@
 #define SYS_read    4
 #define SYS_fork    5
 #define SYS_waitpid 6
+#define SYS_execvp  7
 
 #endif
 
