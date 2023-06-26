@@ -106,7 +106,7 @@ process_t* newProcess(file_t* file) {
         process = &processes[i];
 
         if (!process->initialized) {
-            memset(&process, 0, sizeof(process_t));
+            memset(process, 0, sizeof(process_t));
             found = true;
             process->id = i;
             break;
