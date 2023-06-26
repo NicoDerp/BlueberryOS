@@ -40,6 +40,10 @@ OBJ = $(OBJ_C) $(OBJ_ASM)
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
+
+all:
+	$(MAKE) -j8 $(ISO)
+
 # Compiling C
 %.c.o: %.c
 	$(CC) -MD -c $^ -o $@ $(CFLAGS)
@@ -61,8 +65,6 @@ $(ISO): $(BIN) modules
 
 .PHONY: all clean rebuild check run run-bochs install modules
 .SUFFIXES: .o .c .asm
-
-all: $(ISO)
 
 clean:
 	rm -rf $(ISO) $(BIN) $(OBJ) $(OBJ:.o=.d) isodir initrd.tar
