@@ -222,7 +222,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     process = newProcessArgs(file, args);
 
-    file = getFile("/bin/userfunc");
+    file = getFile("/bin/shell");
     if (file == (file_t*) -1) {
         printf("[ERROR] Failed to load application /bin/shell\n");
         for (;;) {}

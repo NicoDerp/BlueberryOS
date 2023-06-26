@@ -110,8 +110,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_write):
             {
-                printf("Write!\n");
-
                 unsigned int fd = stack_state.ebx;
                 unsigned int buf = stack_state.ecx;
                 unsigned int count = stack_state.edx;
