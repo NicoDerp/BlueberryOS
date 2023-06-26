@@ -10,9 +10,10 @@
 
 
 
-#define MAX_DIRECTORIES 32
-#define MAX_FILES       32
-#define MAX_NAME_LENGTH 128
+#define MAX_DIRECTORIES      32
+#define MAX_FILES            32
+#define MAX_NAME_LENGTH      64
+#define MAX_FULL_PATH_LENGTH 256
 
 struct directory;
 struct file;
@@ -23,6 +24,7 @@ typedef enum {
 } dirtype_t;
 
 typedef struct directory {
+    char fullpath[MAX_FULL_PATH_LENGTH+1];
     char name[MAX_NAME_LENGTH+1];
     char mode[4];
     struct directory* parent;
@@ -40,6 +42,7 @@ typedef struct directory {
 } directory_t;
 
 typedef struct file {
+    char fullpath[MAX_FULL_PATH_LENGTH+1];
     char name[MAX_NAME_LENGTH+1];
     char mode[4];
     struct directory* parent;

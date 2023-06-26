@@ -117,13 +117,13 @@ process_t* newProcess(file_t* file) {
         return (process_t*) -1;
     }
 
-    size_t len = strlen(file->name);
+    size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
         printf("[ERROR] Max process name reached!\n");
         len = PROCESS_MAX_NAME_LENGTH;
     }
 
-    memcpy(process->name, file->name, len);
+    memcpy(process->name, file->fullpath, len);
     process->name[len] = '\0';
 
     bool isELF = isFileELF(file);

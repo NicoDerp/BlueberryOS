@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 
-#define PROCESS_MAX_NAME_LENGTH 128
+#define PROCESS_MAX_NAME_LENGTH (256+64)
 #define PROCESSES_MAX 32
 
 #define PROCESS_TIME 0x00F0

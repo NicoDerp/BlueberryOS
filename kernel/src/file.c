@@ -446,11 +446,7 @@ void parseFile(tar_header_t* header) {
     }
     */
 
-    // TODO LOT smaller
-    file_t* file = kalloc_frame();
-    memset(file, 0, sizeof(file_t));
-
-    //printf("Parsing file: %s\n", header->filename);
+    size_t len;
 
     size_t slash;
     directory_t* parent = findParent(header->filename, &slash, true);
@@ -465,10 +461,24 @@ void parseFile(tar_header_t* header) {
         for (;;) {}
     }
 
+    // TODO LOT smaller
+    file_t* file = kalloc_frame();
+    memset(file, 0, sizeof(file_t));
+
+    //printf("Parsing file: %s\n", header->filename);
+
+    // initrd: 6
+    len = strlen(header->filename) - 6;
+    if (len > MAX_FULL_PATH_LENGTH) {
+        printf("[ERROR] Full path is too large\n");
+        for (;;) {}
+    }
+    memcpy(file->fullpath, header->filename + 6, len + 1);
+
     parent->files[parent->fileCount++] = file;
     file->parent = parent;
 
-    size_t len = strlen(header->filename + slash);
+    len = strlen(header->filename + slash);
     if (len > MAX_NAME_LENGTH) {
         printf("[ERROR] Filename is too large\n");
         for (;;) {}
