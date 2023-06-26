@@ -55,6 +55,7 @@ FREEOBJS =\
 	unistd/read.o \
 	unistd/fork.o \
 	fcntl/open.o \
+	sys/wait.o \
 
 HOSTEDOBJS =
 

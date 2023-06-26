@@ -87,12 +87,17 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
     // Check if page-table is present
     if (pd[virtualIndex] & 1) {
         pagetable = (pagetable_t) p_to_v(pd[virtualIndex] & 0xFFFFF000);
+
+#ifdef VERBOSE
         printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+#endif
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
 
+#ifdef VERBOSE
         printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+#endif
 
         /*
         malloc(&pagetable, 0, FRAME_4KB);
@@ -136,12 +141,16 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
     if (present) {
         pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
 
+#ifdef VERBOSE
         printf("Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+#endif
     } else {
         // Allocate new pagetable if it isn't present
         pagetable = (pagetable_t) kalloc_frame();
 
+#ifdef VERBOSE
         printf("Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+#endif
 
         memset(pagetable, 0, FRAME_4KB);
     }

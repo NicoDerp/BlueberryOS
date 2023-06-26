@@ -78,7 +78,8 @@ typedef struct {
 
 typedef enum {
     RUNNING,
-    BLOCKED_KEYBOARD
+    BLOCKED_KEYBOARD,
+    BLOCKED_WAITPID,
 } process_state_t;
 
 struct process;
@@ -94,8 +95,8 @@ typedef struct process {
     pagedirectory_t pd;
     process_state_t state;
     struct process* parent;
+    uint32_t indexInParent;
     file_t* file;
-    uint32_t childrenCount;
     uint32_t entryPoint;
     uint32_t physical_stack;
     uint32_t virtual_stack;

@@ -197,6 +197,36 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             }
             break;
 
+        case (SYS_waitpid):
+            {
+                //if (!(ss & 0x3)) {
+                if (!(frame.cs & 0x3)) {
+                    printf("[ERROR] Kernel called waitpid?\n");
+                    for (;;) {}
+                }
+
+                process_t* process = getCurrentProcess();
+                process->state = BLOCKED_WAITPID;
+
+                process->blocked_regs.eax = stack_state.eax;
+                process->blocked_regs.ebx = stack_state.ebx;
+                process->blocked_regs.ecx = stack_state.ecx;
+                process->blocked_regs.edx = stack_state.edx;
+                process->blocked_regs.ebp = stack_state.ebp;
+                process->blocked_regs.edi = stack_state.edi;
+                process->blocked_regs.esi = stack_state.esi;
+
+                // Save registers
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                // Number of bytes read
+                process->regs.eax = 0;
+
+                // Switch to next process
+                switchProcess();
+            }
+            break;
+
         default:
             printf("Invalid syscall id '%d'\n", stack_state.eax);
     }

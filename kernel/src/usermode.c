@@ -106,6 +106,7 @@ process_t* newProcess(file_t* file) {
         process = &processes[i];
 
         if (!process->initialized) {
+            memset(&process, 0, sizeof(process_t));
             found = true;
             process->id = i;
             break;
@@ -143,17 +144,20 @@ process_t* newProcess(file_t* file) {
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + STACK_TOP_OFFSET;
 
-    printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p(process->physical_stack), process->virtual_stack, true, false);
+
+#ifdef VERBOSE
+    printf("Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+#endif
 
     process->state = RUNNING;
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
-    process->childrenCount = 0;
+    //process->childrenCount = 0;
     process->initialized = true;
+    //process->parent = (process_t*) 0;
 
-    printf("eip: 0x%x\n", process->eip);
     return process;
 }
 
@@ -174,16 +178,23 @@ process_t* newProcessArgs(file_t* file, const char* args[]) {
 
     // Push strings
     for (int i = 0; i < argCount; i++) {
+#ifdef VERBOSE
         printf("Pushing str[%d] as '%s'\n", i, args[i]);
+#endif
+
         strPointers[i] = processPushStr(process, args[i]);
     }
 
     // Push string pointers
     for (int i = 0; i < argCount; i++) {
         int j = argCount - i - 1;
+
+#ifdef VERBOSE
         printf("Pushing argv[%d] as 0x%x\n", j, strPointers[j]);
+#endif
+
         processPush(process, strPointers[j]);
-        //printf("a: '%s'\n", (char*) (strPointers[i] + process->physical_stack - process->virtual_stack_top));
+
     }
 
     uint32_t esp = process->esp;
@@ -191,7 +202,6 @@ process_t* newProcessArgs(file_t* file, const char* args[]) {
     // argv must be zero-terminated
     processPush(process, 0);
 
-    printf("esp: 0x%x\n", esp);
     // argv
     processPush(process, esp);
 
@@ -206,6 +216,12 @@ void terminateProcess(process_t* process, int status) {
     (void) status;
 
     process->initialized = false;
+
+    /*
+    if (process->parent) {
+        process->parent->children[process->indexInParent] = 0;
+    }
+    */
 
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
@@ -229,13 +245,23 @@ void runProcess(process_t* process) {
 
 void forkProcess(process_t* parent) {
 
-    if (parent->childrenCount >= MAX_CHILDREN) {
+    bool found = false;
+    size_t index;
+    for (index = 0; index < MAX_CHILDREN; index++) {
+        if (!parent->children[index]) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
         printf("[ERROR] Max children reached for process %d\n", parent->id);
 
         // Set to indicate error
         parent->regs.eax = -1;
         return;
     }
+
 
     process_t* child = newProcess(parent->file);
 
@@ -249,8 +275,7 @@ void forkProcess(process_t* parent) {
     child->parent = parent;
     child->esp = parent->esp;
     child->eip = parent->eip;
-
-    parent->children[parent->childrenCount++] = child;
+    parent->children[index] = child;
 
     parent->regs.eax = child->id;
     child->regs.eax = 0;
@@ -369,4 +394,3 @@ void set_kernel_stack(uint32_t esp) {
     sys_tss.ss0 = 0x10;  /* Kernel data segment */
     sys_tss.esp0 = esp;
 }
-

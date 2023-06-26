@@ -27,16 +27,27 @@ ASM = nasm
 ASMFLAGS = -felf32
 
 
-SRC_C = src/test.c src/shell.c src/loop.c
-SRC_ASM = src/userfunc.asm
+SRC_C = src/sbin/loop.c \
+		src/bin/test.c \
+		src/bin/shell.c \
+
+SRC_ASM = src/bin/userfunc.asm \
 
 OBJ_C = $(SRC_C:.c=.o)
 OBJ_ASM = $(SRC_ASM:.asm=.o)
 OBJS = $(OBJ_C) $(OBJ_ASM)
 
+noop=
+space = $(noop) $(noop)
+
 BIN_C = $(patsubst %.c,%,$(SRC_C))
 BIN_ASM = $(patsubst %.asm,%,$(SRC_ASM))
 BINS = $(BIN_C) $(BIN_ASM)
+OUT_BINS = $(patsubst src/%,initrd/%,$(BINS))
+#OUT = $(join $(BINS),  $(addprefix $(space),$(OUT_BINS)))
+#OUT = $(join $(subst $(space),$(space),$(BINS)),$(subst $(space),$(space),$(OUT_BINS)))
+
+DIRS = $(sort $(dir $(OUT_BINS)))
 
 DEPS = $(OBJS:.o=.d)
 
@@ -52,10 +63,14 @@ clean:
 
 rebuild: clean build
 
+#$(foreach (var1, var2), ($(BINS), $(OUT_BINS)), cp --preserve=timestamps $(var1) $(var2);)
+#$(foreach (var1, var2), ($(BINS), $(OUT_BINS)), cp --preserve=timestamps $(var1);)
+#cp -f --preserve=timestamps $(BINS) $(OUT_BINS)
+
 initrd: $(BINS)
 	rm -f initrd.tar
-	mkdir -p initrd/bin
-	cp -f --preserve=timestamps $(BINS) initrd/bin/.
+	mkdir -p $(DIRS)
+	$(subst ^, ,$(join $(addprefix cp^,$(BINS)),$(patsubst %,^%;,$(OUT_BINS))))
 
 initrd.tar: initrd
 	tar U -cvf initrd.tar initrd

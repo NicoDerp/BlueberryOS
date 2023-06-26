@@ -1,4 +1,7 @@
 
+
+//#define VERBOSE
+
 #include <kernel/tty.h>
 
 #include <kernel/multiboot2.h>
@@ -26,8 +29,6 @@
 #if !defined(__i386__)
 #error "The kernel needs to be compiled with an ix86-elf compiler"
 #endif
-
-#define VERBOSE 0
 
 typedef void (*module_func_t)(void);
 
@@ -107,7 +108,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
 
-#if VERBOSE == 1
+#ifdef VERBOSE
     printf("kernelstart: 0x%x\n", KERNEL_START);
     printf("kernelend: 0x%x\n", KERNEL_END);
 #endif
@@ -117,44 +118,44 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
-#if VERBOSE == 1
+#ifdef VERBOSE
         printf("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
 #endif
 
         switch (tag->type)
         {
             case MULTIBOOT_TAG_TYPE_CMDLINE:
-#if VERBOSE == 1
+#ifdef VERBOSE
                 printf("Command line = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
 #endif
                 break;
             case MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME:
-#if VERBOSE == 1
+#ifdef VERBOSE
                 printf("Boot loader name = '%s'\n", ((struct multiboot_tag_string *) tag)->string);
 #endif
                 break;
             case MULTIBOOT_TAG_TYPE_MODULE:
                 struct multiboot_tag_module* tag_module = (struct multiboot_tag_module*) tag;
 
-#if VERBOSE == 1
+#ifdef VERBOSE
                 printf("Module at 0x%x-0x%x. Command line '%s'\n",
-                    tag_module->mod_start + 0xC0000000,
-                    tag_module->mod_end + 0xC0000000,
-                    tag_module->cmdline + 0xC0000000);
+                    p_to_v(tag_module->mod_start),
+                    p_to_v(tag_module->mod_end),
+                    tag_module->cmdline);
 #endif
                 size_t mod_size = tag_module->mod_end - tag_module->mod_start;
 
                 memcpy(&modules[moduleCount++], tag_module, mod_size);
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
-#if VERBOSE == 1
+#ifdef VERBOSE
                 printf("mem_lower = %uKB, mem_upper = %uKB\n",
                   ((struct multiboot_tag_basic_meminfo *) tag)->mem_lower,
                   ((struct multiboot_tag_basic_meminfo *) tag)->mem_upper);
 #endif
                 break;
             case MULTIBOOT_TAG_TYPE_BOOTDEV:
-#if VERBOSE == 1
+#ifdef VERBOSE
                 printf("Boot device 0x%x,%u,%u\n",
                   ((struct multiboot_tag_bootdev *) tag)->biosdev,
                   ((struct multiboot_tag_bootdev *) tag)->slice,
@@ -163,7 +164,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                 break;
             case MULTIBOOT_TAG_TYPE_MMAP:
                 {
-#if VERBOSE == 1
+#ifdef VERBOSE
                     multiboot_memory_map_t *mmap;
 
                     printf("mmap\n");
@@ -203,31 +204,31 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
+    displayDirectory(&rootDir, 0);
+
     printf("\nWelcome to BlueberryOS!\n");
 
     //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
 
     // 0xC03FF000
 
-
     file_t* file;
-    process_t* process;
     const char* args[] = {"af", "Booga", 0};
 
     // TODO only run when there are no other processes
-    file = getFile("/bin/loop");
-    if (file == (file_t*) -1) {
-        printf("[ERROR] Failed to load application /bin/loop\n");
-        for (;;) {}
-    }
-    process = newProcessArgs(file, args);
-
-    file = getFile("/bin/shell");
-    if (file == (file_t*) -1) {
-        printf("[ERROR] Failed to load application /bin/shell\n");
+    file = getFile("/sbin/loop");
+    if (!file) {
+        printf("[ERROR] Failed to load application /sbin/loop\n");
         for (;;) {}
     }
     newProcessArgs(file, args);
+
+    file = getFile("/bin/shell");
+    if (!file) {
+        printf("[ERROR] Failed to load application /bin/shell\n");
+        for (;;) {}
+    }
+    process_t* process = newProcessArgs(file, args);
     //newProcessArgs(file, args);
 
     /*
@@ -246,12 +247,16 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     // Enable PIT interrupt
     irq_clear_mask(IRQ_TIMER);
 
+    // Skip waiting
+    runProcess(process);
+
     /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
     printf("Out: %d\n", a);
     */
 
     for (;;) {
+        asm("hlt");
     }
 
 }

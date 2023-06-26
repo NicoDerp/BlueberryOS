@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <sys/wait.h>
 #include <unistd.h>
 
 
@@ -28,10 +29,14 @@ void main(int argc, char* argv[]) {
         exit(1);
     } else if (pid == 0) {
         printf("I am child!\n");
+        printf("Waiting for input\n");
+        printf("Got char: %c\n", getchar());
         exit(0);
     } else {
-        //printf("I am parent and child is %d\n", pid);
-        printf("I am parent\n");
+        printf("I am parent and child is %d\n", pid);
+        printf("Waiting for child...\n");
+        wait(NULL);
+        printf("Done waiting!\n");
         exit(0);
     }
 
@@ -162,6 +167,8 @@ void main(int argc, char* argv[]) {
             // Do nothing
         } else if (strcmp(cmd, "exit") == 0) {
             exit(0);
+        } else if (strcmp(cmd, "clear") == 0) {
+
         } else if (strncmp(cmd, "echo ", 5) == 0) {
             printf("%s\n", cmd+5);
         } else {

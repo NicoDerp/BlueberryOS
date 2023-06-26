@@ -57,7 +57,7 @@ typedef struct {
 
 
 
-directory_t root;
+directory_t rootDir;
 
 
 
@@ -163,13 +163,17 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
     }
     */
 
-    printf("offset is %d bytes\n", elf_header->programTable);
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
         program_header_t* program = getProgramEntry(elf_header, i);
+
+#ifdef VERBOSE
         printf("Type: %d, vaddr: 0x%x, filesz: 0x%x, memsz: 0x%x, align: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->align);
+#endif
 
         if (program->filesz > FRAME_4KB) {
-            kerror("Can't load ELF because it contains a section over 4KB!\n");
+            printf("[ERROR] Can't load ELF because it contains a section over 4KB!\n");
+            for (;;) {}
+            return pd;
         }
 
         // Check if program header is loadable
@@ -214,7 +218,10 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
             // Map page
             map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false);
+
+#ifdef VERBOSE
             printf("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
+#endif
         }
     }
 
@@ -230,7 +237,9 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
     // ceil(file->size / FRAME_4KB)
     for (size_t i = 0; i < (file->size+FRAME_4KB-1)/FRAME_4KB; i++) {
 
+#ifdef VERBOSE
         printf("Allocating new pageframe to copy executable data with index %d\n", i);
+#endif
 
         uint32_t offset = i*FRAME_4KB;
 
@@ -254,7 +263,10 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
 
         // Map page
         map_page_pd(pd, v_to_p((uint32_t) pageframe + offset), 0x0 + offset, true, false);
+
+#ifdef VERBOSE
         printf("Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe + offset), 0x0 + offset);
+#endif
     }
 
 
@@ -269,7 +281,7 @@ file_t* getFileFromParent(directory_t* parent, char* name) {
         }
     }
 
-    return (file_t*) -1;
+    return (file_t*) 0;
 }
 
 directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
@@ -284,17 +296,17 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
                 return dir->link;
             } else {
                 printf("[ERROR] Unknown directory type %d\n", dir->type);
-                for (;;) {}
+                return (directory_t*) 0;
             }
         }
     }
 
-    return (directory_t*) -1;
+    return (directory_t*) 0;
 }
 
 directory_t* findParent(const char* filename, size_t* slash, bool init) {
 
-    directory_t* parent = &root;
+    directory_t* parent = &rootDir;
 
     char name[MAX_NAME_LENGTH+1];
     size_t ni = 0;
@@ -315,15 +327,15 @@ directory_t* findParent(const char* filename, size_t* slash, bool init) {
             *slash = i + 1;
 
             if (strcmp(name, "initrd") == 0 && init) {
-                parent = &root;
+                parent = &rootDir;
             } else if (strcmp(name, "") == 0) {
-                parent = &root;
+                parent = &rootDir;
             } else {
                 //printf("name so far: %s\n", name);
                 directory_t* p = getDirectoryFromParent(parent, name);
-                if (p == (directory_t*) -1) {
+                if (!p) {
                     //printf("[ERROR] Directory '%s' not found in parent '%s'\n", name, parent->name);
-                    return (directory_t*) -1;
+                    return (directory_t*) 0;
                 }
 
                 parent = p;
@@ -355,7 +367,7 @@ void parseDirectory(tar_header_t* header) {
     size_t slash;
     directory_t* parent = findParent(header->filename, &slash, true);
 
-    if (parent == (directory_t*) -1) {
+    if (!parent) {
         printf("[ERROR] Failed to find parent of name %s\n", header->filename);
         for (;;) {}
     }
@@ -385,18 +397,11 @@ void parseDirectory(tar_header_t* header) {
     directory->mode[3] = '\0';
 
 
-
-    directory_t* d;
-
     // Create '.'
-    d = createDirectory(directory, ".", directory->mode);
-    d->type = SYMBOLIC_LINK;
-    d->link = directory;
+    createSymbolicDirectory(directory, directory, ".", directory->mode);
 
     // Create '..'
-    d = createDirectory(directory, "..", parent->mode);
-    d->type = SYMBOLIC_LINK;
-    d->link = parent;
+    createSymbolicDirectory(directory, parent, "..", parent->mode);
 }
 
 directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
@@ -435,6 +440,45 @@ directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
     return directory;
 }
 
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, char mode[4]) {
+
+    // TODO LOT smaller
+    directory_t* directory = kalloc_frame();
+    memset(directory, 0, sizeof(directory_t));
+
+    if (parent->directoryCount >= MAX_DIRECTORIES) {
+        printf("[ERROR] Max directories reached\n");
+        for (;;) {}
+    }
+
+    parent->directories[parent->directoryCount++] = directory;
+    directory->parent = parent;
+
+
+    size_t len = strlen(name);
+
+    // Ignore slash at the end
+    if (name[len-1] == '/') {
+        len--;
+    }
+
+    if (len > MAX_NAME_LENGTH) {
+        printf("[ERROR] Filename is too large\n");
+        for (;;) {}
+    }
+
+    memcpy(directory->name, name, len);
+    directory->name[len] = '\0';
+
+    memcpy(directory->mode, mode, 3);
+    directory->mode[3] = '\0';
+
+    directory->type = SYMBOLIC_LINK;
+    directory->link = link;
+
+    return directory;
+}
+
 void parseFile(tar_header_t* header) {
 
     uint32_t filesize = oct2bin(header->size, 11);
@@ -451,7 +495,7 @@ void parseFile(tar_header_t* header) {
     size_t slash;
     directory_t* parent = findParent(header->filename, &slash, true);
 
-    if (parent == (directory_t*) -1) {
+    if (!parent) {
         printf("[ERROR] Failed to find parent of name %s\n", header->filename);
         for (;;) {}
     }
@@ -493,15 +537,13 @@ void parseFile(tar_header_t* header) {
 
     // TODO very risky. Not guaranteed consecutive
     // ceil(file->size / FRAME_4KB)
-    printf("Size is %d, looping %d times\n", filesize);
+    //printf("Size is %d, looping %d times\n", filesize);
     for (size_t i = 0; i < (filesize+FRAME_4KB-1)/FRAME_4KB; i++) {
 
         pageframe_t pf = kalloc_frame();
         if (i == 0) {
             file->content = (char*) pf;
         }
-
-        printf("0x%x\n", pf);
 
         /*
         uint32_t offset = i*FRAME_4KB;
@@ -557,13 +599,13 @@ void loadInitrd(struct multiboot_tag_module* module) {
     size_t offset = 512;
 
     header = (tar_header_t*) (uint32_t) module->mod_start;
-    strcpy(root.name, "/");
-    memcpy(root.mode, header->mode+4, 3);
-    root.mode[3] = '\0';
+    strcpy(rootDir.name, "/");
+    memcpy(rootDir.mode, header->mode+4, 3);
+    rootDir.mode[3] = '\0';
 
-    root.directoryCount = 0;
-    root.fileCount = 0;
-    //printf("mode: %s\n", root.mode);
+    rootDir.directoryCount = 0;
+    rootDir.fileCount = 0;
+    //printf("mode: %s\n", rootDir.mode);
 
     while (((uint32_t) module->mod_start + offset) <= (uint32_t) module->mod_end) {
 
@@ -605,8 +647,6 @@ void loadInitrd(struct multiboot_tag_module* module) {
         //printf("offset: %d\n", offset);
 
     }
-
-    displayDirectory(&root, 0);
 }
 
 file_t* getFile(char* filepath) {
@@ -614,8 +654,8 @@ file_t* getFile(char* filepath) {
     size_t slash;
     directory_t* dir = findParent(filepath, &slash, false);
 
-    if (dir == (directory_t*) -1) {
-        return (file_t*) -1;
+    if (!dir) {
+        return (file_t*) 0;
     }
 
     return getFileFromParent(dir, filepath + slash);

@@ -93,13 +93,19 @@ typedef struct
     char prefix[155];
 } tar_header_t;
 
+
+extern directory_t rootDir;
+
+
 bool isFileELF(file_t* file);
 
 void loadInitrd(struct multiboot_tag_module* module);
 file_t* getFile(char* filepath);
 
 directory_t* createDirectory(directory_t* parent, char* name, char mode[4]);
-directory_t* createSymbolicDirectory(directory_t* parent, char* name, char mode[4]);
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, char mode[4]);
+
+void displayDirectory(directory_t* dir, size_t space);
 
 pagedirectory_t loadELFIntoMemory(file_t* file);
 pagedirectory_t loadBinaryIntoMemory(file_t* file);

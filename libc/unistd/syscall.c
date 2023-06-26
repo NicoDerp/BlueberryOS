@@ -12,12 +12,13 @@ extern int syscall3(int, ...);
 
 typedef int (*function_t)(int, ...);
 function_t lookup[] = {
-    syscall1, /* SYS_exit  */
-    syscall3, /* SYS_write */
-    syscall0, /* SYS_yield */
-    syscall2, /* SYS_open  */
-    syscall3, /* SYS_read  */
-    syscall0, /* SYS_fork */
+    syscall1, /* SYS_exit    */
+    syscall3, /* SYS_write   */
+    syscall0, /* SYS_yield   */
+    syscall2, /* SYS_open    */
+    syscall3, /* SYS_read    */
+    syscall0, /* SYS_fork    */
+    syscall1, /* SYS_waitpid */
 };
 
 
