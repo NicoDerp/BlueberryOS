@@ -199,7 +199,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     // 0xC03FF000
 
     file_t* file;
-    const char* args[] = {"af", "Booga", 0};
+    char* args[] = {"af", "Booga", 0};
 
     // TODO only run when there are no other processes
     file = getFile("/sbin/loop");

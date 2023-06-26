@@ -187,7 +187,7 @@ void setProcessArgs(process_t* process, char* args[]) {
     int argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
 
-    //printf("argCount: %d\n", argCount);
+    printf("argCount: %d\n", argCount);
     if (argCount >= MAX_ARGS) {
         printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
         for (;;) {}
@@ -222,9 +222,11 @@ void setProcessArgs(process_t* process, char* args[]) {
 
     // Push argc
     processPush(process, argCount);
+
+    VERBOSE("Pushing argCount as %d\n", argCount);
 }
 
-int overwriteArgs(process_t* process, char* filename, const char* args[]) {
+int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // TODO use enviromental variables n shi and current directory
     file_t* file = getFile(filename);
@@ -234,6 +236,7 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
 
     // Backup
     pagedirectory_t oldPD = process->pd;
+    pageframe_t oldStack = process->physical_stack;
 
     memset(process->children, 0, sizeof(process_t*) * MAX_CHILDREN);
     memset(&process->regs, 0, sizeof(regs_t));
@@ -263,8 +266,7 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
         process->entryPoint = 0x0;
     }
 
-    // Don't allocate new, just use old
-    //process->physical_stack = (uint32_t) kalloc_frame();
+    process->physical_stack = kalloc_frame();
 
     memset((void*) process->physical_stack, 0, FRAME_4KB);
 
@@ -284,9 +286,11 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
 
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
+    VERBOSE("Argcount: %d\n", argCount);
 
     // Hack to not have to lookup in pagedirectory
-    char argsCopy[MAX_ARG_LENGTH+1][argCount];
+    //char argsCopy[MAX_ARG_LENGTH+1][argCount];
+    char argsCopy[argCount][MAX_ARG_LENGTH+1];
     char* argPointers[argCount+1];
 
     for (size_t i = 0; i < argCount; i++) {
@@ -296,12 +300,12 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
             for (;;) {}
         }
 
-        memcpy(argsCopy[i], args[i], len);
+        // Include '\0'
+        memcpy(argsCopy[i], args[i], len + 1);
         argPointers[i] = argsCopy[i];
     }
 
     argPointers[argCount] = NULL;
-
 
     // Add args
     loadPageDirectory(process->pd);
@@ -309,6 +313,7 @@ int overwriteArgs(process_t* process, char* filename, const char* args[]) {
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
     freeUserPagedirectory(oldPD);
+    kfree_frame(oldStack);
 
     return 0;
 }

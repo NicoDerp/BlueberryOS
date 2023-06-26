@@ -7,6 +7,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include <stdio.h>
+
 /*
 typedef struct {
     uint32_t present:1;
