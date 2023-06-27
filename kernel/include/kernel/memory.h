@@ -27,6 +27,7 @@ typedef enum {
 typedef void* pageframe_t;
 
 pageframe_t kalloc_frame(void);
+pageframe_t kalloc_frames(unsigned int count);
 void kfree_frame(pageframe_t frame);
 
 #endif /* KERNEL_MEMORY_H */

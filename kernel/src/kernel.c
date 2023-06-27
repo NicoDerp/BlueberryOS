@@ -212,14 +212,16 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     process_t* loop = newProcessArgs(file, args);
     (void) loop;
 
-    //file = getFile("/bin/shell");
-    file = getFile("/bin/test2");
+    file = getFile("/bin/shell");
+    //file = getFile("/bin/test2");
     if (!file) {
         printf("[ERROR] Failed to load application /bin/shell\n");
         for (;;) {}
     }
     process_t* process = newProcessArgs(file, args);
     //printProcessInfo(process);
+
+    for (;;) {}
 
     (void) process;
 

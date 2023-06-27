@@ -10,8 +10,14 @@ char* strtok(char* str, const char* delim) {
         prev = str;
     }
 
-    for (unsigned int i = 0; prev[i] != 0; i++) {
-        if (strchr(delim, prev[i]) != 0) {
+    for (unsigned int i = 0;; i++) {
+        if (prev[i] == 0 && i == 0) {
+            return (char*) 0;
+        } else if (prev[i] == 0) {
+            char* ret = prev;
+            prev += i;
+            return ret;
+        } else if (strchr(delim, prev[i]) != 0) {
             prev[i] = '\0';
             char* ret = prev;
             prev += i + 1;
