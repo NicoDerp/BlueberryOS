@@ -110,6 +110,8 @@ bool isFileELF(file_t* file) {
     }
 
     char magic[] = {0x7F, 'E', 'L', 'F'};
+    VERBOSE("0x%x %d %d %d\n", file->content[0], file->content[1], file->content[2], file->content[3]);
+    VERBOSE("%d\n", strncmp(file->content, magic, 4));
     if (strncmp(file->content, magic, 4) != 0) {
         printf("Module not ELF: Incorrect magic\n");
         return false;
