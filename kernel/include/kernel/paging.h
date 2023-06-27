@@ -57,9 +57,10 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
 void map_page_wtable_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool pwritable, bool pkernel, bool twritable, bool tkernel);
 void set_pagetable_flags_pd(pagedirectory_t pd, size_t virtualIndex, bool writable, bool kernel);
 
-
 void unmap_page(void* virtualaddr);
 void unmap_pagetable(size_t index);
+
+void printUserPagedirectory(pagedirectory_t pd);
 
 #endif /* KERNEL_PAGING_H */
 

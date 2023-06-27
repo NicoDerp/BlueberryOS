@@ -28,11 +28,11 @@ ASMFLAGS = -felf32
 
 
 SRC_C = src/sbin/loop.c \
-		src/bin/test.c \
-		src/bin/test2.c \
 		src/bin/shell.c \
+		src/usr/bin/test.c \
+		src/usr/bin/test2.c \
 
-SRC_ASM = src/bin/userfunc.asm \
+SRC_ASM = src/usr/bin/userfunc.asm \
 
 OBJ_C = $(SRC_C:.c=.o)
 OBJ_ASM = $(SRC_ASM:.asm=.o)

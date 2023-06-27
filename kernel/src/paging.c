@@ -264,3 +264,24 @@ void unmap_pagetable(size_t index) {
     flushPaging();
 }
 
+
+
+void printUserPagedirectory(pagedirectory_t pd) {
+
+    for (size_t j = 0; j < 768; j++) {
+        if (pd[j] & 1) {
+            printf("   - %d: 0x%x\n", j, pd[j]);
+            pagetable_t pagetable = (pagetable_t) p_to_v(pd[j] & 0xFFFFF000);
+            for (size_t k = 0; k < 1024; k++) {
+                if (pagetable[k] & 1) {
+                    bool rw = pagetable[k] & 0x2;
+                    bool kernel = !(pagetable[k] & 0x4);
+                    printf("     - Page %d for 0x%x rw %d k %d: 0x%x\n", k, FRAME_4KB*k + FRAME_4MB*j, rw, kernel, pagetable[k] & ~(0x7));
+                }
+            }
+        }
+    }
+}
+
+
+

@@ -60,7 +60,8 @@ typedef struct {
 
 directory_t rootDir;
 
-
+pageframe_t currentPageframe = 0;
+uint32_t currentLocation;
 
 
 static inline section_header_t* getSectionHeader(elf_header_t* elf_header) {
@@ -407,10 +408,52 @@ directory_t* findParent(const char* filename, size_t* slash, bool init) {
     return parent;
 }
 
+directory_t* allocateDirectory(void) {
+
+    VERBOSE("allocateDirectory: Allocating\n");
+
+    // Allocate new frame if we haven't yet or there isn't enough space left
+    if (currentPageframe == 0 || (currentLocation + sizeof(directory_t)) > ((uint32_t) currentPageframe + FRAME_4KB)) {
+        VERBOSE("allocateDirectory: Allocating new frame\n");
+        currentPageframe = kalloc_frame();
+        currentLocation = (uint32_t) currentPageframe;
+    }
+
+    directory_t* dir = (directory_t*) currentLocation;
+    currentLocation += sizeof(directory_t);
+
+    // Align to 4 bytes
+    currentLocation = (currentLocation + 4 - 1) & -4;
+
+    return dir;
+}
+
+file_t* allocateFile(void) {
+
+    VERBOSE("allocateFile: Allocating\n");
+
+    // Allocate new frame if we haven't yet or there isn't enough space left
+    if (currentPageframe == 0 || (currentLocation + sizeof(file_t)) > ((uint32_t) currentPageframe + FRAME_4KB)) {
+        VERBOSE("allocateFile: Allocating new frame\n");
+        currentPageframe = kalloc_frame();
+        currentLocation = (uint32_t) currentPageframe;
+    }
+
+    file_t* dir = (file_t*) currentLocation;
+    currentLocation += sizeof(file_t);
+
+    // Align to 4 bytes
+    currentLocation = (currentLocation + 4 - 1) & -4;
+
+    return dir;
+}
+
+
 void parseDirectory(tar_header_t* header) {
 
-    // TODO LOT smaller
-    directory_t* directory = kalloc_frame();
+    VERBOSE("parseDirectory: parsing %s\n", header->filename);
+
+    directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
 
     //printf("Parsing dir: %s\n", header->filename);
@@ -460,12 +503,13 @@ void parseDirectory(tar_header_t* header) {
 
     // Create '..'
     createSymbolicDirectory(directory, parent, "..", parent->mode);
+
+    VERBOSE("parseDirectory: end\n");
 }
 
 directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
 
-    // TODO LOT smaller
-    directory_t* directory = kalloc_frame();
+    directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
@@ -500,8 +544,7 @@ directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
 
 directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, char mode[4]) {
 
-    // TODO LOT smaller
-    directory_t* directory = kalloc_frame();
+    directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
@@ -539,6 +582,8 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
 
 void parseFile(tar_header_t* header) {
 
+    VERBOSE("parseFile: parsing %s\n", header->filename);
+
     uint32_t filesize = oct2bin(header->size, 11);
 
     /*
@@ -563,8 +608,7 @@ void parseFile(tar_header_t* header) {
         for (;;) {}
     }
 
-    // TODO LOT smaller
-    file_t* file = kalloc_frame();
+    file_t* file = allocateFile();
     memset(file, 0, sizeof(file_t));
 
     //printf("Parsing file: %s\n", header->filename);
@@ -593,35 +637,15 @@ void parseFile(tar_header_t* header) {
 
     file->size = filesize;
 
-    // TODO very risky. Not guaranteed consecutive
     // ceil(file->size / FRAME_4KB)
     //printf("Size is %d, looping %d times\n", filesize);
-    for (size_t i = 0; i < (filesize+FRAME_4KB-1)/FRAME_4KB; i++) {
 
-        pageframe_t pf = kalloc_frame();
-        if (i == 0) {
-            file->content = (char*) pf;
-        }
-
-        /*
-        uint32_t offset = i*FRAME_4KB;
-
-        if ((uint32_t) pf != (uint32_t) file->content + offset) {
-            printf("[ERROR] Can't load file because frames aren't consequtive\n");
-            for (;;) {}
-        }
-
-        uint32_t size;
-        if (i == (filesize+FRAME_4KB-1)/FRAME_4KB-1) {
-            size = filesize % FRAME_4KB;
-        } else {
-            size = FRAME_4KB;
-        }
-        */
-
-    }
-
+    size_t count = (filesize+FRAME_4KB-1)/FRAME_4KB;
+    VERBOSE("parseFile: Allocating %d consecutive frames\n", count);
+    file->content = (char*) kalloc_frames(count);
     memcpy((void*) file->content, (void*) ((uint32_t) header + 512), filesize);
+
+    VERBOSE("parseFile: end\n");
 }
 
 void displayDirectory(directory_t* dir, size_t space) {
@@ -670,10 +694,14 @@ void loadInitrd(struct multiboot_tag_module* module) {
 
         header = (tar_header_t*) (uint32_t) (module->mod_start + offset);
 
+        VERBOSE("mod_start at 0x%x\n", module->mod_start);
+        VERBOSE("offset is %d\n", offset);
+        VERBOSE("??\n");
         if (memcmp(header->magic, "ustar", 5) != 0) {
             // EOF
             break;
         }
+        VERBOSE("a\n");
 
         /*
         printf("Name: '%s'\n", header->filename);
@@ -688,7 +716,6 @@ void loadInitrd(struct multiboot_tag_module* module) {
         // Normal file
         if (header->typeflag[0] == '0') {
 
-            // TODO parent
             parseFile(header);
 
         } else if (header->typeflag[0] == '5') {
@@ -701,6 +728,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
         }
 
         uint32_t size = oct2bin(header->size, 11);
+        VERBOSE("size is '%s'\n", header->size);
         offset += 512 + (-size % 512) + size;
 
         //printf("offset: %d\n", offset);

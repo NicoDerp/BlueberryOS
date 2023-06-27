@@ -203,6 +203,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     file_t* file;
     char* args[] = {"af", "Booga", 0};
 
+    /*
     // TODO only run when there are no other processes
     file = getFile("/sbin/loop");
     if (!file) {
@@ -211,6 +212,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     process_t* loop = newProcessArgs(file, args);
     (void) loop;
+    */
 
     file = getFile("/bin/shell");
     //file = getFile("/bin/test2");
@@ -223,23 +225,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     (void) process;
 
-    /*
-    for (size_t j = 0; j < 768; j++) {
-        if (process->pd[j] & 1) {
-            printf("   - %d: 0x%x\n", j, process->pd[j]);
-            pagetable_t pagetable = (pagetable_t) p_to_v(process->pd[j] & 0xFFFFF000);
-            for (size_t k = 0; k < 1024; k++) {
-                if (pagetable[k] & 1) {
-                    bool rw = pagetable[k] & 0x2;
-                    bool kernel = !(pagetable[k] & 0x4);
-                    printf("     - Page %d for 0x%x rw %d k %d: 0x%x\n", k, FRAME_4KB*k + FRAME_4MB*j, rw, kernel, pagetable[k] & ~(0x7));
-                }
-            }
-        }
-    }
-
-    for (;;) {}
-    */
+    //printUserPagedirectory(process->pd);
 
 
 
@@ -250,10 +236,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     //runProcess(loop);
     runProcess(process);
 
-    /*
-    int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
-    printf("Out: %d\n", a);
-    */
 
     for (;;) {
         asm("hlt");
