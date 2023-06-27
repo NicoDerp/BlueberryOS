@@ -1,12 +1,12 @@
 
 #include <sys/syscall.h>
 #include <unistd.h>
-
 #include <stddef.h>
 
 
-int read(int fd, void* buf, size_t count) {
+extern int syscall3(int, int, int, int);
 
-    return syscall(SYS_read, fd, buf, count);
+int read(int fd, void* buf, size_t count) {
+    return syscall3(SYS_read, fd, (int) buf, count);
 }
 

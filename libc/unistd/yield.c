@@ -2,7 +2,10 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+
+extern int syscall0(int);
+
 void yield(void) {
-    syscall(SYS_yield);
+    syscall0(SYS_yield);
 }
 

@@ -12,6 +12,7 @@
 #define SYS_fork    5
 #define SYS_waitpid 6
 #define SYS_execvp  7
+#define SYS_getcwd  8
 
 #endif
 

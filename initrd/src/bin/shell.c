@@ -22,6 +22,7 @@ void execArgs(char** args) {
     } else if (pid == 0) {
         if (execvp(args[0], args) == -1) {
             printf("%s: command not found\n", args[0]);
+            return;
         }
 
         exit(0);
@@ -39,6 +40,14 @@ void main(int argc, char* argv[]) {
     (void) argv;
 */
 void main() {
+
+    char path[32];
+    if (getcwd(path, sizeof(path)) != NULL)
+        printf("path: '%s'\n", path);
+    else
+        printf("error\n");
+
+    for (;;) {}
 
     char cmd[MAX_LINE_LENGTH+1];
     char history[MAX_LINE_LENGTH][HISTORY_SIZE];

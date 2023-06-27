@@ -120,7 +120,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 handleWaitpidBlock(process);
 
-                printf("process called exit: %d %s\n", process->id, process->name);
+                VERBOSE("SYS_exit: Process called exit: %d %s\n", process->id, process->name);
                 terminateProcess(process, status);
 
                 // Switch to next process
@@ -144,7 +144,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                         terminal_write((void*) buf, count);
                     }
                 } else {
-                    printf("Invalid fd '%d'\n", fd);
+                    printf("[ERROR] Invalid fd '%d'\n", fd);
                 }
             }
 
@@ -284,6 +284,36 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Since we have changed entire process then we need
                 //  to reload those changes
                 runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_getcwd):
+            {
+                if (!(frame.cs & 0x3)) {
+                    printf("[ERROR] Kernel called getcwd?\n");
+                    for (;;) {}
+                }
+
+                char* buf = (char*) stack_state.ebx;
+                size_t size = stack_state.ecx;
+
+                process_t* process = getCurrentProcess();
+
+                // Null character included
+                size_t len = strlen(process->cwd->fullpath) + 1;
+
+                if (len > size) {
+
+                    // Indicate error
+                    process->regs.eax = 0;
+
+                } else {
+                    memcpy(buf, process->cwd->fullpath, len);
+
+                    // Indicate sucess
+                    process->regs.eax = (uint32_t) buf;
+                }
             }
 
             break;

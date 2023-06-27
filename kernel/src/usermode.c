@@ -164,6 +164,12 @@ process_t* newProcess(file_t* file) {
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
+    process->cwd = getDirectory("/");
+
+    if (!process->cwd) {
+        printf("[ERROR] Failed to find root directory for process\n");
+    }
+
     process->initialized = true;
     process->parent = (process_t*) 0;
 
@@ -284,6 +290,9 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     // Keep parent
     //process->parent = (process_t*) 0;
 
+    // Keep cwd
+    //process->cwd = getDirectory("/");
+
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
     VERBOSE("overwriteArgs: argCount: %d\n", argCount);
@@ -392,6 +401,7 @@ void forkProcess(process_t* parent) {
     child->parent = parent;
     child->esp = parent->esp;
     child->eip = parent->eip;
+    child->cwd = parent->cwd;
     child->indexInParent = index;
     parent->children[index] = child;
 
@@ -427,7 +437,6 @@ void switchProcess(void) {
     pit_set_count(PROCESS_TIME);
 
     VERBOSE("switchProcess: Entering process %d:%s at 0x%x with esp 0x%x\n", process->id, process->name, process->eip, process->esp);
-
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);

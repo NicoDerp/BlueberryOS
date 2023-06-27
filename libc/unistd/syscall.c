@@ -5,21 +5,22 @@
 
 #include <stdio.h>
 
-extern int syscall0(int, ...);
-extern int syscall1(int, ...);
-extern int syscall2(int, ...);
-extern int syscall3(int, ...);
+extern int syscalla0(int, ...);
+extern int syscalla1(int, ...);
+extern int syscalla2(int, ...);
+extern int syscalla3(int, ...);
 
 typedef int (*function_t)(int, ...);
 function_t lookup[] = {
-    syscall1, /* SYS_exit    */
-    syscall3, /* SYS_write   */
-    syscall0, /* SYS_yield   */
-    syscall2, /* SYS_open    */
-    syscall3, /* SYS_read    */
-    syscall0, /* SYS_fork    */
-    syscall1, /* SYS_waitpid */
-    syscall2, /* SYS_execvp  */
+    syscalla1, /* SYS_exit    */
+    syscalla3, /* SYS_write   */
+    syscalla0, /* SYS_yield   */
+    syscalla2, /* SYS_open    */
+    syscalla3, /* SYS_read    */
+    syscalla0, /* SYS_fork    */
+    syscalla1, /* SYS_waitpid */
+    syscalla2, /* SYS_execvp  */
+    syscalla2, /* SYS_getcwd  */
 };
 
 

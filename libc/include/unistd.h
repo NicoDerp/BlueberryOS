@@ -24,6 +24,7 @@ int read(int fd, void* buf, size_t count);
 void yield(void);
 pid_t fork(void);
 int execvp(const char* file, char* const argv[]);
+char* getcwd(char* buf, size_t size);
 
 #ifdef __cplusplus
 }

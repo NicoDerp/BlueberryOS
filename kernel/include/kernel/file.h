@@ -100,6 +100,8 @@ extern directory_t rootDir;
 bool isFileELF(file_t* file);
 
 void loadInitrd(struct multiboot_tag_module* module);
+
+directory_t* getDirectory(char* path);
 file_t* getFile(char* filepath);
 
 directory_t* createDirectory(directory_t* parent, char* name, char mode[4]);

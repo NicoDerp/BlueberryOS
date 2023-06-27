@@ -346,6 +346,7 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
                 return dir->link;
             } else {
                 printf("[ERROR] Unknown directory type %d\n", dir->type);
+                for (;;) {}
                 return (directory_t*) 0;
             }
         }
@@ -414,6 +415,7 @@ void parseDirectory(tar_header_t* header) {
 
     //printf("Parsing dir: %s\n", header->filename);
 
+    size_t len;
     size_t slash;
     directory_t* parent = findParent(header->filename, &slash, true);
 
@@ -431,9 +433,15 @@ void parseDirectory(tar_header_t* header) {
 
     directory->parent = parent;
 
+    len = strlen(header->filename) - 6;
+    if (len > MAX_FULL_PATH_LENGTH) {
+        printf("[ERROR] Full path is too large\n");
+        for (;;) {}
+    }
+    memcpy(directory->fullpath, header->filename+6, len + 1);
 
     // Ignore slash at the end
-    size_t len = strlen(header->filename + slash) - 1;
+    len = strlen(header->filename + slash) - 1;
 
     if (len > MAX_NAME_LENGTH) {
         printf("[ERROR] Filename is too large\n");
@@ -649,6 +657,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
     size_t offset = 512;
 
     header = (tar_header_t*) (uint32_t) module->mod_start;
+    strcpy(rootDir.fullpath, "/");
     strcpy(rootDir.name, "/");
     memcpy(rootDir.mode, header->mode+4, 3);
     rootDir.mode[3] = '\0';
@@ -699,16 +708,32 @@ void loadInitrd(struct multiboot_tag_module* module) {
     }
 }
 
+directory_t* getDirectory(char* path) {
+
+    size_t slash;
+    directory_t* parent = findParent(path, &slash, false);
+
+    if (!parent) {
+        return (directory_t*) 0;
+    }
+
+    if (strcmp(parent->name, path) == 0) {
+        return parent;
+    }
+
+    return getDirectoryFromParent(parent, path + slash);
+}
+
 file_t* getFile(char* filepath) {
 
     size_t slash;
-    directory_t* dir = findParent(filepath, &slash, false);
+    directory_t* parent = findParent(filepath, &slash, false);
 
-    if (!dir) {
+    if (!parent) {
         return (file_t*) 0;
     }
 
-    return getFileFromParent(dir, filepath + slash);
+    return getFileFromParent(parent, filepath + slash);
 }
 
 unsigned int oct2bin(unsigned char* str, int size) {

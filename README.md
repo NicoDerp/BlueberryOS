@@ -20,6 +20,7 @@ This is very in-development and just a hobby-project.
 - [x] Preemptive os
 - [x] Filesystem (with initrd)
 - [ ] Shell
+- [ ] Memory allocator
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit
