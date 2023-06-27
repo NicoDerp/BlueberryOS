@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 
-extern void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
+extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
 
 void initialize_tss(tss_t* tss);
 
@@ -101,19 +101,34 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcessAt(file_t* file, uint32_t pid) {
+process_t* newProcess(file_t* file) {
 
-    VERBOSE("newProcessAt: Creating new process with id %d\n", pid);
+    process_t* process;
+    bool found = false;
+    uint32_t index;
+    for (index = 0; index < PROCESSES_MAX; index++) {
+        if (!processes[index].initialized) {
+            found = true;
+            process = &processes[index];
+            memset(process, 0, sizeof(process_t));
+            break;
+        }
+    }
 
-    if (pid >= PROCESSES_MAX) {
+    if (!found) {
+        printf("[ERROR] Max processes reached!\n");
+        for (;;) {}
+        return (process_t*) 0;
+    }
+
+    VERBOSE("newProcess: Creating new process with id %d\n", index);
+
+    if (index >= PROCESSES_MAX) {
         printf("[ERROR] Can't create process with pid outside maximum limit\n");
         for (;;) {}
     }
 
-    process_t* process = &processes[pid];
-    memset(process, 0, sizeof(process_t));
-
-    process->id = pid;
+    process->id = index;
 
     size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
@@ -142,9 +157,8 @@ process_t* newProcessAt(file_t* file, uint32_t pid) {
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + STACK_TOP_OFFSET;
 
+    VERBOSE("newProcess: Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
-
-    VERBOSE("newProcessAt: Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
 
     process->state = RUNNING;
     process->eip = process->entryPoint;
@@ -154,26 +168,6 @@ process_t* newProcessAt(file_t* file, uint32_t pid) {
     process->parent = (process_t*) 0;
 
     return process;
-}
-
-process_t* newProcess(file_t* file) {
-
-    bool found = false;
-    uint32_t index;
-    for (index = 0; index < PROCESSES_MAX; index++) {
-        if (!processes[index].initialized) {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found) {
-        printf("[ERROR] Max processes reached!\n");
-        for (;;) {}
-        return (process_t*) 0;
-    }
-
-    return newProcessAt(file, index);
 }
 
 process_t* newProcessArgs(file_t* file, char* args[]) {
@@ -231,6 +225,8 @@ void setProcessArgs(process_t* process, char* args[]) {
 
 int overwriteArgs(process_t* process, char* filename, const char** args) {
 
+    VERBOSE("overwriteArgs: Overwriting process %d:%s with %s\n", process->id, process->name, filename);
+
     // TODO use enviromental variables n shi and current directory
     file_t* file = getFile(filename);
     if (!file) {
@@ -276,9 +272,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     process->virtual_stack = 4*FRAME_4KB; // Place stack at some place 4KB
     process->virtual_stack_top = process->virtual_stack + STACK_TOP_OFFSET;
 
-    map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
-
     VERBOSE("overwriteArgs: Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
+    map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
 
     process->state = RUNNING;
     process->eip = process->entryPoint;
@@ -353,7 +348,7 @@ void runProcess(process_t* process) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
-    VERBOSE("runProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
+    VERBOSE("runProcess: Entering process %d:%s at 0x%x with esp 0x%x\n", process->id, process->name, process->eip, process->esp);
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
@@ -429,7 +424,8 @@ void switchProcess(void) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
-    VERBOSE("switchProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
+    VERBOSE("switchProcess: Entering process %d:%s at 0x%x with esp 0x%x\n", process->id, process->name, process->eip, process->esp);
+
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);

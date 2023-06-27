@@ -246,9 +246,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
             }
         }
     }
-    */
 
-    //for (;;) {}
+    for (;;) {}
+    */
 
 
 

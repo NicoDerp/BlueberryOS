@@ -1,4 +1,5 @@
 
+#include <kernel/logging.h>
 #include <kernel/idt.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
@@ -96,6 +97,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         printf("\nSyscall %d from %d %s\n", stack_state.eax, p->id, p->name);
     }
     */
+
+    VERBOSE("Got syscall %d\n", stack_state.eax);
 
     switch (stack_state.eax) {
         case (SYS_exit):
@@ -365,16 +368,20 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 
         PIC_sendEOI(irq);
 
+        printf("scan: %d\n", scancode);
         if (scancode < 128) {
             char key = keyboard_US[scancode];
-            //printf("scan: %d, %d\n", scancode, key);
 
             process_t* process = getCurrentProcess();
             if (process->initialized) {
                 // Only save registers if we came from userspace
+                /*
                 if (frame.cs & 0x3) { // TODO or ss?
+                    VERBOSE("INT_KEYBOARD: Saving registers for %d:%s\n", process->id, process->name);
+
                     saveRegisters(process, &stack_state, &frame, esp);
                 }
+                */
 
                 // Good change no processes are initialized if current isn't
                 handleKeyboardBlock(key);
@@ -387,8 +394,10 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         PIC_sendEOI(irq);
 
         if (tickCounter == 3) {
-            printf("Task switch!\n");
+        //if (tickCounter == 50) {
             tickCounter = 0;
+
+            VERBOSE("INT_TIMER: Task switch!\n");
 
             /*
             printf(" - cs: 0x%x\n", frame.cs);
@@ -401,10 +410,13 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             // Only save registers if we came from userspace
             if (frame.cs & 0x3) {
 
+                VERBOSE("INT_TIMER: Came from userspace\n");
+
                 // Save registers
                 process_t* process = getCurrentProcess();
                 if (process->initialized) {
-                    //printf("Saving regs\n");
+                    VERBOSE("INT_TIMER: Saving registers for %d:%s\n", process->id, process->name);
+
                     saveRegisters(process, &stack_state, &frame, esp);
                 }
             }
@@ -413,6 +425,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             switchProcess();
         }
     } else {
+        VERBOSE("Got unknown IRQ %d\n", interrupt_id);
         printf("Unknown IRQ %d\n", interrupt_id);
         for (;;) {}
     }

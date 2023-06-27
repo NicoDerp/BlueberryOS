@@ -34,10 +34,13 @@ void execArgs(char** args) {
     }
 }
 
+/*
 void main(int argc, char* argv[]) {
 
     (void) argc;
     (void) argv;
+*/
+void main() {
 
     char cmd[MAX_LINE_LENGTH+1];
     char history[MAX_LINE_LENGTH][HISTORY_SIZE];
@@ -92,7 +95,7 @@ void main(int argc, char* argv[]) {
                     }
 
                     strcpy(cmd, history[historyCount - historyScroll]);
-                    printf(cmd);
+                    printf("%s", cmd);
 
                     size_t len = strlen(cmd);
                     index = len;
@@ -121,7 +124,7 @@ void main(int argc, char* argv[]) {
                     size_t len = strlen(history[historyCount - historyScroll]);
                     memcpy(cmd, history[historyCount - historyScroll], len);
                     cmd[len] = '\0';
-                    printf(cmd);
+                    printf("%s", cmd);
 
                     index = len;
                     cursor = len;

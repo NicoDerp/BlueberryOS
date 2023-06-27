@@ -168,7 +168,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
         program_header_t* program = getProgramEntry(elf_header, i);
 
-        VERBOSE("loadELFIntoMemory: %d va: 0x%x, filesz: 0x%x, memsz: 0x%x, offset: 0x%x\n", program->type, program->vaddr, program->filesz, program->memsz, program->offset);
+        VERBOSE("loadELFIntoMemory: %d va: 0x%x, filesz: 0x%x, memsz: 0x%x, offset: 0x%x\n", i, program->vaddr, program->filesz, program->memsz, program->offset);
 
         if (program->filesz > FRAME_4KB) {
             printf("[ERROR] Can't load ELF because it contains a section over 4KB!\n");
@@ -197,20 +197,32 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                 return pd;
             }
 
+            if (program->filesz > program->memsz) {
+                printf("[ERROR] Can't load ELF program section because its filesz (%d) is greater than its memsz (%d)\n", program->filesz, program->memsz);
+                for (;;) {}
+                return pd;
+            }
+
             // Allocate memory for program header
             pageframe_t pageframe = kalloc_frame();
+
+            VERBOSE("Allocated pageframe at 0x%x\n", pageframe);
+
             void* data = (void*) ((uint32_t) file->content + program->offset);
 
-            // TODO here is risk of buffer overflow
             // Same as mod 1024 but better
-            //uint32_t offset = program->vaddr & 0x03FF;
+            uint32_t physOffset = program->vaddr & 0x03FF;
+            VERBOSE("loadELFIntoMemory: Physical offset: 0x%x\n", physOffset);
 
             // Set pageframe to zero with size of memsz
-            memset(pageframe, 0, program->memsz);
+            memset(pageframe + physOffset, 0, program->memsz);
+
+            //VERBOSE("loadELFIntoMemory: Offset was 0x%x, now 0x%x\n", program->offset, program->offset % FRAME_4KB);
 
             // Copy program header data to pageframe
             //memcpy(pageframe+offset, data, program->filesz);
-            memcpy(pageframe + program->offset, data, program->filesz);
+            //memcpy(pageframe + program->offset, data, program->filesz);
+            memcpy(pageframe + physOffset, data, program->filesz);
 
             /*
             printf("Program header %d\n", i);
@@ -223,15 +235,12 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             bool writable = program->flags & 0x2;
 
             VERBOSE("loadELFIntoMemory: Flags in program header: %d, %d\n", program->flags, writable);
+            VERBOSE("loadELFIntoMemory: Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
 
             // Map page
-            //map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false);
-            //map_page_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, true, false);
-
             // Set table to readwrite, but page can vary
             map_page_wtable_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr, writable, false, true, false);
 
-            VERBOSE("loadELFIntoMemory: Mapping 0x%x to 0x%x\n", v_to_p((uint32_t) pageframe), program->vaddr);
         } else {
             printf("[ERROR] Non-supported program header type %d\n", program->type);
             for (;;) {}
