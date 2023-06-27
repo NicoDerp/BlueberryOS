@@ -13,10 +13,12 @@ char* strtok(char* str, const char* delim) {
     for (unsigned int i = 0; prev[i] != 0; i++) {
         if (strchr(delim, prev[i]) != 0) {
             prev[i] = '\0';
-            prev = prev + i + 1;
-            return prev;
+            char* ret = prev;
+            prev += i + 1;
+            return ret;
         }
     }
+
     return (char*) 0;
 }
 

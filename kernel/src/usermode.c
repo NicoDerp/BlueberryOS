@@ -55,6 +55,8 @@ void install_tss(uint8_t* gdt) {
 
 process_t* findNextProcess(void) {
 
+    VERBOSE("findNextProcess\n");
+
     process_t* process;
     bool found = false;
     uint32_t i = currentProcessID + 1;
@@ -90,7 +92,7 @@ process_t* findNextProcess(void) {
         }
     }
 
-    //printf("Found process %d\n", process->id);
+    VERBOSE("findNextProcess: Found process %d:%s\n", process->id, process->name);
 
     return process;
 }
@@ -333,6 +335,8 @@ void terminateProcess(process_t* process, int status) {
 
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
+    //
+    VERBOSE("terminateProcess: Terminating process %d:%s\n", process->id, process->name);
 
     // TODO free memory and shit
     freeUserPagedirectory(process->pd);
@@ -349,11 +353,17 @@ void runProcess(process_t* process) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
+    VERBOSE("runProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
+
     // Enter usermode
-    enter_usermode(process->entryPoint, process->virtual_stack_top, process->regs);
+    enter_usermode(process->eip, process->esp, process->regs);
+
+    __builtin_unreachable();
 }
 
 void forkProcess(process_t* parent) {
+
+    VERBOSE("forkProcess: Forking process %d:%s\n", parent->id, parent->name);
 
     bool found = false;
     size_t index;
@@ -419,8 +429,12 @@ void switchProcess(void) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
+    VERBOSE("switchProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
+
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
+
+    __builtin_unreachable();
 }
 
 void runCurrentProcess(void) {
@@ -435,8 +449,12 @@ void runCurrentProcess(void) {
     // Load process's page directory
     loadPageDirectory(process->pd);
 
+    VERBOSE("runCurrentProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
+
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
+
+    __builtin_unreachable();
 }
 
 void handleKeyboardBlock(char c) {

@@ -173,11 +173,36 @@ void main(int argc, char* argv[]) {
         } else if (strncmp(cmd, "echo ", 5) == 0) {
             printf("%s\n", cmd+5);
         } else {
+            printf("Executing command\n");
             char* parsedArgs[MAX_ARGS];
-            parsedArgs[0] = "/bin/test";
-            parsedArgs[1] = "ooga";
-            parsedArgs[2] = "boga";
-            parsedArgs[3] = NULL;
+            unsigned int tokCount = 0;
+            char* tok;
+
+            printf("Splitting string \"%s\" into tokens:\n", cmd);
+
+            tok = strtok(cmd, " ");
+            parsedArgs[tokCount++] = tok;
+
+            while (tok != NULL)
+            {
+                if (tokCount == MAX_ARGS) {
+                    printf("Reached max args\n");
+                    break;
+                }
+
+                printf("Got token: %s\n", tok);
+                getchar();
+                tok = strtok(NULL, " ");
+                parsedArgs[tokCount++] = tok;
+            }
+
+            parsedArgs[tokCount-1] = NULL;
+
+            for (unsigned int i = 0; parsedArgs[i] != 0; i++) {
+                printf("%d: %s\n", i, parsedArgs[i]);
+            }
+
+            continue;
 
             if (execvp(parsedArgs[0], parsedArgs) == -1) {
                 printf("%s: command not found\n", cmd);

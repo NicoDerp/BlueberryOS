@@ -387,7 +387,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         PIC_sendEOI(irq);
 
         if (tickCounter == 3) {
-            //printf("Task switch!\n");
+            printf("Task switch!\n");
             tickCounter = 0;
 
             /*
@@ -422,6 +422,8 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
     printf("\nException handler:\n");
 
+    for (;;){}
+
     const char* formatted = format_interrupt(interrupt_id);
 
     (void)stack_state;
@@ -452,10 +454,10 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
     printf(" - Error code: '%d'\n", error_code);
     printf(" - eflags: 0x%x\n", frame.eflags);
     printf(" - cs: 0x%x\n", frame.cs);
-    printf(" - eip: 0x%x\n", frame.eip);
     printf(" - current esp: 0x%x\n", stack_state.esp);
     printf(" - faulted from ring %d\n", frame.cs & 0x3);
 
+    printf(" - program eip: 0x%x\n", frame.eip);
     if (frame.cs & 0x3) {
         printf(" - program esp: 0x%x\n", esp);
         printf(" - program ss: 0x%x\n", ss);

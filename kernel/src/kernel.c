@@ -173,7 +173,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     if (moduleCount == 0) {
         printf("[FATAL] No initrd found!\n");
-        for (;;) {};
+        for (;;) { asm("hlt"); }
     }
 
     for (size_t i = 0; i < moduleCount; i++) {
@@ -182,8 +182,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         module->mod_start = p_to_v(module->mod_start);
         module->mod_end = p_to_v(module->mod_end);
 
+#ifdef _VERBOSE
         size_t moduleSize = module->mod_end - module->mod_start;
         printf("Module %d size: %d\n", i, moduleSize);
+#endif
     }
 
     loadInitrd(&modules[0]);
@@ -207,15 +209,19 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("[ERROR] Failed to load application /sbin/loop\n");
         for (;;) {}
     }
-    newProcessArgs(file, args);
+    process_t* loop = newProcessArgs(file, args);
+    (void) loop;
 
-    //file = getFile("/bin/shell");
-    file = getFile("/bin/test2");
+    file = getFile("/bin/shell");
+    //file = getFile("/bin/test2");
     if (!file) {
         printf("[ERROR] Failed to load application /bin/shell\n");
         for (;;) {}
     }
     process_t* process = newProcessArgs(file, args);
+    //printProcessInfo(process);
+
+    (void) process;
 
     /*
     file = getFile("/bin/shell");
@@ -224,9 +230,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         for (;;) {}
     }
     process = newProcessArgs(file, args);
-    //printProcessInfo(process);
     */
 
+    /*
     for (size_t j = 0; j < 768; j++) {
         if (process->pd[j] & 1) {
             printf("   - %d: 0x%x\n", j, process->pd[j]);
@@ -240,17 +246,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
             }
         }
     }
+    */
 
     //for (;;) {}
 
-    (void) process;
 
 
     // Enable PIT interrupt
     irq_clear_mask(IRQ_TIMER);
 
     // Skip waiting
-    //runProcess(process);
+    //runProcess(loop);
+    runProcess(process);
 
     /*
     int a = syscall(SYS_write, STDOUT_FILENO, "Hello world!\n", 13);
