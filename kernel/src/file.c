@@ -110,8 +110,6 @@ bool isFileELF(file_t* file) {
     }
 
     char magic[] = {0x7F, 'E', 'L', 'F'};
-    VERBOSE("0x%x %d %d %d\n", file->content[0], file->content[1], file->content[2], file->content[3]);
-    VERBOSE("%d\n", strncmp(file->content, magic, 4));
     if (strncmp(file->content, magic, 4) != 0) {
         printf("Module not ELF: Incorrect magic\n");
         return false;
@@ -698,12 +696,10 @@ void loadInitrd(struct multiboot_tag_module* module) {
 
         VERBOSE("mod_start at 0x%x\n", module->mod_start);
         VERBOSE("offset is %d\n", offset);
-        VERBOSE("??\n");
         if (memcmp(header->magic, "ustar", 5) != 0) {
             // EOF
             break;
         }
-        VERBOSE("a\n");
 
         /*
         printf("Name: '%s'\n", header->filename);
@@ -730,7 +726,7 @@ void loadInitrd(struct multiboot_tag_module* module) {
         }
 
         uint32_t size = oct2bin(header->size, 11);
-        VERBOSE("size is '%s'\n", header->size);
+        VERBOSE("loadInitrd: Header size is '%s'\n", header->size);
         offset += 512 + (-size % 512) + size;
 
         //printf("offset: %d\n", offset);

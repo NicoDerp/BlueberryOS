@@ -75,12 +75,12 @@ pageframe_t kalloc_frames(unsigned int count) {
     }
 
     for (size_t i = startindex; i < startindex + count; i++) {
-        frame_map[index] = USED;
+        frame_map[i] = USED;
     }
 
     pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + FRAME_START);
 
-    VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x\n", count, frame);
+    VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
 
     return frame;
 }

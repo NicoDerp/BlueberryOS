@@ -213,7 +213,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     (void) loop;
 
     file = getFile("/bin/shell");
-    printf("file: '%s' '%s'", file->name, file->fullpath);
     //file = getFile("/bin/test2");
     if (!file) {
         printf("[ERROR] Failed to load application /bin/shell\n");
@@ -222,7 +221,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     process_t* process = newProcessArgs(file, args);
     //printProcessInfo(process);
 
-    for (;;){}
     (void) process;
 
     //printUserPagedirectory(process->pd);

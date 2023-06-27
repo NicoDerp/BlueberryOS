@@ -485,10 +485,13 @@ void handleWaitpidBlock(process_t* process) {
 
 void handleKeyboardBlock(char c) {
 
+    if (!processes[currentProcessID].initialized)
+        return;
+
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
         process_t* process = &processes[i];
 
-        if (process->state == BLOCKED_KEYBOARD) {
+        if (process->initialized && process->state == BLOCKED_KEYBOARD) {
 
             // Quick fix
             loadPageDirectory(process->pd);
