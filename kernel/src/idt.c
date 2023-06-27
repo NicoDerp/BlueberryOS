@@ -552,7 +552,7 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
     printf("\nException handler:\n");
 
-    for (;;){}
+    //for (;;){}
 
     const char* formatted = format_interrupt(interrupt_id);
 

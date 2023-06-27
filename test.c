@@ -10,9 +10,9 @@ int main ()
     pch = strtok (str," ,.-");
     while (pch != NULL)
     {
-        printf ("%s\n",pch);
-        printf ("%s\n",str);
-        pch = strtok (NULL, " ,.-");
+        printf ("%s\n", pch);
+        pch = strtok (NULL, " ");
+        printf("pch: 0x%x\n", pch);
     }
     return 0;
 }

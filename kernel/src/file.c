@@ -210,8 +210,8 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
             void* data = (void*) ((uint32_t) file->content + program->offset);
 
-            // Same as mod 1024 but better
-            uint32_t physOffset = program->vaddr & 0x03FF;
+            //uint32_t physOffset = program->vaddr % FRAME_4KB;
+            uint32_t physOffset = program->vaddr & (FRAME_4KB-1);
             VERBOSE("loadELFIntoMemory: Physical offset: 0x%x\n", physOffset);
 
             // Set pageframe to zero with size of memsz

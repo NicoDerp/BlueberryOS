@@ -184,7 +184,6 @@ void main() {
             printf("Splitting string \"%s\" into tokens:\n", cmd);
 
             tok = strtok(cmd, " ");
-            parsedArgs[tokCount++] = tok;
 
             while (tok != NULL)
             {
@@ -194,12 +193,13 @@ void main() {
                 }
 
                 printf("Got token: %s\n", tok);
+                parsedArgs[tokCount++] = tok;
+
                 getchar();
                 tok = strtok(NULL, " ");
-                parsedArgs[tokCount++] = tok;
             }
 
-            parsedArgs[tokCount-1] = NULL;
+            parsedArgs[tokCount] = NULL;
 
             for (unsigned int i = 0; parsedArgs[i] != 0; i++) {
                 printf("%d: %s\n", i, parsedArgs[i]);
