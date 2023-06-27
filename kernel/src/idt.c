@@ -28,7 +28,9 @@ static idtr_t idtr;
 // Table of all exceptions. Defined in idt.asm
 extern void* isr_stub_table[];
 
-bool maskBackup;
+static bool maskBackup;
+static bool shiftDown = false;
+static bool capslock = false;
 
 //static bool vectors[32];
 
@@ -299,6 +301,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
     (void)test_struct;
     (void)frame;
     (void)ss;
+    (void)esp;
 
     unsigned int irq = interrupt_id - IDT_IRQ_OFFSET;
 
@@ -319,15 +322,73 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
     printf(" - eip: '%d'\n", frame.eip);
     */
 
+#define KEY_LEFT_SHIFT  1
+#define KEY_RIGHT_SHIFT 2
+#define KEY_LEFT_CTRL   3
+#define KEY_ALT         4
+#define KEY_F1          5
+#define KEY_F2          6
+#define KEY_F3          7
+#define KEY_F4          8
+#define KEY_F5          9
+#define KEY_F6          10
+#define KEY_F7          11
+#define KEY_F8          12
+#define KEY_F9          13
+#define KEY_F10         14
+#define KEY_F11         15
+#define KEY_F12         16
+#define KEY_CAPS_LOCK   17
+#define KEY_LEFT_ARROW  18
+#define KEY_RIGHT_ARROW 19
+#define KEY_UP_ARROW    20
+#define KEY_DOWN_ARROW  21
+
+
+    char keyboard_special_US[128] =
+    {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        KEY_LEFT_CTRL, /* <-- control key */
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, KEY_LEFT_SHIFT, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, KEY_RIGHT_SHIFT,
+        0,
+        KEY_ALT,  /* Alt */
+        0,  /* Space bar */
+        KEY_CAPS_LOCK,  /* Caps lock */
+        KEY_F1,  /* 59 - F1 key ... > */
+        KEY_F2,   KEY_F3,   KEY_F4,   KEY_F5,   KEY_F6,   KEY_F7,   KEY_F8,   KEY_F9,
+        KEY_F10,  /* < ... F10 */
+        0,  /* 69 - Num lock*/
+        0,  /* Scroll Lock */
+        0,  /* Home key */
+        KEY_UP_ARROW,  /* Up Arrow */
+        0,  /* Page Up */
+        0,
+        KEY_LEFT_ARROW,  /* Left Arrow */
+        0,
+        KEY_RIGHT_ARROW,  /* Right Arrow */
+        0,
+        0,  /* 79 - End key*/
+        KEY_DOWN_ARROW,  /* Down Arrow */
+        0,  /* Page Down */
+        0,  /* Insert Key */
+        0,  /* Delete Key */
+        0,   0,   0,
+        0,  /* F11 Key */
+        0,  /* F12 Key */
+        0,  /* All other keys are undefined */
+    };
+
     //io_outb(PIC1, PIC_EOI);
     //io_outb(PIC2, PIC_EOI);
-    char keyboard_US [128] =
+    char keyboard_US[128] =
     {
-        0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',   
-      '\t', /* <-- Tab */
-      'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',     
+        0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+      '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
         0, /* <-- control key */
-      'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',  0, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',   0,
+      'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',  0, '\\',
+      'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',  0,
       '*',
         0,  /* Alt */
       ' ',  /* Space bar */
@@ -356,6 +417,41 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         0,  /* All other keys are undefined */
     };
 
+    char keyboard_shift_US[128] =
+    {
+        0,  27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
+      '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
+        0, /* <-- control key */
+       'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',  0, '|',
+       'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?',  0,
+       '*',
+        0,  /* Alt */
+       ' ',  /* Space bar */
+        0,  /* Caps lock */
+        0,  /* 59 - F1 key ... > */
+        0,   0,   0,   0,   0,   0,   0,   0,
+        0,  /* < ... F10 */
+        0,  /* 69 - Num lock*/
+        0,  /* Scroll Lock */
+        0,  /* Home key */
+        24,  /* Up Arrow */
+        0,  /* Page Up */
+       '-',
+        27,  /* Left Arrow */
+        0,
+        26,  /* Right Arrow */
+       '+',
+        0,  /* 79 - End key*/
+        25,  /* Down Arrow */
+        0,  /* Page Down */
+        0,  /* Insert Key */
+        0,  /* Delete Key */
+        0,   0,   0,
+        0,  /* F11 Key */
+        0,  /* F12 Key */
+        0,  /* All other keys are undefined */
+    };
+
     if (interrupt_id == INT_KEYBOARD) {
         int scancode = io_inb(0x60);
         //int type = io_inb(0x61);
@@ -366,27 +462,48 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         //if (type == KEY_PRESSED) {
         //}
 
-        PIC_sendEOI(irq);
+        key_state_t state;
 
-        printf("scan: %d\n", scancode);
-        if (scancode < 128) {
-            char key = keyboard_US[scancode];
-
-            process_t* process = getCurrentProcess();
-            if (process->initialized) {
-                // Only save registers if we came from userspace
-                /*
-                if (frame.cs & 0x3) { // TODO or ss?
-                    VERBOSE("INT_KEYBOARD: Saving registers for %d:%s\n", process->id, process->name);
-
-                    saveRegisters(process, &stack_state, &frame, esp);
-                }
-                */
-
-                // Good change no processes are initialized if current isn't
-                handleKeyboardBlock(key);
-            }
+        if (scancode < 128)
+            state = PRESSED;
+        else {
+            state = RELEASED;
+            scancode -= 128;
         }
+
+
+        char key = keyboard_US[scancode];
+
+        // Check for special key
+        if (key == 0) {
+
+            key = keyboard_special_US[scancode];
+
+            if (key == KEY_LEFT_SHIFT || key == KEY_RIGHT_SHIFT) {
+
+                if (state == PRESSED)
+                    shiftDown = true;
+                else
+                    shiftDown = false;
+
+            } else if (key == KEY_CAPS_LOCK) {
+
+                if (state == PRESSED)
+                    capslock = !capslock;
+
+            } else {
+                // Not-implemented yet
+            }
+
+        } else if (state == PRESSED) {
+
+            if (shiftDown || capslock)
+                key = keyboard_shift_US[scancode];
+
+            handleKeyboardBlock(key);
+        }
+
+        PIC_sendEOI(irq);
 
     } else if (interrupt_id == INT_TIMER) {
         tickCounter += 1;

@@ -481,18 +481,11 @@ void handleKeyboardBlock(char c) {
 
                     int* status = (int*) process->parent->blocked_regs.ebx;
                     if (status != NULL) {
-                        printf("[INFO] Status from waitpid used but is unimplemented\n");
+                        VERBOSE("handleKeyboardBlock: Satus from waitpid used but is unimplemented\n");
                         loadPageDirectory(process->parent->pd);
                         *status = 0; // TODO unimplemented WIFEXITED n shi
                     }
                 }
-
-                // Loop process
-                /*
-                if (currentProcessID == 0) {
-                    switchProcess();
-                }
-                */
             }
         }
     }

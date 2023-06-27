@@ -58,10 +58,11 @@
 #define INT_SYSCALL             0x30  /* 48 */
 
 
-#define KEY_PRESSED     0x30
-#define KEY_RELEASED    0x20
-
-
+typedef enum {
+    PRESSED,
+    RELEASED,
+    HOLD,
+} key_state_t;
 
 typedef struct {
     uint16_t isr_low; // Lower 16 bits of ISR's address
