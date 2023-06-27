@@ -280,7 +280,9 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     process->esp = process->virtual_stack_top;
     process->file = file;
     process->initialized = true;
-    process->parent = (process_t*) 0;
+
+    // Keep parent
+    //process->parent = (process_t*) 0;
 
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
@@ -453,6 +455,25 @@ void runCurrentProcess(void) {
     __builtin_unreachable();
 }
 
+void handleWaitpidBlock(process_t* process) {
+
+    if (!(process->parent && process->parent->state == BLOCKED_WAITPID)) {
+        return;
+    }
+
+    process->parent->state = RUNNING;
+
+    // Sucess
+    process->parent->regs.eax = process->id;
+
+    int* status = (int*) process->parent->blocked_regs.ebx;
+    if (status != NULL) {
+        VERBOSE("handleKeyboardBlock: Satus from waitpid used but is unimplemented\n");
+        loadPageDirectory(process->parent->pd);
+        *status = 0; // TODO unimplemented WIFEXITED n shi
+    }
+}
+
 void handleKeyboardBlock(char c) {
 
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
@@ -472,20 +493,6 @@ void handleKeyboardBlock(char c) {
             // If counter is zero, then unblock
             if (process->blocked_regs.edx == 0) {
                 process->state = RUNNING;
-
-                if (process->parent && process->parent->state == BLOCKED_WAITPID) {
-                    process->parent->state = RUNNING;
-
-                    // Sucess
-                    process->parent->regs.eax = process->id;
-
-                    int* status = (int*) process->parent->blocked_regs.ebx;
-                    if (status != NULL) {
-                        VERBOSE("handleKeyboardBlock: Satus from waitpid used but is unimplemented\n");
-                        loadPageDirectory(process->parent->pd);
-                        *status = 0; // TODO unimplemented WIFEXITED n shi
-                    }
-                }
             }
         }
     }

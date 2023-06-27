@@ -4,6 +4,7 @@
 *.swp
 *.mod
 *.tar
+[^\.]*
 sysroot
 initrd/initrd
 

@@ -20,17 +20,15 @@ void execArgs(char** args) {
     if (pid == -1) {
         printf("[ERROR] Fork error!\n");
     } else if (pid == 0) {
-        printf("I am child!\n");
         if (execvp(args[0], args) == -1) {
-            printf("Failed to run program\n");
+            printf("%s: command not found\n", args[0]);
         }
 
         exit(0);
     } else {
-        printf("I am parent and child is %d\n", pid);
-        printf("Waiting for child...\n");
-        wait(NULL);
-        printf("Done waiting for child!\n");
+        int status;
+        wait(&status);
+
     }
 }
 
@@ -176,12 +174,9 @@ void main() {
         } else if (strncmp(cmd, "echo ", 5) == 0) {
             printf("%s\n", cmd+5);
         } else {
-            printf("Executing command\n");
             char* parsedArgs[MAX_ARGS];
             unsigned int tokCount = 0;
             char* tok;
-
-            printf("Splitting string \"%s\" into tokens:\n", cmd);
 
             tok = strtok(cmd, " ");
 
@@ -192,24 +187,13 @@ void main() {
                     break;
                 }
 
-                printf("Got token: %s\n", tok);
                 parsedArgs[tokCount++] = tok;
-
-                getchar();
                 tok = strtok(NULL, " ");
             }
 
             parsedArgs[tokCount] = NULL;
 
-            for (unsigned int i = 0; parsedArgs[i] != 0; i++) {
-                printf("%d: %s\n", i, parsedArgs[i]);
-            }
-
-            continue;
-
-            if (execvp(parsedArgs[0], parsedArgs) == -1) {
-                printf("%s: command not found\n", cmd);
-            }
+            execArgs(parsedArgs);
         }
     }
 

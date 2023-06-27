@@ -117,6 +117,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 //printf("Status: '%d'\n", status);
 
                 process_t* process = getCurrentProcess();
+
+                handleWaitpidBlock(process);
+
                 printf("process called exit: %d %s\n", process->id, process->name);
                 terminateProcess(process, status);
 

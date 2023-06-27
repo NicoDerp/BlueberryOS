@@ -128,6 +128,7 @@ void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
 
+void handleWaitpidBlock(process_t* process);
 void handleKeyboardBlock(char c);
 
 void printProcessInfo(process_t* process);
