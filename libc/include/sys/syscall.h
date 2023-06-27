@@ -13,6 +13,7 @@
 #define SYS_waitpid 6
 #define SYS_execvp  7
 #define SYS_getcwd  8
+#define SYS_chdir   9
 
 #endif
 

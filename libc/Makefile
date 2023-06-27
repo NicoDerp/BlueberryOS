@@ -58,6 +58,7 @@ FREEOBJS =\
 	unistd/fork.o \
 	unistd/execvp.o \
 	unistd/getcwd.o \
+	unistd/chdir.o \
 	fcntl/open.o \
 	sys/wait.o \
 

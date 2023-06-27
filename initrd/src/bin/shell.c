@@ -41,14 +41,6 @@ void main(int argc, char* argv[]) {
 */
 void main() {
 
-    char path[32];
-    if (getcwd(path, sizeof(path)) != NULL)
-        printf("path: '%s'\n", path);
-    else
-        printf("error\n");
-
-    for (;;) {}
-
     char cmd[MAX_LINE_LENGTH+1];
     char history[MAX_LINE_LENGTH][HISTORY_SIZE];
     size_t historyCount = 0;
