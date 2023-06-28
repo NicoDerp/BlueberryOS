@@ -327,7 +327,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     char* args[] = {"af", "Booga", 0};
 
     // TODO only run when there are no other processes
-    /*
     file = getFile("/sbin/loop");
     if (!file) {
         printf("[ERROR] Failed to load application /sbin/loop\n");
@@ -335,7 +334,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     process_t* loop = newProcessArgs(file, args);
     (void) loop;
-    */
 
     file = getFile("/bin/shell");
     //file = getFile("/bin/test2");
