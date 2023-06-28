@@ -1,28 +1,39 @@
 
-#include <stdio.h>
+#include <stdbool.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 
 
 //#define _VERBOSE
 
 
-#ifdef _VERBOSE
 
-extern bool terminalInitialized;
-
-#define VERBOSE(format, ...)\
-    if (terminalInitialized) {\
-        printf("[INFO] "format, ## __VA_ARGS__);\
-    }\
+#ifndef KERNEL_LOGGING_H
+#define KERNEL_LOGGING_H
 
 
-#else
-
-
-#define VERBOSE(format, ...)
 
 void enableLogging(void);
 
+
+#ifdef _VERBOSE
+
+extern bool loggingEnabled;
+
+#define VERBOSE(format, ...)\
+    if (loggingEnabled) {\
+        printf("[INFO] "format, ## __VA_ARGS__);\
+    }\
+
+#else
+
+#define VERBOSE(format, ...)
+
 #endif
+
+
+
+#endif
+
 

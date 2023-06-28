@@ -198,6 +198,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                   ((struct multiboot_tag_bootdev *) tag)->slice,
                   ((struct multiboot_tag_bootdev *) tag)->part);
                 break;
+
+            /*
             case MULTIBOOT_TAG_TYPE_MMAP:
                 {
                     multiboot_memory_map_t *mmap;
@@ -227,6 +229,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                     }
                 }
                 break;
+            */
         }
     }
 
