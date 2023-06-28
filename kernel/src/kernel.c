@@ -194,8 +194,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     memory_initialize(FRAME_START, memorySize);
     printf("[OK]\n");
 
-    for (;;) {}
-
     if (moduleCount == 0) {
         printf("[FATAL] No initrd found!\n");
         for (;;) { asm("hlt"); }
@@ -218,6 +216,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 //#ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
 //#endif
+
+    for (;;) {}
 
     printf("\nWelcome to BlueberryOS!\n");
 

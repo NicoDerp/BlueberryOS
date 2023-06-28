@@ -7,6 +7,8 @@ Made by NicoDerp.
 
 Big thanks to [wiki.osdev.org](wiki.osdev.org) for their wiki and forums.
 
+This project uses a slighly modified version of the [tinf](https://github.com/jibsen/tinf) library for decompressing the initrd.
+
 Use BlueberryOS at our own risk. I'm not responsible for any damages or other things that can happen by using my operating system.
 This is very in-development and just a hobby-project.
 

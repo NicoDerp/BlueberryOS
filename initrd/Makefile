@@ -30,7 +30,7 @@ ASMFLAGS = -felf32
 SRC_C = src/sbin/loop.c \
 		src/bin/shell.c \
 		src/bin/cd.c \
-#		src/bin/pwd.c \
+		src/bin/pwd.c \
 		src/usr/bin/test.c \
 		src/usr/bin/test2.c \
 
@@ -62,7 +62,7 @@ all: build install
 build: $(BINS)
 
 clean:
-	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d initrd.tar initrd
+	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d initrd.tar.gz initrd
 
 rebuild: clean build
 
@@ -71,16 +71,17 @@ rebuild: clean build
 #cp -f --preserve=timestamps $(BINS) $(OUT_BINS)
 
 initrd: $(BINS)
-	rm -f initrd.tar
+	rm -f initrd.tar.gz
 	mkdir -p $(DIRS)
 	$(subst ^, ,$(join $(addprefix cp^,$(BINS)),$(patsubst %,^%;,$(OUT_BINS))))
 
-initrd.tar: initrd
-	tar U -cvf initrd.tar initrd
+#tar U -cvf initrd.tar initrd
+initrd.tar.gz: initrd
+	tar U -zcvf initrd.tar.gz initrd
 
-install: initrd initrd.tar
+install: initrd initrd.tar.gz
 	mkdir -p ../kernel/isodir/boot
-	cp --preserve=timestamps initrd.tar ../kernel/isodir/boot/initrd.tar
+	cp --preserve=timestamps initrd.tar.gz ../kernel/isodir/boot/initrd.tar.gz
 
 $(BINS): $(OBJS) link.o
 
