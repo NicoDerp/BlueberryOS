@@ -9,9 +9,12 @@
 
 #ifdef _VERBOSE
 
+extern bool terminalInitialized;
 
 #define VERBOSE(format, ...)\
-    printf("[INFO] "format, ## __VA_ARGS__);
+    if (terminalInitialized) {\
+        printf("[INFO] "format, ## __VA_ARGS__);\
+    }\
 
 
 #else
@@ -19,6 +22,7 @@
 
 #define VERBOSE(format, ...)
 
+void enableLogging(void);
 
 #endif
 

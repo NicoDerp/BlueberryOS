@@ -103,6 +103,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
 
     if (!foundMemory) {
+
+        // Enough for just one pagetable
+        memory_initialize(FRAME_START, FRAME_4KB);
         virtualFramebuffer = 0xC03FF000;
         map_page(0x000B8000, virtualFramebuffer, true, true);
         terminal_initialize(80, 25, (void*) virtualFramebuffer);
@@ -111,13 +114,12 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         for (;;) {asm("hlt");}
     }
 
-
     memory_initialize(FRAME_START, memorySize);
-
     map_page(0x000B8000, virtualFramebuffer, true, true);
     terminal_initialize(80, 25, (void*) virtualFramebuffer);
-    VERBOSE("init: virtualFramebuffer at 0x%x\n", virtualFramebuffer);
+    enableLogging();
 
+    VERBOSE("init: virtualFramebuffer at 0x%x\n", virtualFramebuffer);
 
     printf("\nStarting BlueberryOS\n");
 
@@ -150,7 +152,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     set_kernel_stack(esp);
     printf("[OK]\n");
 
-
     if (eax != 0x36d76289) {
         printf("[ERROR] Failed to verify if bootloader has passed correct information\n");
     }
@@ -161,7 +162,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     VERBOSE("kernelend: 0x%x(v) 0x%x(p)\n", KERNEL_END, v_to_p(KERNEL_END));
 
     VERBOSE("Multiboot2 structure starting at 0x%x\n", ebx);
-    printf("Multiboot2 structure starting at 0x%x\n", ebx);
 
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
@@ -229,7 +229,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                 break;
         }
     }
-
 
     /*
     pagedirectory_t pd = page_directory;

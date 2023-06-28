@@ -119,6 +119,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 process_t* process = getCurrentProcess();
 
                 handleWaitpidBlock(process);
+                loadPageDirectory(process->pd);
 
                 VERBOSE("SYS_exit: Process called exit: %d %s\n", process->id, process->name);
                 terminateProcess(process, status);
@@ -300,6 +301,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 process_t* process = getCurrentProcess();
 
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
                 // Null character included
                 size_t len = strlen(process->cwd->fullpath) + 1;
 
@@ -314,6 +318,43 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     // Indicate sucess
                     process->regs.eax = (uint32_t) buf;
                 }
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_chdir):
+            {
+                if (!(frame.cs & 0x3)) {
+                    printf("[ERROR] Kernel called chdir?\n");
+                    for (;;) {}
+                }
+
+                char* path = (char*) stack_state.ebx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                directory_t* dir = getDirectory(path);
+                if (dir) {
+
+                    process->cwd = dir;
+
+                    // Indicate sucess
+                    process->regs.eax = 0;
+
+                } else {
+
+                    // Indicate error
+                    process->regs.eax = -1;
+                }
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
             }
 
             break;
@@ -547,7 +588,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         //if (tickCounter == 50) {
             tickCounter = 0;
 
-            VERBOSE("INT_TIMER: Task switch!\n");
+            //VERBOSE("INT_TIMER: Task switch!\n");
 
             /*
             printf(" - cs: 0x%x\n", frame.cs);

@@ -436,7 +436,7 @@ void switchProcess(void) {
     // Reset PIT count
     pit_set_count(PROCESS_TIME);
 
-    VERBOSE("switchProcess: Entering process %d:%s at 0x%x with esp 0x%x\n", process->id, process->name, process->eip, process->esp);
+    //VERBOSE("switchProcess: Entering process %d:%s at 0x%x with esp 0x%x\n", process->id, process->name, process->eip, process->esp);
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
@@ -456,7 +456,7 @@ void runCurrentProcess(void) {
     // Load process's page directory
     loadPageDirectory(process->pd);
 
-    VERBOSE("runCurrentProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
+    //VERBOSE("runCurrentProcess: Entering process %d:%s at 0x%x\n", process->id, process->name, process->eip);
 
     // Enter usermode
     enter_usermode(process->eip, process->esp, process->regs);
@@ -477,7 +477,7 @@ void handleWaitpidBlock(process_t* process) {
 
     int* status = (int*) process->parent->blocked_regs.ebx;
     if (status != NULL) {
-        VERBOSE("handleKeyboardBlock: Satus from waitpid used but is unimplemented\n");
+        VERBOSE("handleWaitpidBlock: Satus from waitpid used but is unimplemented\n");
         loadPageDirectory(process->parent->pd);
         *status = 0; // TODO unimplemented WIFEXITED n shi
     }
