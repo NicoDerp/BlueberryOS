@@ -23,6 +23,9 @@
 #define VGA_LIGHT_BROWN 14
 #define VGA_WHITE 15
 
+#define VGA_DEFAULT_FG VGA_LIGHT_GRAY
+#define VGA_DEFAULT_BG VGA_BLACK
+
 void terminal_initialize(size_t width, size_t height, void* buffer);
 void terminal_move_cursor(size_t x, size_t y);
 void terminal_write(const char* data, size_t size);

@@ -32,6 +32,25 @@
 
 typedef void (*module_func_t)(void);
 
+
+
+
+
+
+char* titleText = "\e[b;0m"
+"  ____  _            _                           ____   _____ \n"
+" |  _ \\| |          | |                         / __ \\ / ____|\n"
+" | |_) | |_   _  ___| |__   ___ _ __ _ __ _   _| |  | | (___  \n"
+" |  _ <| | | | |/ _ \\ '_ \\ / _ \\ '__| '__| | | | |  | |\\___ \\ \n"
+" | |_) | | |_| |  __/ |_) |  __/ |  | |  | |_| | |__| |____) |\n"
+" |____/|_|\\__,_|\\___|_.__/ \\___|_|  |_|   \\__, |\\____/|_____/ \n"
+"                                           __/ |              \n"
+"                                          |___/               \n\e[0m";
+
+
+
+
+
 //void kernel_main(const multiboot_header* mutliboot_structure) {
 void kernel_main(unsigned int eax, unsigned int ebx) {
 
@@ -110,7 +129,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         map_page(0x000B8000, virtualFramebuffer, true, true);
         terminal_initialize(80, 25, (void*) virtualFramebuffer);
 
-        printf("[FATAL] Not enough memory available to run OS!\n");
+        printf("\n\n[\e[4;0m[FATAL]\e[0m Not enough memory available to run OS!\n");
         for (;;) {asm("hlt");}
     }
 
@@ -123,25 +142,25 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("\nStarting BlueberryOS\n");
 
-    printf("Settings up System TSS ...");
+    printf("Settings up System TSS ... ");
     tss_initialize();
-    printf("[OK]\n");
+    printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Setting up GDT ... ");
+    printf("Setting up GDT ...         ");
     gdt_initialize();
-    printf("[OK]\n");
+    printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Flushing TSS ...");
+    printf("Flushing TSS ...           ");
     flush_tss();
-    printf("[OK]\n");
+    printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Setting up IDT ... ");
+    printf("Setting up IDT ...         ");
     idt_initialize();
-    printf("[OK]\n");
+    printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Setting up Paging ...");
+    printf("Setting up Paging ...      ");
     paging_initialize();
-    printf("[OK]\n");
+    printf("\e[2;0m[OK]\e[0m\n");
 
     struct multiboot_tag_module modules[32];
     size_t moduleCount = 0;
@@ -150,7 +169,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
-    printf("[OK]\n");
+    printf("\e[2;0m[OK]\e[0m\n");
 
     if (eax != 0x36d76289) {
         printf("[ERROR] Failed to verify if bootloader has passed correct information\n");
@@ -253,7 +272,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
     if (moduleCount == 0) {
-        printf("[FATAL] No initrd found!\n");
+        printf("\n\n\e[4;0m[FATAL]\e[0m No initrd found!\n");
         for (;;) { asm("hlt"); }
     }
 
@@ -273,38 +292,37 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     void* dest = (void*) modules[0].mod_end + FRAME_4KB;
     uint32_t sourceLen = (uint32_t) modules[0].mod_end - (uint32_t) modules[0].mod_start;
 
-    printf("Decompressing initrd ... ");
+    printf("Decompressing initrd ...   ");
     int status = tinf_gzip_uncompress(dest, &destLen, (void*) modules[0].mod_start, sourceLen);
 
     if (status == TINF_BUF_ERROR) {
-        printf("[ERROR]\n[FATAL] Failed to decompress initrd: buffer error\n");
+        printf("\e[4;0m[ERROR]\e[0m\n");
+        printf("\e[4;0m[FATAL]\e[0m Failed to decompress initrd: buffer error\n");
         for (;;) { asm("hlt"); }
 
     } else if (status == TINF_DATA_ERROR) {
 
         VERBOSE("init: initrd wasn't tar.gz\n");
-        printf("[OK]\n");
+        printf("\e[2;0m[OK]\e[0m\n");
         // Not gzip
         loadInitrd(modules[0].mod_start, modules[0].mod_end);
     } else if (status == TINF_OK) {
 
         VERBOSE("init: initrd decompression sucessfull\n");
-        printf("[OK]\n");
+        printf("\e[2;0m[OK]\e[0m\n");
         loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
     }
 
-
-//#ifdef _VERBOSE
+#ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
-//#endif
+#endif
 
-    //for (;;) {}
 
-    printf("\nWelcome to BlueberryOS!\n");
 
-    //syscall(SYS_write, STDOUT_FILENO, "hello\n", 6);
+    printf("\n%s\n", titleText);
 
-    // 0xC03FF000
+    printf("Welcome to BlueberryOS!\n");
+
 
     file_t* file;
     char* args[] = {"af", "Booga", 0};
