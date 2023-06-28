@@ -33,6 +33,10 @@ void execArgs(char** args) {
     }
 }
 
+char cmd[MAX_LINE_LENGTH+1];
+char history[MAX_LINE_LENGTH][HISTORY_SIZE];
+size_t historyCount = 0;
+
 /*
 void main(int argc, char* argv[]) {
 
@@ -41,9 +45,6 @@ void main(int argc, char* argv[]) {
 */
 void main() {
 
-    char cmd[MAX_LINE_LENGTH+1];
-    char history[MAX_LINE_LENGTH][HISTORY_SIZE];
-    size_t historyCount = 0;
 
     while (true) {
 

@@ -195,11 +195,12 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             }
 
             // ceil(file->size / FRAME_4KB)
-            unsigned int count = (program->filesz+FRAME_4KB-1)/FRAME_4KB;
+            unsigned int fzcount = (program->filesz+FRAME_4KB-1)/FRAME_4KB;
+            unsigned int mzcount = (program->memsz+FRAME_4KB-1)/FRAME_4KB;
 
             VERBOSE("loadELFIntoMemory: filesize: %d\n", program->filesz);
-            VERBOSE("loadELFIntoMemory: Looping %d times\n", count);
-            for (size_t j = 0; j < count; j++) {
+            VERBOSE("loadELFIntoMemory: Looping %d times with %d fzcount\n", mzcount, fzcount);
+            for (size_t j = 0; j < mzcount; j++) {
 
                 uint32_t offset = j*FRAME_4KB;
                 VERBOSE("loadELFIntoMemory: Index %d with offset 0x%x\n", j, offset);
@@ -213,50 +214,63 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
                 VERBOSE("loadELFIntoMemory: Allocated pageframe at 0x%x\n", pageframe);
 
-
-                uint32_t physOffset;
-                if (j == 0) {
-                    //physOffset = program->vaddr % FRAME_4KB;
-                    physOffset = program->vaddr & (FRAME_4KB-1);
-                } else {
-                    physOffset = 0x0;
-                }
-
-                VERBOSE("loadELFIntoMemory: Physical offset: 0x%x\n", physOffset);
-
-
-                // Doesn't matter if the frames aren't consecutive
-                /*
-                uint32_t offset = j*FRAME_4KB;
-                if ((uint32_t) pageframe != (uint32_t) firstpf + offset) {
-                    printf("[ERROR] Can't load ELF because frames aren't consequtive\n");
-                    for (;;) {}
-                }
-                */
-
-                void* data = (void*) ((uint32_t) file->content + program->offset + offset);
-
-
-                uint32_t size;
-                if (i == (program->filesz+FRAME_4KB-1)/FRAME_4KB-1) {
+                uint32_t msize;
+                if (j == (program->memsz+FRAME_4KB-1)/FRAME_4KB-1) {
                     //size = program->filesz % FRAME_4KB;
-                    size = program->filesz & (FRAME_4KB - 1);
+                    msize = program->memsz & (FRAME_4KB - 1);
                 } else {
-                    size = FRAME_4KB;
+                    msize = FRAME_4KB;
                 }
 
-                VERBOSE("loadELFIntoMemory: Copying block with size %d bytes\n", size);
+                // Set pageframe to zero with msize with has 4KB size, but for last has
+                //  how much is left
+                //memset(pageframe + physOffset, 0, msize);
+                memset(pageframe, 0, msize);
 
-                // Set pageframe to zero with size of memsz
-                memset(pageframe + physOffset, 0, program->memsz);
+                // If there is data to copy
+                if (j < fzcount) {
+
+                    uint32_t physOffset;
+                    if (j == 0) {
+                        //physOffset = program->vaddr % FRAME_4KB;
+                        physOffset = program->vaddr & (FRAME_4KB-1);
+                    } else {
+                        physOffset = 0x0;
+                    }
+
+                    VERBOSE("loadELFIntoMemory: Physical offset: 0x%x\n", physOffset);
+
+
+                    // Doesn't matter if the frames aren't consecutive
+                    /*
+                    uint32_t offset = j*FRAME_4KB;
+                    if ((uint32_t) pageframe != (uint32_t) firstpf + offset) {
+                        printf("[ERROR] Can't load ELF because frames aren't consequtive\n");
+                        for (;;) {}
+                    }
+                    */
+
+                    void* data = (void*) ((uint32_t) file->content + program->offset + offset);
+
+
+                    uint32_t size;
+                    if (j == (program->filesz+FRAME_4KB-1)/FRAME_4KB-1) {
+                        //size = program->filesz % FRAME_4KB;
+                        size = program->filesz & (FRAME_4KB - 1);
+                    } else {
+                        size = FRAME_4KB;
+                    }
+
+                    VERBOSE("loadELFIntoMemory: Copying block with size %d bytes\n", size);
+
+                    // Copy program header data to pageframe
+                    //memcpy(pageframe+offset, data, program->filesz);
+                    //memcpy(pageframe + program->offset, data, program->filesz);
+                    //memcpy(pageframe + physOffset, data, program->filesz);
+                    memcpy(pageframe + physOffset, data, size);
+                }
 
                 //VERBOSE("loadELFIntoMemory: Offset was 0x%x, now 0x%x\n", program->offset, program->offset % FRAME_4KB);
-
-                // Copy program header data to pageframe
-                //memcpy(pageframe+offset, data, program->filesz);
-                //memcpy(pageframe + program->offset, data, program->filesz);
-                //memcpy(pageframe + physOffset, data, program->filesz);
-                memcpy(pageframe + physOffset, data, size);
 
                 /*
                 printf("Program header %d\n", i);
@@ -265,7 +279,6 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                 }
                 */
 
-                // Though this meant writable in memory, but probably not
                 bool writable = program->flags & 0x2;
 
                 VERBOSE("loadELFIntoMemory: Flags in program header: %d, %d\n", program->flags, writable);
@@ -282,6 +295,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             return pd;
         }
     }
+    for (;;) {}
 
     return pd;
 }
