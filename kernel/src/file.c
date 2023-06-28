@@ -690,6 +690,8 @@ void loadInitrd(struct multiboot_tag_module* module) {
     rootDir.fileCount = 0;
     //printf("mode: %s\n", rootDir.mode);
 
+    printf("a: '%s'\n", (char*) module->mod_start);
+
     while (((uint32_t) module->mod_start + offset) <= (uint32_t) module->mod_end) {
 
         header = (tar_header_t*) (uint32_t) (module->mod_start + offset);

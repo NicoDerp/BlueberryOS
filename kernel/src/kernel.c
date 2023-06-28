@@ -106,15 +106,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
 
-    VERBOSE("kernelstart: 0x%x\n", KERNEL_START);
-    VERBOSE("kernelend: 0x%x\n", KERNEL_END);
+    VERBOSE("kernelstart: 0x%x(v) 0x%x(p)\n", p_to_v(KERNEL_START), KERNEL_START);
+    VERBOSE("kernelend: 0x%x(v) 0x%x(p)\n", KERNEL_END, v_to_p(KERNEL_END));
 
     struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
     {
-        VERBOSE("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
+        //VERBOSE("Tag 0x%x, Size 0x%x\n", tag->type, tag->size);
 
         switch (tag->type)
         {
@@ -170,6 +170,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                 break;
         }
     }
+    for (;;) {}
 
     if (moduleCount == 0) {
         printf("[FATAL] No initrd found!\n");
@@ -190,9 +191,9 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     loadInitrd(&modules[0]);
 
-#ifdef _VERBOSE
+//#ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
-#endif
+//#endif
 
     printf("\nWelcome to BlueberryOS!\n");
 
