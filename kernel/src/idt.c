@@ -268,6 +268,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 char* file = (char*) stack_state.ebx;
                 const char** argv = (const char**) stack_state.ecx;
 
+                printf("path at 0x%x and is '%s'\n", file, file);
+
                 process_t* process = getCurrentProcess();
 
                 // Save registers incase overwriteArgs fails
@@ -630,7 +632,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
     }
 }
 
-void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int interrupt_id, stack_state_t stack_state, bool has_error, unsigned int error_code, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
+void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int interrupt_id, stack_state_t stack_state, unsigned int error_code, interrupt_frame_t frame, unsigned int esp, unsigned int ss) {
 
     printf("\nException handler:\n");
 
@@ -641,30 +643,17 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
     (void)stack_state;
     (void)test_struct;
     (void)frame;
-    (void)has_error;
 
     printf(" - Interrupt: %s\n", formatted);
     printf(" - Interrupt id: '%d'\n\n", interrupt_id);
 
     /*
-    if (interrupt_id == 0x08) {
-        return;
-    }
-    */
-
     printf(" - eax: '%d'\n", stack_state.eax);
-    /*
-    printf(" - ebx: '%d'\n", ebx);
-    printf(" - ecx: '%d'\n", ecx);
-    printf(" - edx: '%d'\n", edx);
-    printf(" - ebp: '%d'\n", ebp);
-    printf(" - edi: '%d'\n", edi);
-    printf(" - esi: '%d'\n\n", esi);
-    */
     printf(" - Test1: '%d'\n", test_struct.num1);
     printf(" - Test2: '%d'\n", test_struct.num2);
     printf(" - Error code: '%d'\n", error_code);
     printf(" - eflags: 0x%x\n", frame.eflags);
+    */
     printf(" - cs: 0x%x\n", frame.cs);
     printf(" - current esp: 0x%x\n", stack_state.esp);
     printf(" - faulted from ring %d\n", frame.cs & 0x3);
@@ -679,6 +668,7 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
     asm volatile("mov %%cs, %0" : "=r"(cs));
     printf(" - current cs: 0x%x\n", cs);
 
+    bool resolved = false;
     if (interrupt_id == INT_GENERAL_PROTECTION) {
         printf("\nError breakdown:\n");
 
@@ -721,11 +711,12 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
         printf(" - Segment Selector Index: '%d'\n", (error_code >> 3) & 0xFF);
 
-        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
     } else if (interrupt_id == INT_PAGE_FAULT) {
         printf("\nError breakdown:\n");
 
         printf(" - Fault happened because of operation at 0x%x\n", cr2);
+
+        bool canResolve = true;
         
         pagedirectory_t pd;
         if (error_code & 0x04) {
@@ -743,22 +734,12 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
         bool rw = (pd[virtualPTI] & 0x2) > 0;
         bool kernel = !(pd[virtualPTI] & 0x4);
 
-        printf(" - Pagetable is 0x%x with flags p%d rw%d and k%d\n", pd[virtualPTI], present, rw, kernel);
-        if (pd[virtualPTI] & 1) {
-            pagetable_t pagetable = (pagetable_t) p_to_v((pd[virtualPTI] & 0xFFFFF000));
-            uint32_t page = pagetable[virtualPI];
 
-            present = page & 0x1;
-            rw = (page & 0x2) > 0;
-            kernel = !(page & 0x4);
 
-            printf(" - Page is 0x%x with flags p%d rw%d and k%d\n", page, present, rw, kernel);
-        } else {
-            printf(" - Pagetable not present\n");
-        }
 
         if (error_code & 0x01) {
             printf(" - Page was present\n");
+            canResolve = false;
         } else {
             printf(" - Page wasn't present\n");
         }
@@ -776,46 +757,83 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
             printf(" - Current process has id '%d' and name '%s'\n", process->id, process->name);
         } else {
             printf(" - Fault happened in kernel-mode\n");
+            canResolve = false;
         }
 
         if (error_code & 0x08) {
             printf(" - Fault caused by reserved bits being overwritten\n");
+            canResolve = false;
         }
 
         if (error_code & 0x10) {
             printf(" - Fault occured because of instruction fetch\n");
+            canResolve = false;
         }
 
         if (error_code & 0x20) {
             printf(" - Fault caused by protection-key violation\n");
+            canResolve = false;
         }
 
         if (error_code & 0x40) {
             printf(" - Fault caused by shadow-stack access\n");
+            canResolve = false;
         }
 
         if (error_code & 0x80) {
             printf(" - Fault occured during HLAT paging\n");
+            canResolve = false;
         }
 
         if (error_code & 0x8000) {
             printf(" - Fault resulted from violation of SGX-specific access-control requirements\n");
+            canResolve = false;
         }
 
-        // Ensure that the error wasn't because of an instruction fetch
-        if (!(error_code & 0x10)) {
-            // If page is trying to be read by user
-            if (error_code & 0x04) {
 
-            } else {
+
+
+
+
+        printf(" - Pagetable is 0x%x with flags p%d rw%d and k%d\n", pd[virtualPTI], present, rw, kernel);
+        if (pd[virtualPTI] & 1) {
+            pagetable_t pagetable = (pagetable_t) p_to_v((pd[virtualPTI] & 0xFFFFF000));
+            uint32_t page = pagetable[virtualPI];
+
+            present = page & 0x1;
+            rw = (page & 0x2) > 0;
+            kernel = !(page & 0x4);
+
+            printf(" - Page is 0x%x with flags p%d rw%d and k%d\n", page, present, rw, kernel);
+
+            // If we can resolve we try
+            if (canResolve) {
+                process_t* process = getCurrentProcess();
+
+                if (cr2 < 0xC0000000) {
+                    pageframe_t pageframe = kalloc_frame();
+
+                    VERBOSE("EXP_PAGING: Trying to resolve by mapping 0x%x to 0x%x\n", cr2, v_to_p((uint32_t) pageframe));
+                    map_page_wtable_pd(process->pd, v_to_p((uint32_t) pageframe), cr2, true, false, true, false);
+
+                    resolved = true;
+                } else {
+                    VERBOSE("EXP_PAGING: Can't resolve because user tried to access kernel-reserved page\n");
+                }
 
             }
-        }
 
-        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
-    } else {
+        } else {
+            printf(" - Pagetable not present\n");
+        }
+    }
+
+    if (!resolved) {
         __asm__ volatile ("cli; hlt"); // Completely hangs the computer
     }
+
+    printf("EXP: returning\n");
+    for (;;) {}
 }
 
 void idt_initialize(void) {

@@ -9,13 +9,14 @@
 
 
 #define MAX_LINE_LENGTH 128
-#define HISTORY_SIZE    8
-#define MAX_ARGS        8
+#define HISTORY_SIZE    64
+#define MAX_ARGS        32
 
 
 void execArgs(char** args) {
 
     pid_t pid = fork();
+    printf("parsed: '%s'\n", args[0]);
 
     if (pid == -1) {
         printf("[ERROR] Fork error!\n");
@@ -36,6 +37,7 @@ void execArgs(char** args) {
 char cmd[MAX_LINE_LENGTH+1];
 char history[MAX_LINE_LENGTH][HISTORY_SIZE];
 size_t historyCount = 0;
+
 
 /*
 void main(int argc, char* argv[]) {
@@ -167,6 +169,7 @@ void main() {
 
         putchar('\n');
 
+        printf("You typed in '%s'\n", cmd);
 
         char* parsedArgs[MAX_ARGS+1];
         unsigned int argCount = 0;
@@ -181,12 +184,11 @@ void main() {
                 break;
             }
 
+            printf("writing tok 0x%x to parsedArgs[%d]\n", tok, argCount);
             parsedArgs[argCount++] = tok;
             tok = strtok(NULL, " ");
         }
-
         parsedArgs[argCount] = NULL;
-
 
         if (argCount == 0) {
             continue;

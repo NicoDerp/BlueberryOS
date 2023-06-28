@@ -295,7 +295,6 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             return pd;
         }
     }
-    for (;;) {}
 
     return pd;
 }

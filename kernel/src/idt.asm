@@ -14,8 +14,6 @@ extern syscall_handler
 %macro isr_exc_err_stub 1
 isr_stub_%+%1:
 
-    push dword 1  ; signal that this interrupt has an error
-
     pushad
 
     push dword %1 ; interrupt id
@@ -28,9 +26,11 @@ isr_stub_%+%1:
     cld
     call exception_handler
 
+    add esp, 16     ; 'pop' interrupt-id, 2*test number and cr2
+
     popad
 
-    add esp, 20     ; 'pop' has_erorr, interrupt-id, 2*test number and error-code
+    add esp, 4      ; 'pop' error-code
 
     iret
 %endmacro
@@ -42,7 +42,6 @@ isr_stub_%+%1:
     
     pushad
 
-    push dword 0  ; signal that this interrupt doesn't have an error
     push dword %1 ; interrupt id
     push dword 69
     push dword 420
@@ -53,9 +52,11 @@ isr_stub_%+%1:
     cld
     call exception_handler
 
+    add esp, 16     ; 'pop' interrupt-id, 2*test number and cr2
+
     popad
 
-    add esp, 20     ; 'pop' has_error, interrupt-id, 2*test-number and error-code
+    add esp, 4      ; 'pop' error-code
 
     iret
 %endmacro
