@@ -53,6 +53,34 @@ void install_tss(uint8_t* gdt) {
     gdt_entry(gdt, source);
 }
 
+void freeProcessPagedirectory(pagedirectory_t pd) {
+
+    for (size_t i = 0; i < 768; i++) {
+        if (pd[i] & 1) {
+            VERBOSE("terminateProcess: freeing pagetable %d\n", i);
+            pagetable_t pt = getPagetable(pd[i]);
+
+            // TODO this only works now because the only things
+            //  I map is the ELF.
+            // In future I need to keep track of which pages to free.
+            // Idea: Pages have bits 9-11 available.
+            // Perfect for storing a flag if we need to free this page!!
+            for (size_t j = 0; j < 1024; j++) {
+                if (pt[j] & 1) {
+                    VERBOSE("terminateProcess: freeing page %d\n", j);
+
+                    uint32_t page = getPage(pt[j]);
+                    kfree_frame((void*) page);
+                }
+            }
+
+            kfree_frame((void*) pt);
+        }
+    }
+
+    kfree_frame(pd);
+}
+
 process_t* findNextProcess(void) {
 
     //VERBOSE("findNextProcess\n");
@@ -321,7 +349,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
     VERBOSE("overwriteArgs: freeing old stack\n");
-    freeUserPagedirectory(oldPD);
+    freeProcessPagedirectory(oldPD);
     kfree_frame(oldStack);
 
     return 0;
@@ -344,9 +372,10 @@ void terminateProcess(process_t* process, int status) {
     //
     VERBOSE("terminateProcess: Terminating process %d:%s\n", process->id, process->name);
 
-    // TODO free memory and shit
+    // TODO free malloc stuff
+
     VERBOSE("terminateProcess: freeing pagedirectory\n");
-    freeUserPagedirectory(process->pd);
+    freeProcessPagedirectory(process->pd);
 
     VERBOSE("terminateProcess: freeing stack\n");
     kfree_frame(process->physical_stack);

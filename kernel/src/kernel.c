@@ -271,7 +271,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
     if (moduleCount == 0) {
-        printf("\n\n\e[4;0m[FATAL]\e[0m No initrd found!\n");
+        printf("\n\e[4;0m[FATAL]\e[0m No initrd found!\n");
         for (;;) { asm("hlt"); }
     }
 

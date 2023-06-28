@@ -204,6 +204,10 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                 uint32_t offset = j*FRAME_4KB;
                 VERBOSE("loadELFIntoMemory: Index %d with offset 0x%x\n", j, offset);
 
+                // TODO space for optimizatoin
+                // if memsz == filesz, then you don't need to allocate new pageframe!
+                // Just use the same!
+
                 // Allocate memory for program header
                 pageframe_t pageframe = kalloc_frame();
 

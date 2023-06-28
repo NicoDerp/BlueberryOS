@@ -73,15 +73,12 @@ pagedirectory_t copy_system_pagedirectory(void) {
     return pd;
 }
 
-void freeUserPagedirectory(pagedirectory_t pd) {
+pagetable_t getPagetable(uint32_t entry) {
+    return (pagetable_t) p_to_v(entry & 0xFFFFF000);
+}
 
-    for (size_t i = 0; i < 768; i++) {
-        if (pd[i] & 1) {
-            kfree_frame((void*) p_to_v(pd[i] & 0xFFFFF000));
-        }
-    }
-
-    kfree_frame(pd);
+uint32_t getPage(uint32_t entry) {
+    return (uint32_t) p_to_v(entry & 0xFFFFF000);
 }
 
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
