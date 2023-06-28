@@ -166,34 +166,66 @@ void main() {
 
         putchar('\n');
 
-        if (index == 0) {
-            // Do nothing
-        } else if (strcmp(cmd, "exit") == 0) {
-            exit(0);
-        } else if (strcmp(cmd, "clear") == 0) {
 
-        } else if (strncmp(cmd, "echo ", 5) == 0) {
-            printf("%s\n", cmd+5);
-        } else {
-            char* parsedArgs[MAX_ARGS];
-            unsigned int tokCount = 0;
-            char* tok;
+        char* parsedArgs[MAX_ARGS+1];
+        unsigned int argCount = 0;
+        char* tok;
 
-            tok = strtok(cmd, " ");
+        tok = strtok(cmd, " ");
 
-            while (tok != NULL)
-            {
-                if (tokCount == MAX_ARGS) {
-                    printf("Reached max args\n");
-                    break;
-                }
-
-                parsedArgs[tokCount++] = tok;
-                tok = strtok(NULL, " ");
+        while (tok != NULL)
+        {
+            if (argCount == MAX_ARGS) {
+                printf("Reached max args\n");
+                break;
             }
 
-            parsedArgs[tokCount] = NULL;
+            parsedArgs[argCount++] = tok;
+            tok = strtok(NULL, " ");
+        }
 
+        parsedArgs[argCount] = NULL;
+
+
+        if (argCount == 0) {
+            continue;
+        } else if (strcmp(parsedArgs[0], "exit") == 0) {
+
+            if (argCount == 1) {
+                exit(0);
+            } else if (argCount == 2) {
+                printf("");
+                exit(0);
+            } else {
+                printf("exit: too many arguments\n");
+            }
+
+        } else if (strcmp(parsedArgs[0], "clear") == 0) {
+
+        } else if (strcmp(parsedArgs[0], "echo") == 0) {
+
+            for (size_t i = 0; i < argCount; i++) {
+                printf("%s", parsedArgs[i]);
+            }
+            putchar('\n');
+
+        } else if (strcmp(parsedArgs[0], "cd") == 0) {
+
+            if (argCount == 1) {
+                // Should actually go to home
+                printf("too few arguments\n");
+            } else if (argCount == 2) {
+
+                int status = chdir(parsedArgs[1]);
+                if (status == -1) {
+                    printf("error: chdir failed\n");
+                }
+
+            } else {
+                printf("too many arguments\n");
+            }
+
+        } else {
             execArgs(parsedArgs);
         }
     }

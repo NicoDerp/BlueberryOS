@@ -496,7 +496,10 @@ void parseDirectory(tar_header_t* header) {
         printf("[ERROR] Full path is too large\n");
         for (;;) {}
     }
-    memcpy(directory->fullpath, header->filename+6, len + 1);
+
+    // Cut away trailing /
+    memcpy(directory->fullpath, header->filename+6, len-1);
+    directory->fullpath[len-1] = '\0';
 
     // Ignore slash at the end
     len = strlen(header->filename + slash) - 1;
