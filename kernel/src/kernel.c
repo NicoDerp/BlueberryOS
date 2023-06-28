@@ -11,6 +11,8 @@
 #include <kernel/file.h>
 #include <kernel/io.h>
 
+#include <tinf/tinf.h>
+
 #include <string.h>
 #include <stdio.h>
 
@@ -110,6 +112,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     VERBOSE("kernelend: 0x%x(v) 0x%x(p)\n", KERNEL_END, v_to_p(KERNEL_END));
 
     VERBOSE("Multiboot2 structure starting at 0x%x\n", ebx);
+    printf("Multiboot2 structure starting at 0x%x\n", ebx);
 
     uint32_t memorySize;
     bool foundMemory = false;
@@ -131,13 +134,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
             case MULTIBOOT_TAG_TYPE_MODULE:
                 struct multiboot_tag_module* tag_module = (struct multiboot_tag_module*) tag;
 
-                VERBOSE("Module at 0x%x-0x%x. Command line '%s'\n",
+                printf("Module at 0x%x-0x%x. Command line '%s'\n",
                     p_to_v(tag_module->mod_start),
                     p_to_v(tag_module->mod_end),
                     tag_module->cmdline);
-                size_t mod_size = tag_module->mod_end - tag_module->mod_start;
 
-                memcpy(&modules[moduleCount++], tag_module, mod_size);
+                char* src = (char*) p_to_v(tag_module->mod_start);
+                printf("src: 0x%x 0x%x\n", src[0], src[1]);
+
+                memcpy(&modules[moduleCount++], tag_module, sizeof(struct multiboot_tag_module));
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
                 VERBOSE("mem_lower = %uKB, mem_upper = %uKB\n",
@@ -152,16 +157,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                 break;
             case MULTIBOOT_TAG_TYPE_MMAP:
                 {
-#ifdef _VERBOSE
                     multiboot_memory_map_t *mmap;
 
-                    printf("mmap\n");
+                    VERBOSE("mmap\n");
 
                     for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
                         (multiboot_uint8_t*) mmap < (multiboot_uint8_t *) tag + tag->size;
                         mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
 
-                        printf(" base_addr = 0x%x%x,"
+                        VERBOSE(" base_addr = 0x%x%x,"
                         " length = 0x%x%x, type = 0x%x\n",
                         (unsigned) (mmap->addr >> 32),
                         (unsigned) (mmap->addr & 0xffffffff),
@@ -179,7 +183,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                             VERBOSE("MMAP: Found mmap to use with size %d MB ranging from 0x%x to 0x%x\n", memorySize / FRAME_1MB, addr, addr + len);
                         }
                     }
-#endif
                 }
                 break;
         }
@@ -193,6 +196,28 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Setting up Memory ...");
     memory_initialize(FRAME_START, memorySize);
     printf("[OK]\n");
+
+
+    pagedirectory_t pd = page_directory;
+
+    for (size_t j = 767; j < 1024; j++) {
+        if (pd[j] & 1) {
+            printf("   - %d for 0x%x - 0x%x: 0x%x\n", j, FRAME_4MB*j, FRAME_4MB*(j+1), pd[j]);
+            pagetable_t pagetable = (pagetable_t) p_to_v(pd[j] & 0xFFFFF000);
+            for (size_t k = 0; k < 1024; k++) {
+                if (pagetable[k] & 1) {
+                    bool rw = pagetable[k] & 0x2;
+                    bool kernel = !(pagetable[k] & 0x4);
+                    printf("     - Page %d for 0x%x rw %d k %d: 0x%x\n", k, FRAME_4KB*k + FRAME_4MB*j, rw, kernel, pagetable[k] & ~(0x7));
+                }
+            }
+        }
+    }
+
+
+
+    for (;;) {}
+
 
     if (moduleCount == 0) {
         printf("[FATAL] No initrd found!\n");
@@ -211,13 +236,40 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 #endif
     }
 
-    loadInitrd(&modules[0]);
+    unsigned int destLen;
+    void* dest = (void*) modules[0].mod_end + FRAME_4KB;
+    uint32_t sourceLen = (uint32_t) modules[0].mod_end - (uint32_t) modules[0].mod_start;
+
+    int status = tinf_gzip_uncompress(dest, &destLen, (void*) modules[0].mod_start, sourceLen);
+
+    if (status == TINF_OK) {
+        printf("Decompression OK\n");
+    }
+
+    if (status == TINF_DATA_ERROR) {
+        printf("[FATAL] Data error: error in initrd.tar.gz\n");
+        for (;;) { asm("hlt"); }
+    }
+
+    if (status == TINF_BUF_ERROR) {
+        printf("[FATAL] Buffer error: not enough room for output\n");
+        for (;;) { asm("hlt"); }
+    }
+
+    printf("destLen is %d\n", destLen);
+    if (destLen == 0) {
+        printf("[FATAL] Failed to decompress initrd!\n");
+        for (;;) { asm("hlt"); }
+    }
+
+    //loadInitrd(modules[0].mod_start, modules[0].mod_end);
+    loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
 
 //#ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
 //#endif
 
-    for (;;) {}
+    //for (;;) {}
 
     printf("\nWelcome to BlueberryOS!\n");
 

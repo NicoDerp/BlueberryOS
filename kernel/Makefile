@@ -73,9 +73,9 @@ rebuild: clean all
 
 check: all
 	@if grub-file --is-x86-multiboot2 $(BIN); then\
-		echo OS is multiboot;\
+		echo OS is multiboot2;\
 	else\
-		echo OS is not multiboot!!;\
+		echo OS is not multiboot2!!;\
 	fi
 
 run: all

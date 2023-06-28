@@ -675,12 +675,12 @@ void displayDirectory(directory_t* dir, size_t space) {
     }
 }
 
-void loadInitrd(struct multiboot_tag_module* module) {
+void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
 
     tar_header_t* header;
     size_t offset = 512;
 
-    header = (tar_header_t*) (uint32_t) module->mod_start;
+    header = (tar_header_t*) (uint32_t) tar_start;
     strcpy(rootDir.fullpath, "/");
     strcpy(rootDir.name, "/");
     memcpy(rootDir.mode, header->mode+4, 3);
@@ -690,13 +690,13 @@ void loadInitrd(struct multiboot_tag_module* module) {
     rootDir.fileCount = 0;
     //printf("mode: %s\n", rootDir.mode);
 
-    printf("a: '%s'\n", (char*) module->mod_start);
+    //printf("a: '%s'\n", (char*) tar_start);
 
-    while (((uint32_t) module->mod_start + offset) <= (uint32_t) module->mod_end) {
+    while ((tar_start + offset) <= tar_end) {
 
-        header = (tar_header_t*) (uint32_t) (module->mod_start + offset);
+        header = (tar_header_t*) (tar_start + offset);
 
-        VERBOSE("mod_start at 0x%x\n", module->mod_start);
+        VERBOSE("mod_start at 0x%x\n", tar_start);
         VERBOSE("offset is %d\n", offset);
         if (memcmp(header->magic, "ustar", 5) != 0) {
             // EOF

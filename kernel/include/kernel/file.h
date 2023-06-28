@@ -99,7 +99,7 @@ extern directory_t rootDir;
 
 bool isFileELF(file_t* file);
 
-void loadInitrd(struct multiboot_tag_module* module);
+void loadInitrd(uint32_t tar_start, uint32_t tar_end);
 
 directory_t* getDirectory(char* path);
 file_t* getFile(char* filepath);
