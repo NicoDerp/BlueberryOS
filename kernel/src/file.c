@@ -356,10 +356,10 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
     return (directory_t*) 0;
 }
 
-directory_t* findParent(const char* filename, size_t* slash, bool init) {
+directory_t* findParent(directory_t* parent, const char* filename, size_t* slash, bool init) {
 
     //directory_t* parent = &rootDir;
-    directory_t* parent = (directory_t*) 0;
+    //directory_t* parent = (directory_t*) 0;
 
     char name[MAX_NAME_LENGTH+1];
     size_t ni = 0;
@@ -393,8 +393,11 @@ directory_t* findParent(const char* filename, size_t* slash, bool init) {
                 parent = &rootDir;
             } else {
                 // If parent isn't set then the path is: abc/, which means local
+                // But since we pass parent this means that this directory can't exist
+                //  (we don't deal with enviroment variables)
                 if (!parent) {
-                    printf("Local path! Not supported yet\n");
+                    VERBOSE("findParent: got local directory, but enviroment variables aren't supported yet\n");
+                    for (;;) {}
                     return (directory_t*) 0;
                 }
 
@@ -475,7 +478,7 @@ void parseDirectory(tar_header_t* header) {
 
     size_t len;
     size_t slash;
-    directory_t* parent = findParent(header->filename, &slash, true);
+    directory_t* parent = findParent((directory_t*) 0, header->filename, &slash, true);
 
     if (!parent) {
         printf("[ERROR] Failed to find parent of name %s\n", header->filename);
@@ -614,7 +617,7 @@ void parseFile(tar_header_t* header) {
     size_t len;
 
     size_t slash;
-    directory_t* parent = findParent(header->filename, &slash, true);
+    directory_t* parent = findParent((directory_t*) 0, header->filename, &slash, true);
 
     if (!parent) {
         printf("[ERROR] Failed to find parent of name %s\n", header->filename);
@@ -757,7 +760,7 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
 directory_t* getDirectory(char* path) {
 
     size_t slash;
-    directory_t* parent = findParent(path, &slash, false);
+    directory_t* parent = findParent((directory_t*) 0, path, &slash, false);
 
     if (!parent) {
         VERBOSE("getDirectory: no parent\n");
@@ -776,7 +779,38 @@ directory_t* getDirectory(char* path) {
 file_t* getFile(char* filepath) {
 
     size_t slash;
-    directory_t* parent = findParent(filepath, &slash, false);
+    directory_t* parent = findParent((directory_t*) 0, filepath, &slash, false);
+
+    if (!parent) {
+        return (file_t*) 0;
+    }
+
+    return getFileFromParent(parent, filepath + slash);
+}
+
+directory_t* getDirectoryFrom(directory_t* dir, char* path) {
+
+    size_t slash;
+    directory_t* parent = findParent(dir, path, &slash, false);
+
+    if (!parent) {
+        VERBOSE("getDirectory: no parent\n");
+        return (directory_t*) 0;
+    }
+
+    if (strcmp(parent->name, path) == 0) {
+        return parent;
+    }
+
+    VERBOSE("getDirectory: Got parent %s\n", parent->fullpath);
+
+    return getDirectoryFromParent(parent, path + slash);
+}
+
+file_t* getFileFrom(directory_t* dir, char* filepath) {
+
+    size_t slash;
+    directory_t* parent = findParent(dir, filepath, &slash, false);
 
     if (!parent) {
         return (file_t*) 0;

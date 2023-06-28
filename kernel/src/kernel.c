@@ -41,9 +41,9 @@ char* titleText = "\e[b;0m"
 "  ____  _            _                           ____   _____ \n"
 " |  _ \\| |          | |                         / __ \\ / ____|\n"
 " | |_) | |_   _  ___| |__   ___ _ __ _ __ _   _| |  | | (___  \n"
-" |  _ <| | | | |/ _ \\ '_ \\ / _ \\ '__| '__| | | | |  | |\\___ \\ \n"
+" |  _ <| | | | |/ _ \\ '_ \\ / _ \\ '__| '__| | | | |  | |\\___ \\\n"
 " | |_) | | |_| |  __/ |_) |  __/ |  | |  | |_| | |__| |____) |\n"
-" |____/|_|\\__,_|\\___|_.__/ \\___|_|  |_|   \\__, |\\____/|_____/ \n"
+" |____/|_|\\__,_|\\___|_.__/ \\___|_|  |_|   \\__, |\\____/|_____/\n"
 "                                           __/ |              \n"
 "                                          |___/               \n\e[0m";
 
@@ -174,7 +174,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     if (eax != 0x36d76289) {
         printf("[ERROR] Failed to verify if bootloader has passed correct information\n");
     }
-
 
 
     VERBOSE("kernelstart: 0x%x(v) 0x%x(p)\n", p_to_v(KERNEL_START), KERNEL_START);

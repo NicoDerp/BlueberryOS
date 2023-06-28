@@ -305,7 +305,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 // Null character included
-                size_t len = strlen(process->cwd->fullpath) + 1;
+                size_t len = strlen(process->cwdir->fullpath) + 1;
 
                 if (len > size) {
 
@@ -313,7 +313,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     process->regs.eax = 0;
 
                 } else {
-                    memcpy(buf, process->cwd->fullpath, len);
+                    memcpy(buf, process->cwdir->fullpath, len);
 
                     // Indicate sucess
                     process->regs.eax = (uint32_t) buf;
@@ -344,11 +344,11 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
                 VERBOSE("SYS_chdir: after\n");
 
-                directory_t* dir = getDirectory(path);
+                directory_t* dir = getDirectoryFrom(process->cwdir, path);
                 if (dir) {
 
                     VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
-                    process->cwd = dir;
+                    process->cwdir = dir;
 
                     // Indicate sucess
                     process->regs.eax = 0;

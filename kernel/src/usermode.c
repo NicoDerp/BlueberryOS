@@ -164,9 +164,9 @@ process_t* newProcess(file_t* file) {
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
-    process->cwd = getDirectory("/");
+    process->cwdir = getDirectory("/");
 
-    if (!process->cwd) {
+    if (!process->cwdir) {
         printf("[ERROR] Failed to find root directory for process\n");
     }
 
@@ -233,8 +233,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     VERBOSE("overwriteArgs: Overwriting process %d:%s with %s\n", process->id, process->name, filename);
 
-    // TODO use enviromental variables n shi and current directory
-    file_t* file = getFile(filename);
+    file_t* file = getFileFrom(process->cwdir, filename);
     if (!file) {
         return -1;
     }
@@ -290,8 +289,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     // Keep parent
     //process->parent = (process_t*) 0;
 
-    // Keep cwd
-    //process->cwd = getDirectory("/");
+    // Keep cwdir
+    //process->cwdir = getDirectory("/");
 
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
@@ -405,7 +404,7 @@ void forkProcess(process_t* parent) {
     child->parent = parent;
     child->esp = parent->esp;
     child->eip = parent->eip;
-    child->cwd = parent->cwd;
+    child->cwdir = parent->cwdir;
     child->indexInParent = index;
     parent->children[index] = child;
 

@@ -9,8 +9,8 @@
 
 
 #define MAX_LINE_LENGTH 128
-#define HISTORY_SIZE    8
-#define MAX_ARGS        8
+#define HISTORY_SIZE    128
+#define MAX_ARGS        32
 
 
 void execArgs(char** args) {

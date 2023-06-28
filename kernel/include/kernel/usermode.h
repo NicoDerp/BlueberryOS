@@ -97,7 +97,7 @@ typedef struct process {
     struct process* parent;
     uint32_t indexInParent;
     file_t* file;
-    directory_t* cwd;
+    directory_t* cwdir;
     uint32_t entryPoint;
     pageframe_t physical_stack;
     uint32_t virtual_stack;

@@ -104,6 +104,9 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end);
 directory_t* getDirectory(char* path);
 file_t* getFile(char* filepath);
 
+directory_t* getDirectoryFrom(directory_t* dir, char* path);
+file_t* getFileFrom(directory_t* dir, char* filepath);
+
 directory_t* createDirectory(directory_t* parent, char* name, char mode[4]);
 directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, char mode[4]);
 
