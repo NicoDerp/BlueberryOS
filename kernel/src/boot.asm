@@ -98,7 +98,7 @@ _start:
     ; Fill page table's pages
     mov edi, (page_table1 - 0xC0000000)
     mov esi, 0
-    mov ecx, 1023
+    mov ecx, 1024
 .table1_1:
     cmp esi, _kernelstart
     jl .table1_2
@@ -129,7 +129,7 @@ _start:
     ; Map VGA memory to 0xC03FF000
     ; - Present
     ; - Read/write
-    mov [page_table1 - 0xC0000000 + 1023 * 4], dword (0x000B8000 | 0x003)
+    ;mov [page_table1 - 0xC0000000 + 1023 * 4], dword (0x000B8000 | 0x003)
 
     ; Tell the CPU where the page directory is
     mov ecx, (page_directory - 0xC0000000)

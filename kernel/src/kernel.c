@@ -68,7 +68,56 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     */
 
-    terminal_initialize(80, 25, (void*) 0xC03FF000);
+    uint32_t memorySize;
+    uint32_t virtualFramebuffer;
+    bool foundMemory = false;
+
+    struct multiboot_tag* tag;
+    for (tag = (struct multiboot_tag*) (ebx + 8);
+       tag->type != MULTIBOOT_TAG_TYPE_END;
+       tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
+    {
+        switch (tag->type)
+        {
+            case MULTIBOOT_TAG_TYPE_MMAP:
+                {
+                    multiboot_memory_map_t *mmap;
+
+                    for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
+                        (multiboot_uint8_t*) mmap < (multiboot_uint8_t *) tag + tag->size;
+                        mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
+
+                        unsigned int addr = p_to_v((unsigned int) (mmap->addr & 0xFFFFFFFF));
+                        unsigned int len = (unsigned int) (mmap->len & 0xFFFFFFFF);
+
+                        // Minimum requirement
+                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + len > FRAME_START + 2*FRAME_4MB)) {
+                            foundMemory = true;
+                            virtualFramebuffer = addr + len - FRAME_4KB;
+                            memorySize = len - FRAME_4KB;
+                        }
+                    }
+                }
+                break;
+        }
+    }
+
+    if (!foundMemory) {
+        virtualFramebuffer = 0xC03FF000;
+        map_page(0x000B8000, virtualFramebuffer, true, true);
+        terminal_initialize(80, 25, (void*) virtualFramebuffer);
+
+        printf("[FATAL] Not enough memory available to run OS!\n");
+        for (;;) {asm("hlt");}
+    }
+
+
+    memory_initialize(FRAME_START, memorySize);
+
+    map_page(0x000B8000, virtualFramebuffer, true, true);
+    terminal_initialize(80, 25, (void*) virtualFramebuffer);
+    VERBOSE("init: virtualFramebuffer at 0x%x\n", virtualFramebuffer);
+
 
     printf("\nStarting BlueberryOS\n");
 
@@ -114,9 +163,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     VERBOSE("Multiboot2 structure starting at 0x%x\n", ebx);
     printf("Multiboot2 structure starting at 0x%x\n", ebx);
 
-    uint32_t memorySize;
-    bool foundMemory = false;
-    struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
        tag = (struct multiboot_tag*) ((multiboot_uint8_t*) tag + ((tag->size + 7) & ~7)))
@@ -179,7 +225,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                         // Minimum requirement
                         if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + len > FRAME_START + 2*FRAME_4MB)) {
                             foundMemory = true;
-                            memorySize = (unsigned int) (mmap->len & 0xFFFFFFFF);
                             VERBOSE("MMAP: Found mmap to use with size %d MB ranging from 0x%x to 0x%x\n", memorySize / FRAME_1MB, addr, addr + len);
                         }
                     }
@@ -188,16 +233,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         }
     }
 
-    if (!foundMemory) {
-        printf("[FATAL] Not enough memory available to run OS!\n");
-        for (;;) {}
-    }
 
-    printf("Setting up Memory ...");
-    memory_initialize(FRAME_START, memorySize);
-    printf("[OK]\n");
-
-
+    /*
     pagedirectory_t pd = page_directory;
 
     for (size_t j = 767; j < 1024; j++) {
@@ -213,10 +250,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
             }
         }
     }
-
-
-
-    for (;;) {}
+    */
 
 
     if (moduleCount == 0) {
