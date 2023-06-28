@@ -358,11 +358,16 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
 directory_t* findParent(const char* filename, size_t* slash, bool init) {
 
-    directory_t* parent = &rootDir;
+    //directory_t* parent = &rootDir;
+    directory_t* parent = (directory_t*) 0;
 
     char name[MAX_NAME_LENGTH+1];
     size_t ni = 0;
 
+    // If we never set it
+    *slash = 0;
+
+    VERBOSE("findParent: Path: %s\n", filename);
     for (size_t i = 0; filename[i] != '\0'; i++) {
 
         //printf("Checking char '%c'. %d\n", header->filename[i], header->filename[i + 1]);
@@ -372,6 +377,10 @@ directory_t* findParent(const char* filename, size_t* slash, bool init) {
 
             // Directory since it end with /0
             if (filename[i+1] == '\0') {
+                if (i == 0) {
+                    return &rootDir;
+                }
+
                 //printf("Directory, so stopping. Got parent %s for %s\n", parent->name, name);
                 return parent;
             }
@@ -383,6 +392,12 @@ directory_t* findParent(const char* filename, size_t* slash, bool init) {
             } else if (strcmp(name, "") == 0) {
                 parent = &rootDir;
             } else {
+                // If parent isn't set then the path is: abc/, which means local
+                if (!parent) {
+                    printf("Local path! Not supported yet\n");
+                    return (directory_t*) 0;
+                }
+
                 //printf("name so far: %s\n", name);
                 directory_t* p = getDirectoryFromParent(parent, name);
                 if (!p) {
@@ -742,12 +757,15 @@ directory_t* getDirectory(char* path) {
     directory_t* parent = findParent(path, &slash, false);
 
     if (!parent) {
+        VERBOSE("getDirectory: no parent\n");
         return (directory_t*) 0;
     }
 
     if (strcmp(parent->name, path) == 0) {
         return parent;
     }
+
+    VERBOSE("getDirectory: Got parent %s\n", parent->fullpath);
 
     return getDirectoryFromParent(parent, path + slash);
 }

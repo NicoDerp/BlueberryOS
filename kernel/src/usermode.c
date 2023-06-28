@@ -55,7 +55,7 @@ void install_tss(uint8_t* gdt) {
 
 process_t* findNextProcess(void) {
 
-    VERBOSE("findNextProcess\n");
+    //VERBOSE("findNextProcess\n");
 
     process_t* process;
     bool found = false;
@@ -92,7 +92,7 @@ process_t* findNextProcess(void) {
         }
     }
 
-    VERBOSE("findNextProcess: Found process %d:%s\n", process->id, process->name);
+    //VERBOSE("findNextProcess: Found process %d:%s\n", process->id, process->name);
 
     return process;
 }
@@ -321,6 +321,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     setProcessArgs(process, argPointers);
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
+    VERBOSE("overwriteArgs: freeing old stack\n");
     freeUserPagedirectory(oldPD);
     kfree_frame(oldStack);
 
@@ -345,7 +346,10 @@ void terminateProcess(process_t* process, int status) {
     VERBOSE("terminateProcess: Terminating process %d:%s\n", process->id, process->name);
 
     // TODO free memory and shit
+    VERBOSE("terminateProcess: freeing pagedirectory\n");
     freeUserPagedirectory(process->pd);
+
+    VERBOSE("terminateProcess: freeing stack\n");
     kfree_frame(process->physical_stack);
 }
 

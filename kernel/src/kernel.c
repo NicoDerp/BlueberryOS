@@ -180,7 +180,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
             case MULTIBOOT_TAG_TYPE_MODULE:
                 struct multiboot_tag_module* tag_module = (struct multiboot_tag_module*) tag;
 
-                printf("Module at 0x%x-0x%x. Command line '%s'\n",
+                VERBOSE("Module at 0x%x-0x%x. Command line '%s'\n",
                     p_to_v(tag_module->mod_start),
                     p_to_v(tag_module->mod_end),
                     tag_module->cmdline);

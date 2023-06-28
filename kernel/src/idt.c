@@ -100,7 +100,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
     }
     */
 
-    VERBOSE("Got syscall %d\n", stack_state.eax);
+    //VERBOSE("Got syscall %d\n", stack_state.eax);
 
     switch (stack_state.eax) {
         case (SYS_exit):
@@ -336,18 +336,26 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 process_t* process = getCurrentProcess();
 
+                VERBOSE("SYS_chdir: Finding directory '%s'\n", path);
+                VERBOSE("SYS_chdir: Saving registers for %d:%s\n", process->id, process->name);
+                VERBOSE("SYS_chdir: after\n");
+
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
+                VERBOSE("SYS_chdir: after\n");
 
                 directory_t* dir = getDirectory(path);
                 if (dir) {
 
+                    VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
                     process->cwd = dir;
 
                     // Indicate sucess
                     process->regs.eax = 0;
 
                 } else {
+
+                    VERBOSE("SYS_chdir: Couldn't find directory\n");
 
                     // Indicate error
                     process->regs.eax = -1;
@@ -601,12 +609,12 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             // Only save registers if we came from userspace
             if (frame.cs & 0x3) {
 
-                VERBOSE("INT_TIMER: Came from userspace\n");
+                //VERBOSE("INT_TIMER: Came from userspace\n");
 
                 // Save registers
                 process_t* process = getCurrentProcess();
                 if (process->initialized) {
-                    VERBOSE("INT_TIMER: Saving registers for %d:%s\n", process->id, process->name);
+                    //VERBOSE("INT_TIMER: Saving registers for %d:%s\n", process->id, process->name);
 
                     saveRegisters(process, &stack_state, &frame, esp);
                 }
