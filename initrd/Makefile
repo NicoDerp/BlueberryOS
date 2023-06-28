@@ -75,7 +75,6 @@ initrd: $(BINS)
 	mkdir -p $(DIRS)
 	$(subst ^, ,$(join $(addprefix cp^,$(BINS)),$(patsubst %,^%;,$(OUT_BINS))))
 
-#tar U -cvf initrd.tar initrd
 initrd.tar.gz: initrd
 	tar U --gzip -cvf initrd.tar.gz initrd
 

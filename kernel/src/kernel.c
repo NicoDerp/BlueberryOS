@@ -185,9 +185,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                     p_to_v(tag_module->mod_end),
                     tag_module->cmdline);
 
-                char* src = (char*) p_to_v(tag_module->mod_start);
-                printf("src: 0x%x 0x%x\n", src[0], src[1]);
-
                 memcpy(&modules[moduleCount++], tag_module, sizeof(struct multiboot_tag_module));
                 break;
             case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
@@ -266,7 +263,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 #ifdef _VERBOSE
         size_t moduleSize = module->mod_end - module->mod_start;
-        printf("Module %d size: %d\n", i, moduleSize);
+        VERBOSE("Module %d size: %d\n", i, moduleSize);
 #endif
     }
 
@@ -274,30 +271,26 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     void* dest = (void*) modules[0].mod_end + FRAME_4KB;
     uint32_t sourceLen = (uint32_t) modules[0].mod_end - (uint32_t) modules[0].mod_start;
 
+    printf("Decompressing initrd ... ");
     int status = tinf_gzip_uncompress(dest, &destLen, (void*) modules[0].mod_start, sourceLen);
 
-    if (status == TINF_OK) {
-        printf("Decompression OK\n");
-    }
-
-    if (status == TINF_DATA_ERROR) {
-        printf("[FATAL] Data error: error in initrd.tar.gz\n");
-        for (;;) { asm("hlt"); }
-    }
-
     if (status == TINF_BUF_ERROR) {
-        printf("[FATAL] Buffer error: not enough room for output\n");
+        printf("[ERROR]\n[FATAL] Failed to decompress initrd: buffer error\n");
         for (;;) { asm("hlt"); }
+
+    } else if (status == TINF_DATA_ERROR) {
+
+        VERBOSE("init: initrd wasn't tar.gz\n");
+        printf("[OK]\n");
+        // Not gzip
+        loadInitrd(modules[0].mod_start, modules[0].mod_end);
+    } else if (status == TINF_OK) {
+
+        VERBOSE("init: initrd decompression sucessfull\n");
+        printf("[OK]\n");
+        loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
     }
 
-    printf("destLen is %d\n", destLen);
-    if (destLen == 0) {
-        printf("[FATAL] Failed to decompress initrd!\n");
-        for (;;) { asm("hlt"); }
-    }
-
-    //loadInitrd(modules[0].mod_start, modules[0].mod_end);
-    loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
 
 //#ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
