@@ -109,6 +109,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     VERBOSE("kernelstart: 0x%x(v) 0x%x(p)\n", p_to_v(KERNEL_START), KERNEL_START);
     VERBOSE("kernelend: 0x%x(v) 0x%x(p)\n", KERNEL_END, v_to_p(KERNEL_END));
 
+    VERBOSE("Multiboot2 structure starting at 0x%x\n", ebx);
+
+    uint32_t memorySize;
+    bool foundMemory = false;
     struct multiboot_tag* tag;
     for (tag = (struct multiboot_tag*) (ebx + 8);
        tag->type != MULTIBOOT_TAG_TYPE_END;
@@ -164,12 +168,32 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                         (unsigned) (mmap->len >> 32),
                         (unsigned) (mmap->len & 0xffffffff),
                         (unsigned) mmap->type);
+
+                        unsigned int addr = p_to_v((unsigned int) (mmap->addr & 0xFFFFFFFF));
+                        unsigned int len = (unsigned int) (mmap->len & 0xFFFFFFFF);
+
+                        // Minimum requirement
+                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + len > FRAME_START + 2*FRAME_4MB)) {
+                            foundMemory = true;
+                            memorySize = (unsigned int) (mmap->len & 0xFFFFFFFF);
+                            VERBOSE("MMAP: Found mmap to use with size %d MB ranging from 0x%x to 0x%x\n", memorySize / FRAME_1MB, addr, addr + len);
+                        }
                     }
 #endif
                 }
                 break;
         }
     }
+
+    if (!foundMemory) {
+        printf("[FATAL] Not enough memory available to run OS!\n");
+        for (;;) {}
+    }
+
+    printf("Setting up Memory ...");
+    memory_initialize(FRAME_START, memorySize);
+    printf("[OK]\n");
+
     for (;;) {}
 
     if (moduleCount == 0) {

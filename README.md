@@ -10,6 +10,11 @@ Big thanks to [wiki.osdev.org](wiki.osdev.org) for their wiki and forums.
 Use BlueberryOS at our own risk. I'm not responsible for any damages or other things that can happen by using my operating system.
 This is very in-development and just a hobby-project.
 
+## Minimum requirements
+
+ - x86 (or x86_64) CPU
+ - 4 MiB of memory
+
 ## Goals
 
 - [x] Libc with syscalls
@@ -19,6 +24,7 @@ This is very in-development and just a hobby-project.
 - [x] Multiple processes
 - [x] Preemptive os
 - [x] Filesystem (with initrd)
+- [ ] Fancier terminal
 - [ ] Shell
 - [ ] Memory allocator
 - [ ] Graphics manager

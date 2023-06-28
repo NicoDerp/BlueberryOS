@@ -4,6 +4,7 @@
 #include <kernel/errors.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <stdio.h>
 
@@ -12,13 +13,26 @@ pageframe_t kalloc_cachedframe(void);
 frame_map_t frame_map[FRAME_MAP_SIZE];
 pageframe_t cached_frame_map[FRAME_CACHE_SIZE];
 
+uint32_t framestart;
 size_t cachedIndex = 0;
-bool firsttime = true;
+
+void memory_initialize(uint32_t framestart_, uint32_t bytes) {
+
+    framestart = framestart_;
+
+    // TODO FRAME_MAP_SIZE should be bytes / FRAME_4KB
+    (void) bytes;
+
+    cachedIndex = 0;
+    for (size_t i = 0; i < FRAME_CACHE_SIZE; i++) {
+        cached_frame_map[i] = kalloc_cachedframe();
+    }
+
+}
 
 pageframe_t kalloc_frame(void) {
-    if (cachedIndex >= FRAME_CACHE_SIZE || firsttime) {
+    if (cachedIndex >= FRAME_CACHE_SIZE) {
         cachedIndex = 0;
-        firsttime = false;
         for (size_t i = 0; i < FRAME_CACHE_SIZE; i++) {
             cached_frame_map[i] = kalloc_cachedframe();
         }
@@ -78,7 +92,7 @@ pageframe_t kalloc_frames(unsigned int count) {
         frame_map[i] = USED;
     }
 
-    pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + FRAME_START);
+    pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + framestart);
 
     VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
 
@@ -88,7 +102,7 @@ pageframe_t kalloc_frames(unsigned int count) {
 void kfree_frame(pageframe_t frame) {
     VERBOSE("kfree_frame: Freeing frame at 0x%x\n", frame);
 
-    size_t index = (unsigned int) frame - FRAME_START;
+    size_t index = (unsigned int) frame - framestart;
     if (index != 0) {
         index /= FRAME_SIZE;
     }
@@ -111,7 +125,7 @@ pageframe_t kalloc_cachedframe(void) {
     }
 
     frame_map[index] = USED;
-    return (pageframe_t) (index*FRAME_SIZE + FRAME_START);
+    return (pageframe_t) (index*FRAME_SIZE + framestart);
 }
 
 
