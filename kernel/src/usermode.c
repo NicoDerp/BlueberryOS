@@ -363,9 +363,13 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     setProcessArgs(process, argPointers);
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
-    VERBOSE("overwriteArgs: freeing old stack\n");
+    VERBOSE("overwriteArgs: freeing pagedirectory\n");
     freeProcessPagedirectory(oldPD, freeReadOnly);
-    kfree_frame(oldStack);
+
+    if (oldStack) {
+        VERBOSE("overwriteArgs: freeing old stack\n");
+        kfree_frame(oldStack);
+    }
 
     return 0;
 }
