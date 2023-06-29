@@ -104,6 +104,10 @@ pageframe_t kalloc_frames(unsigned int count) {
 void kfree_frame(pageframe_t frame) {
     VERBOSE("kfree_frame: Freeing frame at 0x%x\n", frame);
 
+    if (((uint32_t) frame & (FRAME_SIZE-1)) != 0) {
+        ERROR("Kernel tried to free non 4KB aligned-pageframe\n");
+    }
+    
     size_t index = (unsigned int) frame - framestart;
     if (index != 0) {
         index /= FRAME_SIZE;
@@ -131,4 +135,16 @@ pageframe_t kalloc_cachedframe(void) {
     return (pageframe_t) (index*FRAME_SIZE + framestart);
 }
 
+uint32_t get_used_memory(void) {
+
+    uint32_t count = 0;
+    for (size_t i = 0; i < FRAME_MAP_SIZE; i++) {
+        if (frame_map[i] == USED) {
+            count++;
+        }
+    }
+
+    return count;
+
+}
 

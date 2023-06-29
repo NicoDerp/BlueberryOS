@@ -124,6 +124,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 VERBOSE("SYS_exit: Process called exit: %d %s\n", process->id, process->name);
                 terminateProcess(process, status);
 
+                VERBOSE("SYS_exit: switching to next process\n");
                 // Switch to next process
                 switchProcess();
             }
@@ -216,6 +217,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
+                uint32_t count = get_used_memory();
+                printf("SYS_fork: Used memory: %d\n", count);
+
                 process_t* process = getCurrentProcess();
 
                 // Save registers
@@ -264,6 +268,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     ERROR("Kernel called execvp?\n");
                     for (;;) {}
                 }
+
+                uint32_t count = get_used_memory();
+                printf("SYS_execvp: Used memory: %d\n", count);
 
                 char* file = (char*) stack_state.ebx;
                 const char** argv = (const char**) stack_state.ecx;

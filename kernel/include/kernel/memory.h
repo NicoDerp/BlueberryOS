@@ -40,5 +40,7 @@ pageframe_t kalloc_frame(void);
 pageframe_t kalloc_frames(unsigned int count);
 void kfree_frame(pageframe_t frame);
 
+uint32_t get_used_memory(void);
+
 #endif /* KERNEL_MEMORY_H */
 

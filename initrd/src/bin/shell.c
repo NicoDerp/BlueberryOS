@@ -22,7 +22,6 @@ void execArgs(char** args) {
     } else if (pid == 0) {
         if (execvp(args[0], args) == -1) {
             printf("%s: command not found\n", args[0]);
-            return;
         }
 
         exit(0);

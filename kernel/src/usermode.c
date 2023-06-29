@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <kernel/memory.h>
+
 
 extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
 
@@ -92,6 +94,7 @@ void freeProcessPagedirectory(pagedirectory_t pd, bool freeReadOnly) {
         }
     }
 
+    VERBOSE("freProcessPagedirectory: freeing pagedirectory\n");
     kfree_frame(pd);
 }
 
@@ -371,6 +374,9 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
         kfree_frame(oldStack);
     }
 
+    uint32_t count = get_used_memory();
+    printf("Used memory: %d\n", count);
+
     return 0;
 }
 
@@ -380,15 +386,13 @@ void terminateProcess(process_t* process, int status) {
 
     process->initialized = false;
 
-    /*
     if (process->parent) {
         process->parent->children[process->indexInParent] = 0;
     }
-    */
 
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
-    //
+
     VERBOSE("terminateProcess: Terminating process %d:%s\n", process->id, process->name);
 
     // TODO free malloc stuff
@@ -396,8 +400,13 @@ void terminateProcess(process_t* process, int status) {
     VERBOSE("terminateProcess: freeing pagedirectory\n");
     freeProcessPagedirectory(process->pd, process->parent == 0);
 
-    VERBOSE("terminateProcess: freeing stack\n");
-    kfree_frame(process->physical_stack);
+    if (process->physical_stack) {
+        VERBOSE("terminateProcess: freeing stack\n");
+        kfree_frame(process->physical_stack);
+    }
+
+    uint32_t count = get_used_memory();
+    printf("Used memory: %d\n", count);
 }
 
 void runProcess(process_t* process) {
@@ -532,6 +541,9 @@ void forkProcess(process_t* parent) {
     child->indexInParent = index;
     parent->children[index] = child;
 
+    strcpy(child->name, parent->name);
+    child->file = parent->file;
+
     parent->regs.eax = child->id;
     child->regs.eax = 0;
 
@@ -544,9 +556,12 @@ void switchProcess(void) {
     // Simple round robin
 
     process_t* process = findNextProcess();
+    /*
+    if (currentProcessID != process->id)
+        printf("Found next process: %d:%s\n", process->id, process->name);
+    */
     currentProcessID = process->id;
 
-    //printf("Found next process: %d, %s\n", process->id, process->name);
     /*
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
         process_t* p = &processes[i];
