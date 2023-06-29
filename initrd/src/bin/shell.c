@@ -16,7 +16,6 @@
 void execArgs(char** args) {
 
     pid_t pid = fork();
-    printf("parsed: '%s'\n", args[0]);
 
     if (pid == -1) {
         printf("[ERROR] Fork error!\n");
@@ -169,8 +168,6 @@ void main() {
 
         putchar('\n');
 
-        printf("You typed in '%s'\n", cmd);
-
         char* parsedArgs[MAX_ARGS+1];
         unsigned int argCount = 0;
         char* tok;
@@ -184,7 +181,6 @@ void main() {
                 break;
             }
 
-            printf("writing tok 0x%x to parsedArgs[%d]\n", tok, argCount);
             parsedArgs[argCount++] = tok;
             tok = strtok(NULL, " ");
         }

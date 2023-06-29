@@ -39,9 +39,11 @@ pageframe_t kalloc_frame(void) {
     }
 
     pageframe_t frame = cached_frame_map[cachedIndex];
+    /*
     if ((unsigned int) frame >= (0xC03FF000-FRAME_4KB)) {
         kerror("Allocated frame goes into framebuffer\n");
     }
+    */
 
     VERBOSE("kalloc_frame: Allocated 4KB frame at 0x%x\n", frame);
 
@@ -107,7 +109,7 @@ void kfree_frame(pageframe_t frame) {
         index /= FRAME_SIZE;
     }
     if (index >= FRAME_MAP_SIZE) {
-        printf("[ERROR] Index not in correct range: 0x%x from frame 0x%x\n", index, frame);
+        ERROR("Index not in correct range: 0x%x from frame 0x%x\n", index, frame);
         return;
     }
 
@@ -119,7 +121,8 @@ pageframe_t kalloc_cachedframe(void) {
     while (frame_map[index] != FREE) {
         index++;
         if (index >= FRAME_MAP_SIZE) {
-            kerror("Out of memory!\n");
+            FATAL("Out of memory!\n");
+            kabort();
             return (pageframe_t) -1;
         }
     }

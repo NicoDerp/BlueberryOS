@@ -1,7 +1,8 @@
 
 #include <kernel/logging.h>
-#include <kernel/tty.h>
+#include <kernel/errors.h>
 
+#include <kernel/tty.h>
 #include <kernel/multiboot2.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
@@ -130,7 +131,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         terminal_initialize(80, 25, (void*) virtualFramebuffer);
 
         printf("\n\n[\e[4;0m[FATAL]\e[0m Not enough memory available to run OS!\n");
-        for (;;) {asm("hlt");}
+        kabort();
     }
 
     memory_initialize(FRAME_START, memorySize);
@@ -172,7 +173,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("\e[2;0m[OK]\e[0m\n");
 
     if (eax != 0x36d76289) {
-        printf("[ERROR] Failed to verify if bootloader has passed correct information\n");
+        ERROR("Failed to verify if bootloader has passed correct information\n");
     }
 
 
@@ -272,7 +273,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     if (moduleCount == 0) {
         printf("\n\e[4;0m[FATAL]\e[0m No initrd found!\n");
-        for (;;) { asm("hlt"); }
+        kabort();
     }
 
     for (size_t i = 0; i < moduleCount; i++) {
@@ -296,8 +297,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     if (status == TINF_BUF_ERROR) {
         printf("\e[4;0m[ERROR]\e[0m\n");
-        printf("\e[4;0m[FATAL]\e[0m Failed to decompress initrd: buffer error\n");
-        for (;;) { asm("hlt"); }
+        FATAL("Failed to decompress initrd: buffer error\n");
+        kabort();
 
     } else if (status == TINF_DATA_ERROR) {
 
@@ -329,7 +330,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     // TODO only run when there are no other processes
     file = getFile("/sbin/loop");
     if (!file) {
-        printf("[ERROR] Failed to load application /sbin/loop\n");
+        ERROR("Failed to load application /sbin/loop\n");
         for (;;) {}
     }
     process_t* loop = newProcessArgs(file, args);
@@ -338,7 +339,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     file = getFile("/bin/shell");
     //file = getFile("/bin/test2");
     if (!file) {
-        printf("[ERROR] Failed to load application /bin/shell\n");
+        ERROR("Failed to load application /bin/shell\n");
         for (;;) {}
     }
     process_t* process = newProcessArgs(file, args);

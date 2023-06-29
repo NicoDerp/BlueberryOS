@@ -122,7 +122,7 @@ process_t* findNextProcess(void) {
 
     if (!found) {
         if (!processes[currentProcessID].initialized) {
-            printf("[ERROR] No current processes?? Idk what to do now\n");
+            ERROR("No current processes?? Idk what to do now\n");
             for (;;) {}
             return (process_t*) 0;
         }
@@ -130,7 +130,7 @@ process_t* findNextProcess(void) {
         process = &processes[currentProcessID];
 
         if (process->state != RUNNING) {
-            printf("[ERROR] Only one process to run and that is blocked\n");
+            ERROR("Only one process to run and that is blocked\n");
         }
     }
 
@@ -158,7 +158,7 @@ process_t* newProcess(file_t* file) {
     }
 
     if (!found) {
-        printf("[ERROR] Max processes reached!\n");
+        ERROR("Max processes reached!\n");
         for (;;) {}
         return (process_t*) 0;
     }
@@ -166,7 +166,7 @@ process_t* newProcess(file_t* file) {
     VERBOSE("newProcess: Creating new process with id %d\n", index);
 
     if (index >= PROCESSES_MAX) {
-        printf("[ERROR] Can't create process with pid outside maximum limit\n");
+        ERROR("Can't create process with pid outside maximum limit\n");
         for (;;) {}
     }
 
@@ -174,7 +174,7 @@ process_t* newProcess(file_t* file) {
 
     size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
-        printf("[ERROR] Max process name reached!\n");
+        ERROR("Max process name reached!\n");
         len = PROCESS_MAX_NAME_LENGTH;
         for (;;) {}
     }
@@ -209,7 +209,7 @@ process_t* newProcess(file_t* file) {
     process->cwdir = getDirectory("/");
 
     if (!process->cwdir) {
-        printf("[ERROR] Failed to find root directory for process\n");
+        ERROR("Failed to find root directory for process\n");
     }
 
     process->initialized = true;
@@ -234,7 +234,7 @@ void setProcessArgs(process_t* process, char* args[]) {
     VERBOSE("setProcessArgs: argCount %d\n", argCount);
 
     if (argCount >= MAX_ARGS) {
-        printf("[ERROR] Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
+        ERROR("Can't create process with arg count %d because it exceeds limit of %d\n", argCount, MAX_ARGS);
         for (;;) {}
     }
 
@@ -289,13 +289,13 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     memset(&process->regs, 0, sizeof(regs_t));
 
     if (process->id >= PROCESSES_MAX) {
-        printf("[ERROR] Can't create process with pid outside maximum limit\n");
+        ERROR("Can't create process with pid outside maximum limit\n");
         return -1;
     }
 
     size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
-        printf("[ERROR] Max process name reached!\n");
+        ERROR("Max process name reached!\n");
         len = PROCESS_MAX_NAME_LENGTH;
     }
 
@@ -347,7 +347,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     for (size_t i = 0; i < argCount; i++) {
         size_t len = strlen(args[i]);
         if (len > MAX_ARG_LENGTH) {
-            printf("[ERROR] Argument is over max length\n");
+            ERROR("Argument is over max length\n");
             for (;;) {}
         }
 
@@ -428,7 +428,7 @@ void forkProcess(process_t* parent) {
     }
 
     if (!found) {
-        printf("[ERROR] Max children reached for process %d\n", parent->id);
+        ERROR("Max children reached for process %d\n", parent->id);
 
         // Set to indicate error
         parent->regs.eax = -1;
@@ -448,7 +448,7 @@ void forkProcess(process_t* parent) {
     }
 
     if (!found) {
-        printf("[ERROR] Max processes reached!\n");
+        ERROR("Max processes reached!\n");
         for (;;) {}
         return;
     }
@@ -456,7 +456,7 @@ void forkProcess(process_t* parent) {
     VERBOSE("forkProcess: Creating new process with id %d\n", index);
 
     if (index >= PROCESSES_MAX) {
-        printf("[ERROR] Can't create process with pid outside maximum limit\n");
+        ERROR("Can't create process with pid outside maximum limit\n");
         for (;;) {}
         return;
     }
@@ -572,7 +572,7 @@ void runCurrentProcess(void) {
     process_t* process = &processes[currentProcessID];
 
     if (!process->initialized) {
-        printf("[ERROR] Kernel tried to execute non-initialized currently running process\n");
+        ERROR("Kernel tried to execute non-initialized currently running process\n");
         for (;;) {}
     }
 
@@ -674,7 +674,7 @@ uint32_t processPushStr(process_t* process, const char* str) {
     size_t len = strlen(str) + 1;
 
     if (len >= MAX_ARG_LENGTH) {
-        printf("[ERROR] Can't push arg with length %d because it exceeds limit of %d\n", len, MAX_ARG_LENGTH);
+        ERROR("Can't push arg with length %d because it exceeds limit of %d\n", len, MAX_ARG_LENGTH);
         for (;;) {}
     }
 

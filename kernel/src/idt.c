@@ -145,7 +145,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                         terminal_write((void*) buf, count);
                     }
                 } else {
-                    printf("[ERROR] Invalid fd '%d'\n", fd);
+                    ERROR("Invalid fd '%d'\n", fd);
                 }
             }
 
@@ -212,7 +212,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         case (SYS_fork):
             {
                 if (!(frame.cs & 0x3)) {
-                    printf("[ERROR] Kernel called fork syscall?\n");
+                    ERROR("Kernel called fork syscall?\n");
                     for (;;) {}
                 }
 
@@ -233,7 +233,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             {
                 //if (!(ss & 0x3)) {
                 if (!(frame.cs & 0x3)) {
-                    printf("[ERROR] Kernel called waitpid?\n");
+                    ERROR("Kernel called waitpid?\n");
                     for (;;) {}
                 }
 
@@ -261,14 +261,12 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             {
                 //if (!(ss & 0x3)) {
                 if (!(frame.cs & 0x3)) {
-                    printf("[ERROR] Kernel called execvp?\n");
+                    ERROR("Kernel called execvp?\n");
                     for (;;) {}
                 }
 
                 char* file = (char*) stack_state.ebx;
                 const char** argv = (const char**) stack_state.ecx;
-
-                printf("path at 0x%x and is '%s'\n", file, file);
 
                 process_t* process = getCurrentProcess();
 
@@ -294,7 +292,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         case (SYS_getcwd):
             {
                 if (!(frame.cs & 0x3)) {
-                    printf("[ERROR] Kernel called getcwd?\n");
+                    ERROR("Kernel called getcwd?\n");
                     for (;;) {}
                 }
 
@@ -330,7 +328,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         case (SYS_chdir):
             {
                 if (!(frame.cs & 0x3)) {
-                    printf("[ERROR] Kernel called chdir?\n");
+                    ERROR("Kernel called chdir?\n");
                     for (;;) {}
                 }
 

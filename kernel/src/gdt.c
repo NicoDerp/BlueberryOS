@@ -1,4 +1,6 @@
 
+#include <kernel/logging.h>
+#include <kernel/errors.h>
 #include <kernel/gdt.h>
 #include <kernel/usermode.h>
 #include <kernel/errors.h>
@@ -75,7 +77,8 @@ void gdt_initialize() {
 void gdt_entry(uint8_t* target, struct GDT source) {
     // Check the limit to make sure that it can be encoded
     if (source.limit > 0xFFFFF) {
-        kerror("GDT cannot encode limits larger than 0xFFFFF");
+        FATAL("GDT cannot encode limits larger than 0xFFFFF");
+        kabort();
     }
 
     // Encode the limit

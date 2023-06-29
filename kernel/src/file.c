@@ -175,21 +175,21 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
         if (program->type == 0x01) {
 
             if (program->vaddr >= 0xC0000000) {
-                printf("[ERROR] Failed to load ELF becuase file goes into kernel-reserved space\n");
+                ERROR("Failed to load ELF becuase file goes into kernel-reserved space\n");
                 for (;;) {}
                 return pd;
             }
 
             /*
             if (program->memsz > FRAME_4KB) {
-                printf("[ERROR] Can't load ELF program section because its size (%d) is greater than 4KB (4096)\n", program->memsz);
+                ERROR("Can't load ELF program section because its size (%d) is greater than 4KB (4096)\n", program->memsz);
                 for (;;) {}
                 return pd;
             }
             */
 
             if (program->filesz > program->memsz) {
-                printf("[ERROR] Can't load ELF program section because its filesz (%d) is greater than its memsz (%d)\n", program->filesz, program->memsz);
+                ERROR("Can't load ELF program section because its filesz (%d) is greater than its memsz (%d)\n", program->filesz, program->memsz);
                 for (;;) {}
                 return pd;
             }
@@ -245,7 +245,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                     /*
                     uint32_t offset = j*FRAME_4KB;
                     if ((uint32_t) pageframe != (uint32_t) firstpf + offset) {
-                        printf("[ERROR] Can't load ELF because frames aren't consequtive\n");
+                        ERROR("Can't load ELF because frames aren't consequtive\n");
                         for (;;) {}
                     }
                     */
@@ -290,7 +290,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             }
 
         } else {
-            printf("[ERROR] Non-supported program header type %d\n", program->type);
+            ERROR("Non-supported program header type %d\n", program->type);
             for (;;) {}
             return pd;
         }
@@ -316,7 +316,7 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
         pageframe_t pageframe = kalloc_frame();
 
         if ((uint32_t) pageframe != (uint32_t) file->content + offset) {
-            printf("[ERROR] Can't load binary because frames aren't consequtive\n");
+            ERROR("Can't load binary because frames aren't consequtive\n");
             for (;;) {}
         }
 
@@ -363,7 +363,7 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
             } else if (dir->type == SYMBOLIC_LINK) {
                 return dir->link;
             } else {
-                printf("[ERROR] Unknown directory type %d\n", dir->type);
+                ERROR("Unknown directory type %d\n", dir->type);
                 for (;;) {}
                 return (directory_t*) 0;
             }
@@ -421,7 +421,7 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
                 //printf("name so far: %s\n", name);
                 directory_t* p = getDirectoryFromParent(parent, name);
                 if (!p) {
-                    //printf("[ERROR] Directory '%s' not found in parent '%s'\n", name, parent->name);
+                    //ERROR("Directory '%s' not found in parent '%s'\n", name, parent->name);
                     return (directory_t*) 0;
                 }
 
@@ -432,7 +432,7 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
 
         } else {
             if (ni >= MAX_NAME_LENGTH) {
-                printf("[ERROR] Max name length reached\n");
+                ERROR("Max name length reached\n");
                 for (;;) {}
             }
 
@@ -498,12 +498,12 @@ void parseDirectory(tar_header_t* header) {
     directory_t* parent = findParent((directory_t*) 0, header->filename, &slash, true);
 
     if (!parent) {
-        printf("[ERROR] Failed to find parent of name %s\n", header->filename);
+        ERROR("Failed to find parent of name %s\n", header->filename);
         for (;;) {}
     }
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
-        printf("[ERROR] Max directories reached\n");
+        ERROR("Max directories reached\n");
         for (;;) {}
     }
 
@@ -513,7 +513,7 @@ void parseDirectory(tar_header_t* header) {
 
     len = strlen(header->filename) - 6;
     if (len > MAX_FULL_PATH_LENGTH) {
-        printf("[ERROR] Full path is too large\n");
+        ERROR("Full path is too large\n");
         for (;;) {}
     }
 
@@ -525,7 +525,7 @@ void parseDirectory(tar_header_t* header) {
     len = strlen(header->filename + slash) - 1;
 
     if (len > MAX_NAME_LENGTH) {
-        printf("[ERROR] Filename is too large\n");
+        ERROR("Filename is too large\n");
         for (;;) {}
     }
 
@@ -551,7 +551,7 @@ directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
     memset(directory, 0, sizeof(directory_t));
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
-        printf("[ERROR] Max directories reached\n");
+        ERROR("Max directories reached\n");
         for (;;) {}
     }
 
@@ -567,7 +567,7 @@ directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
     }
 
     if (len > MAX_NAME_LENGTH) {
-        printf("[ERROR] Filename is too large\n");
+        ERROR("Filename is too large\n");
         for (;;) {}
     }
 
@@ -586,7 +586,7 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
     memset(directory, 0, sizeof(directory_t));
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
-        printf("[ERROR] Max directories reached\n");
+        ERROR("Max directories reached\n");
         for (;;) {}
     }
 
@@ -602,7 +602,7 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
     }
 
     if (len > MAX_NAME_LENGTH) {
-        printf("[ERROR] Filename is too large\n");
+        ERROR("Filename is too large\n");
         for (;;) {}
     }
 
@@ -626,7 +626,7 @@ void parseFile(tar_header_t* header) {
 
     /*
     if (filesize > FRAME_4KB) {
-        printf("[ERROR] File-sizes larger than 4KB (4096) not supported yet. File '%s' has size %d\n", header->filename, filesize);
+        ERROR("File-sizes larger than 4KB (4096) not supported yet. File '%s' has size %d\n", header->filename, filesize);
         for (;;) {}
     }
     */
@@ -637,12 +637,12 @@ void parseFile(tar_header_t* header) {
     directory_t* parent = findParent((directory_t*) 0, header->filename, &slash, true);
 
     if (!parent) {
-        printf("[ERROR] Failed to find parent of name %s\n", header->filename);
+        ERROR("Failed to find parent of name %s\n", header->filename);
         for (;;) {}
     }
 
     if (parent->fileCount >= MAX_FILES) {
-        printf("[ERROR] Max files reached\n");
+        ERROR("Max files reached\n");
         for (;;) {}
     }
 
@@ -654,7 +654,7 @@ void parseFile(tar_header_t* header) {
     // initrd: 6
     len = strlen(header->filename) - 6;
     if (len > MAX_FULL_PATH_LENGTH) {
-        printf("[ERROR] Full path is too large\n");
+        ERROR("Full path is too large\n");
         for (;;) {}
     }
     memcpy(file->fullpath, header->filename + 6, len + 1);
@@ -664,7 +664,7 @@ void parseFile(tar_header_t* header) {
 
     len = strlen(header->filename + slash);
     if (len > MAX_NAME_LENGTH) {
-        printf("[ERROR] Filename is too large\n");
+        ERROR("Filename is too large\n");
         for (;;) {}
     }
 
@@ -761,7 +761,7 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
             parseDirectory(header);
 
         } else {
-            printf("[ERROR] Unsupported tar header type '%s'\n", header->typeflag);
+            ERROR("Unsupported tar header type '%s'\n", header->typeflag);
             for (;;) {}
         }
 
