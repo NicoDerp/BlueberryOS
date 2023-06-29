@@ -48,7 +48,7 @@ pagedirectory_t new_pagedirectory(bool writable, bool kernel);
 pagedirectory_t copy_system_pagedirectory(void);
 
 pagetable_t getPagetable(uint32_t entry);
-uint32_t getPage(uint32_t entry);
+uint32_t getPageLocation(uint32_t entry);
 
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel);
 void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel);

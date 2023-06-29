@@ -5,7 +5,7 @@
 
 
 
-//#define _VERBOSE
+#define _VERBOSE
 
 
 

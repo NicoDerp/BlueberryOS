@@ -53,11 +53,13 @@ void install_tss(uint8_t* gdt) {
     gdt_entry(gdt, source);
 }
 
-void freeProcessPagedirectory(pagedirectory_t pd) {
+void freeProcessPagedirectory(pagedirectory_t pd, bool freeReadOnly) {
+
+    VERBOSE("freProcessPagedirectory: with freeReadOnly %d\n", freeReadOnly);
 
     for (size_t i = 0; i < 768; i++) {
         if (pd[i] & 1) {
-            VERBOSE("terminateProcess: freeing pagetable %d\n", i);
+            VERBOSE("freeProcessPagedirectory: freeing pagetable %d\n", i);
             pagetable_t pt = getPagetable(pd[i]);
 
             // TODO this only works now because the only things
@@ -67,10 +69,22 @@ void freeProcessPagedirectory(pagedirectory_t pd) {
             // Perfect for storing a flag if we need to free this page!!
             for (size_t j = 0; j < 1024; j++) {
                 if (pt[j] & 1) {
-                    VERBOSE("terminateProcess: freeing page %d\n", j);
 
-                    uint32_t page = getPage(pt[j]);
-                    kfree_frame((void*) page);
+                    // Readwrite
+                    if (pt[j] & 2) {
+                        uint32_t page = getPageLocation(pt[j]);
+
+                        VERBOSE("freeProcessPageDirectory: freeing readwrite page %d pointing to 0x%x\n", j, page);
+                        kfree_frame((void*) page);
+                    }
+
+                    // Readonly
+                    else if (freeReadOnly) {
+                        uint32_t page = getPageLocation(pt[j]);
+
+                        VERBOSE("freeProcessPageDirectory: freeing readonly page %d pointing to 0x%x\n", j, page);
+                        kfree_frame((void*) page);
+                    }
                 }
             }
 
@@ -269,6 +283,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     // Backup
     pagedirectory_t oldPD = process->pd;
     pageframe_t oldStack = process->physical_stack;
+    bool freeReadOnly = process->parent == 0;
 
     memset(process->children, 0, sizeof(process_t*) * MAX_CHILDREN);
     memset(&process->regs, 0, sizeof(regs_t));
@@ -349,7 +364,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
     VERBOSE("overwriteArgs: freeing old stack\n");
-    freeProcessPagedirectory(oldPD);
+    freeProcessPagedirectory(oldPD, freeReadOnly);
     kfree_frame(oldStack);
 
     return 0;
@@ -375,7 +390,7 @@ void terminateProcess(process_t* process, int status) {
     // TODO free malloc stuff
 
     VERBOSE("terminateProcess: freeing pagedirectory\n");
-    freeProcessPagedirectory(process->pd);
+    freeProcessPagedirectory(process->pd, process->parent == 0);
 
     VERBOSE("terminateProcess: freeing stack\n");
     kfree_frame(process->physical_stack);
@@ -421,10 +436,85 @@ void forkProcess(process_t* parent) {
     }
 
 
-    process_t* child = newProcess(parent->file);
+    process_t* child;
+    found = false;
+    for (index = 0; index < PROCESSES_MAX; index++) {
+        if (!processes[index].initialized) {
+            found = true;
+            child = &processes[index];
+            memset(child, 0, sizeof(process_t));
+            break;
+        }
+    }
+
+    if (!found) {
+        printf("[ERROR] Max processes reached!\n");
+        for (;;) {}
+        return;
+    }
+
+    VERBOSE("forkProcess: Creating new process with id %d\n", index);
+
+    if (index >= PROCESSES_MAX) {
+        printf("[ERROR] Can't create process with pid outside maximum limit\n");
+        for (;;) {}
+        return;
+    }
+
+    // Set parameters
+    child->id = index;
+    child->state = RUNNING;
+    //child->physical_stack
+    child->initialized = true;
 
     // Copy stack
-    memcpy((void*) child->physical_stack, (void*) parent->physical_stack, FRAME_4KB);
+    //memcpy((void*) child->physical_stack, (void*) parent->physical_stack, FRAME_4KB);
+
+    child->pd = copy_system_pagedirectory();
+
+    for (size_t i = 0; i < 768; i++) {
+
+        // Check if pagetable is present
+        if (parent->pd[i] & 1) {
+
+            pagetable_t pt = getPagetable(parent->pd[i]);
+
+            // Check if pagetable is writable
+            //if (pt[i] & 2)
+
+            for (size_t j = 0; j < 1024; j++) {
+
+                // Check if page is present
+                if (pt[j] & 1) {
+
+                    uint32_t page = pt[j];
+                    uint32_t pageLoc = getPageLocation(page);
+                    uint32_t virtualAddr = i*FRAME_4MB + j*FRAME_4KB;
+
+                    // Check if page is writable
+                    if (page & 2) {
+
+                        VERBOSE("forkProcess: copying page\n");
+                        pageframe_t pageframe = kalloc_frame();
+
+                        memcpy(pageframe, (void*) pageLoc, FRAME_4KB);
+
+                        VERBOSE("forkProcess: mapping 0x%x(p) to 0x%x(v)\n", v_to_p((uint32_t) pageframe), virtualAddr);
+                        // Readwrite and user for both page and table
+                        map_page_wtable_pd(child->pd, v_to_p((uint32_t) pageframe), virtualAddr, true, false, true, false);
+                    }
+                    
+                    else {
+
+                        VERBOSE("forkProcess: mapping to existing page\n");
+                        VERBOSE("forkProcess: mapping 0x%x(p) to 0x%x(v)\n", v_to_p(pageLoc), virtualAddr);
+
+                        map_page_wtable_pd(child->pd, v_to_p(pageLoc), virtualAddr, false, false, true, false);
+                    }
+                }
+            }
+        }
+    }
 
     // Copy registers
     memcpy(&child->regs, &parent->regs, sizeof(regs_t));
@@ -433,6 +523,7 @@ void forkProcess(process_t* parent) {
     child->parent = parent;
     child->esp = parent->esp;
     child->eip = parent->eip;
+    child->entryPoint = parent->entryPoint;
     child->cwdir = parent->cwdir;
     child->indexInParent = index;
     parent->children[index] = child;

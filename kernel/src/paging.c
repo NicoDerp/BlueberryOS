@@ -77,7 +77,7 @@ pagetable_t getPagetable(uint32_t entry) {
     return (pagetable_t) p_to_v(entry & 0xFFFFF000);
 }
 
-uint32_t getPage(uint32_t entry) {
+uint32_t getPageLocation(uint32_t entry) {
     return (uint32_t) p_to_v(entry & 0xFFFFF000);
 }
 
