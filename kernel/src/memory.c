@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-pageframe_t kalloc_cachedframe(void);
+void kalloc_cache();
 
 frame_map_t frame_map[FRAME_MAP_SIZE];
 pageframe_t cached_frame_map[FRAME_CACHE_SIZE];
@@ -24,18 +24,14 @@ void memory_initialize(uint32_t framestart_, uint32_t bytes) {
     (void) bytes;
 
     cachedIndex = 0;
-    for (size_t i = 0; i < FRAME_CACHE_SIZE; i++) {
-        cached_frame_map[i] = kalloc_cachedframe();
-    }
+    kalloc_cache();
 
 }
 
 pageframe_t kalloc_frame(void) {
     if (cachedIndex >= FRAME_CACHE_SIZE) {
         cachedIndex = 0;
-        for (size_t i = 0; i < FRAME_CACHE_SIZE; i++) {
-            cached_frame_map[i] = kalloc_cachedframe();
-        }
+        kalloc_cache();
     }
 
     pageframe_t frame = cached_frame_map[cachedIndex];
@@ -47,7 +43,6 @@ pageframe_t kalloc_frame(void) {
 
     VERBOSE("kalloc_frame: Allocated 4KB frame at 0x%x\n", frame);
 
-    //printf("Allocated new frame at 0x%x\n", (unsigned int) frame);
     cachedIndex++;
 
     return frame;
@@ -85,7 +80,8 @@ pageframe_t kalloc_frames(unsigned int count) {
 
         index++;
         if (index >= FRAME_MAP_SIZE) {
-            kerror("Out of memory!\n");
+            FATAL("Out of memory!\n");
+            kabort();
             return (pageframe_t) -1;
         }
     }
@@ -120,19 +116,23 @@ void kfree_frame(pageframe_t frame) {
     frame_map[index] = FREE;
 }
 
-pageframe_t kalloc_cachedframe(void) {
+void kalloc_cache(void) {
     size_t index = 0;
-    while (frame_map[index] != FREE) {
-        index++;
-        if (index >= FRAME_MAP_SIZE) {
-            FATAL("Out of memory!\n");
-            kabort();
-            return (pageframe_t) -1;
-        }
-    }
 
-    frame_map[index] = USED;
-    return (pageframe_t) (index*FRAME_SIZE + framestart);
+    for (size_t c = 0; c < FRAME_CACHE_SIZE; c++) {
+
+        while (frame_map[index] != FREE) {
+            index++;
+            if (index >= FRAME_MAP_SIZE) {
+                FATAL("Out of memory!\n");
+                kabort();
+                return;
+            }
+        }
+
+        frame_map[index] = USED;
+        cached_frame_map[c] = (pageframe_t) (index*FRAME_SIZE + framestart);
+    }
 }
 
 uint32_t get_used_memory(void) {
@@ -145,6 +145,5 @@ uint32_t get_used_memory(void) {
     }
 
     return count;
-
 }
 

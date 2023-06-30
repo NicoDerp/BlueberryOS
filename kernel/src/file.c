@@ -105,19 +105,19 @@ bool isFileELF(file_t* file) {
 
     // 32 bit ELF's header size is 52 bytes
     if (file->size < 53) {
-        printf("Module not ELF: Too few bytes for ELF header\n");
+        ERROR("Module not ELF: Too few bytes for ELF header\n");
         return false;
     }
 
     char magic[] = {0x7F, 'E', 'L', 'F'};
     if (strncmp(file->content, magic, 4) != 0) {
-        printf("Module not ELF: Incorrect magic\n");
+        ERROR("Module not ELF: Incorrect magic\n");
         return false;
     }
 
     // Check if file is 32-bit or 64-bit
     if (file->content[5] != 1) {
-        printf("Unable to load file: Executable is ELF-64\n");
+        ERROR("Unable to load file: Executable is ELF-64\n");
         return false;
     }
 
@@ -125,7 +125,7 @@ bool isFileELF(file_t* file) {
 
     // Check endianness
     if (elf_header.endianness != 1) {
-        printf("Unable to load file: Executable not made for little-endian\n");
+        ERROR("Unable to load file: Executable not made for little-endian\n");
         return false;
     }
     
@@ -137,7 +137,7 @@ bool isFileELF(file_t* file) {
 
     // Check if file is executable
     if (elf_header.type != 0x02) {
-        printf("Unable to load file: ELF is not executable. Type is 0x%x\n", elf_header.type);
+        ERROR("Unable to load file: ELF is not executable. Type is 0x%x\n", elf_header.type);
         return false;
     }
 
@@ -198,7 +198,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
             unsigned int fzcount = (program->filesz+FRAME_4KB-1)/FRAME_4KB;
             unsigned int mzcount = (program->memsz+FRAME_4KB-1)/FRAME_4KB;
 
-            VERBOSE("loadELFIntoMemory: filesize: %d\n", program->filesz);
+            VERBOSE("loadELFIntoMemory: filesz: %d, memsz: %d\n", program->filesz, program->memsz);
             VERBOSE("loadELFIntoMemory: Looping %d times with %d fzcount\n", mzcount, fzcount);
             for (size_t j = 0; j < mzcount; j++) {
 
@@ -214,9 +214,9 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
                 VERBOSE("loadELFIntoMemory: Allocated pageframe at 0x%x\n", pageframe);
 
+                /*
                 uint32_t msize;
-                if (j == (program->memsz+FRAME_4KB-1)/FRAME_4KB-1) {
-                    //size = program->filesz % FRAME_4KB;
+                if (j == mzcount-1) {
                     msize = program->memsz & (FRAME_4KB - 1);
                 } else {
                     msize = FRAME_4KB;
@@ -224,15 +224,16 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
                 // Set pageframe to zero with msize with has 4KB size, but for last has
                 //  how much is left
-                //memset(pageframe + physOffset, 0, msize);
                 memset(pageframe, 0, msize);
+                */
+
+                memset(pageframe, 0, FRAME_4KB);
 
                 // If there is data to copy
                 if (j < fzcount) {
 
                     uint32_t physOffset;
                     if (j == 0) {
-                        //physOffset = program->vaddr % FRAME_4KB;
                         physOffset = program->vaddr & (FRAME_4KB-1);
                     } else {
                         physOffset = 0x0;
@@ -261,12 +262,14 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                         size = FRAME_4KB;
                     }
 
+                    if (physOffset + size > FRAME_4KB) {
+                        ERROR("Size of section exceeds pageframe\n");
+                        for (;;) {}
+                    }
+
                     VERBOSE("loadELFIntoMemory: Copying block with size %d bytes\n", size);
 
                     // Copy program header data to pageframe
-                    //memcpy(pageframe+offset, data, program->filesz);
-                    //memcpy(pageframe + program->offset, data, program->filesz);
-                    //memcpy(pageframe + physOffset, data, program->filesz);
                     memcpy(pageframe + physOffset, data, size);
                 }
 

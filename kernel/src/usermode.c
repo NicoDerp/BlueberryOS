@@ -216,6 +216,7 @@ process_t* newProcess(file_t* file) {
     }
 
     process->initialized = true;
+    process->overwritten = false;
     process->parent = (process_t*) 0;
 
     return process;
@@ -285,15 +286,12 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Backup
     pagedirectory_t oldPD = process->pd;
-    bool freeReadOnly = process->parent == 0;
+    uint32_t oldID = process->id;
+    process_t* oldParent = process->parent;
+    uint32_t oldIndexInParent = process->indexInParent;
+    directory_t* oldCwdir = process->cwdir;
 
-    memset(process->children, 0, sizeof(process_t*) * MAX_CHILDREN);
-    memset(&process->regs, 0, sizeof(regs_t));
-
-    if (process->id >= PROCESSES_MAX) {
-        ERROR("Can't create process with pid outside maximum limit\n");
-        return -1;
-    }
+    memset(process, 0, sizeof(process_t));
 
     size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
@@ -325,11 +323,16 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     VERBOSE("overwriteArgs: Physical stack at 0x%x. Virtual at 0x%x\n", process->physical_stack, process->virtual_stack);
     map_page_pd(process->pd, v_to_p((uint32_t) process->physical_stack), process->virtual_stack, true, false);
 
+    process->id = oldID;
+    process->indexInParent = oldIndexInParent;
+    process->cwdir = oldCwdir;
+    process->parent = oldParent;
     process->state = RUNNING;
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
     process->initialized = true;
+    process->overwritten = true;
 
     // Keep parent
     //process->parent = (process_t*) 0;
@@ -366,10 +369,10 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
     VERBOSE("overwriteArgs: freeing pagedirectory\n");
-    printf("overwriteArgs: Used memory: %d\n", get_used_memory());
-    freeProcessPagedirectory(oldPD, freeReadOnly);
+    //printf("overwriteArgs: Used memory: %d\n", get_used_memory());
+    freeProcessPagedirectory(oldPD, oldParent == 0);
 
-    printf("overwriteArgs: Used memory: %d\n", get_used_memory());
+    //printf("overwriteArgs: Used memory: %d\n", get_used_memory());
 
     return 0;
 }
@@ -387,7 +390,11 @@ void terminateProcess(process_t* process, int status) {
     // Don't need to clear process because it will get initialized
     // memset(process, 0, sizeof(process_t))
 
-    VERBOSE("terminateProcess: Terminating process %d:%s\n", process->id, process->name);
+    if (process->parent) {
+        VERBOSE("terminateProcess: Terminating process %d:%s with parent %d:%s\n", process->id, process->name, process->parent->id, process->parent->name);
+    } else {
+        VERBOSE("terminateProcess: Terminating process %d:%s without parent\n", process->id, process->name);
+    }
 
     for (size_t i = 0; i < MAX_CHILDREN; i++) {
 
@@ -403,18 +410,15 @@ void terminateProcess(process_t* process, int status) {
 
             VERBOSE("terminateProcess: freeing pagedirectory of child\n");
 
-            // Child so never free read-only memory
-            freeProcessPagedirectory(child->pd, false);
+            freeProcessPagedirectory(child->pd, child->overwritten);
         }
     }
 
-    // TODO free malloc stuff
-
     VERBOSE("terminateProcess: freeing pagedirectory\n");
-    printf("terminateProcess: Used memory: %d\n", get_used_memory());
-    freeProcessPagedirectory(process->pd, process->parent == 0);
+    //printf("terminateProcess: Used memory: %d\n", get_used_memory());
+    freeProcessPagedirectory(process->pd, process->overwritten);
 
-    printf("terminateProcess: Used memory: %d\n", get_used_memory());
+    //printf("terminateProcess: Used memory: %d\n", get_used_memory());
 }
 
 void runProcess(process_t* process) {
@@ -487,6 +491,7 @@ void forkProcess(process_t* parent) {
     child->state = RUNNING;
     //child->physical_stack
     child->initialized = true;
+    child->overwritten = false;
 
     // Copy stack
     //memcpy((void*) child->physical_stack, (void*) parent->physical_stack, FRAME_4KB);
@@ -533,6 +538,11 @@ void forkProcess(process_t* parent) {
         }
     }
 
+    /*
+    printUserPagedirectory(parent->pd);
+    printUserPagedirectory(child->pd);
+    */
+
     // Copy registers
     memcpy(&child->regs, &parent->regs, sizeof(regs_t));
 
@@ -550,8 +560,6 @@ void forkProcess(process_t* parent) {
 
     parent->regs.eax = child->id;
     child->regs.eax = 0;
-
-    // TODO in future also copy pagedirectory for things like malloc
 }
 
 void switchProcess(void) {
@@ -576,7 +584,10 @@ void switchProcess(void) {
     for (;;){}
     */
 
-    // Load process's page directory
+    // Load process's page directory                    //memcpy(pageframe+offset, data, program->filesz);
+                    //memcpy(pageframe + program->offset, data, program->filesz);
+                    //memcpy(pageframe + physOffset, data, program->filesz);
+
     loadPageDirectory(process->pd);
 
     // Reset PIT count

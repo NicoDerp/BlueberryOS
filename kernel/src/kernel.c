@@ -323,7 +323,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Welcome to BlueberryOS!\n");
 
-
     file_t* file;
     char* args[] = {"af", "Booga", 0};
 
@@ -347,8 +346,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     (void) process;
 
     //printUserPagedirectory(process->pd);
-
-
 
     // Enable PIT interrupt
     irq_clear_mask(IRQ_TIMER);

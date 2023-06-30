@@ -106,11 +106,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         case (SYS_exit):
             {
                 if (!(frame.cs & 0x3)) {
-                    printf("[INFO] Kernel called exit syscall?\n");
+                    ERROR("Kernel called exit syscall?\n");
                     for (;;) {}
                 }
-
-                //printf("Exit!\n");
 
                 int status = stack_state.ebx;
 
@@ -125,6 +123,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 terminateProcess(process, status);
 
                 VERBOSE("SYS_exit: switching to next process\n");
+                //printf("SYS_fork: %d\n", get_used_memory());
+
                 // Switch to next process
                 switchProcess();
             }
@@ -159,7 +159,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Don't know why kernel would call yield but just in case
                 //if (ss & 0x3) {
                 if (!(frame.cs & 0x3)) {
-                    printf("[INFO] Kernel called yield syscall?\n");
+                    ERROR("Kernel called yield syscall?\n");
                     for (;;) {}
                 }
 
@@ -177,7 +177,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             {
                 //if (!(ss & 0x3)) {
                 if (!(frame.cs & 0x3)) {
-                    printf("[INFO] Kernel called read syscall syscall?\n");
+                    ERROR("[INFO] Kernel called read syscall syscall?\n");
                     for (;;) {}
                 }
 
@@ -217,7 +217,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
-                printf("SYS_fork: Used memory: %d\n", get_used_memory());
+                //printf("SYS_fork: %d\n", get_used_memory());
 
                 process_t* process = getCurrentProcess();
 
@@ -225,8 +225,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 forkProcess(process);
-
-                printf("SYS_fork: Used memory: %d\n", get_used_memory());
 
                 // Since we have changed registers in current process we
                 //  can't simply iret, but also load registers
@@ -270,8 +268,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
-                printf("SYS_execvp: Used memory: %d\n", get_used_memory());
-
                 char* file = (char*) stack_state.ebx;
                 const char** argv = (const char**) stack_state.ecx;
 
@@ -288,8 +284,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     process->regs.eax = -1;
 
                 }
-
-                printf("SYS_execvp: Used memory: %d\n", get_used_memory());
 
                 // Since we have changed entire process then we need
                 //  to reload those changes
@@ -347,11 +341,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 VERBOSE("SYS_chdir: Finding directory '%s'\n", path);
                 VERBOSE("SYS_chdir: Saving registers for %d:%s\n", process->id, process->name);
-                VERBOSE("SYS_chdir: after\n");
 
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
-                VERBOSE("SYS_chdir: after\n");
 
                 directory_t* dir = getDirectoryFrom(process->cwdir, path);
                 if (dir) {

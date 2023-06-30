@@ -104,6 +104,7 @@ typedef struct process {
     uint32_t virtual_stack_top;
     uint32_t id;
     bool initialized;
+    bool overwritten;
 } process_t;
 
 

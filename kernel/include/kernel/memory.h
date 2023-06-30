@@ -25,7 +25,7 @@ extern unsigned int _kernelstart;
 #define FRAME_START (FRAME_SIZE - (KERNEL_END) % FRAME_SIZE + KERNEL_END)
 //#define FRAME_START (FRAME_SIZE - (kernelend - 1) % FRAME_SIZE + kernelend-1)
 //#define FRAME_START (FRAME_SIZE - (KERNEL_END) % FRAME_SIZE + KERNEL_END)
-#define FRAME_CACHE_SIZE 8
+#define FRAME_CACHE_SIZE 1
 
 typedef enum {
     FREE,
