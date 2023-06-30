@@ -285,7 +285,6 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Backup
     pagedirectory_t oldPD = process->pd;
-    pageframe_t oldStack = process->physical_stack;
     bool freeReadOnly = process->parent == 0;
 
     memset(process->children, 0, sizeof(process_t*) * MAX_CHILDREN);
@@ -367,15 +366,10 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
     VERBOSE("overwriteArgs: freeing pagedirectory\n");
+    printf("overwriteArgs: Used memory: %d\n", get_used_memory());
     freeProcessPagedirectory(oldPD, freeReadOnly);
 
-    if (oldStack) {
-        VERBOSE("overwriteArgs: freeing old stack\n");
-        kfree_frame(oldStack);
-    }
-
-    uint32_t count = get_used_memory();
-    printf("Used memory: %d\n", count);
+    printf("overwriteArgs: Used memory: %d\n", get_used_memory());
 
     return 0;
 }
@@ -395,18 +389,32 @@ void terminateProcess(process_t* process, int status) {
 
     VERBOSE("terminateProcess: Terminating process %d:%s\n", process->id, process->name);
 
+    for (size_t i = 0; i < MAX_CHILDREN; i++) {
+
+        process_t* child = process->children[i];
+        if (child != 0) {
+
+            VERBOSE("terminateProcess: Terminating child %d:%s\n", child->id, child->name);
+
+            // Doesn't really matter since we are terminating also
+            //process->children[i] = 0;
+
+            child->initialized = false;
+
+            VERBOSE("terminateProcess: freeing pagedirectory of child\n");
+
+            // Child so never free read-only memory
+            freeProcessPagedirectory(child->pd, false);
+        }
+    }
+
     // TODO free malloc stuff
 
     VERBOSE("terminateProcess: freeing pagedirectory\n");
+    printf("terminateProcess: Used memory: %d\n", get_used_memory());
     freeProcessPagedirectory(process->pd, process->parent == 0);
 
-    if (process->physical_stack) {
-        VERBOSE("terminateProcess: freeing stack\n");
-        kfree_frame(process->physical_stack);
-    }
-
-    uint32_t count = get_used_memory();
-    printf("Used memory: %d\n", count);
+    printf("terminateProcess: Used memory: %d\n", get_used_memory());
 }
 
 void runProcess(process_t* process) {
@@ -492,31 +500,27 @@ void forkProcess(process_t* parent) {
 
             pagetable_t pt = getPagetable(parent->pd[i]);
 
-            // Check if pagetable is writable
-            //if (pt[i] & 2)
-
             for (size_t j = 0; j < 1024; j++) {
 
                 // Check if page is present
                 if (pt[j] & 1) {
 
-                    uint32_t page = pt[j];
-                    uint32_t pageLoc = getPageLocation(page);
+                    uint32_t pageLoc = getPageLocation(pt[j]);
                     uint32_t virtualAddr = i*FRAME_4MB + j*FRAME_4KB;
 
                     // Check if page is writable
-                    if (page & 2) {
+                    if (pt[j] & 2) {
 
-                        VERBOSE("forkProcess: copying page\n");
                         pageframe_t pageframe = kalloc_frame();
 
+                        VERBOSE("forkProcess: copying page from 0x%x to 0x%x\n", pageLoc, pageframe);
                         memcpy(pageframe, (void*) pageLoc, FRAME_4KB);
 
                         VERBOSE("forkProcess: mapping 0x%x(p) to 0x%x(v)\n", v_to_p((uint32_t) pageframe), virtualAddr);
                         // Readwrite and user for both page and table
                         map_page_wtable_pd(child->pd, v_to_p((uint32_t) pageframe), virtualAddr, true, false, true, false);
                     }
-                    
+
                     else {
 
                         VERBOSE("forkProcess: mapping to existing page\n");

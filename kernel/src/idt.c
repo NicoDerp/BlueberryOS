@@ -217,8 +217,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
-                uint32_t count = get_used_memory();
-                printf("SYS_fork: Used memory: %d\n", count);
+                printf("SYS_fork: Used memory: %d\n", get_used_memory());
 
                 process_t* process = getCurrentProcess();
 
@@ -226,6 +225,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 forkProcess(process);
+
+                printf("SYS_fork: Used memory: %d\n", get_used_memory());
 
                 // Since we have changed registers in current process we
                 //  can't simply iret, but also load registers
@@ -269,8 +270,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
-                uint32_t count = get_used_memory();
-                printf("SYS_execvp: Used memory: %d\n", count);
+                printf("SYS_execvp: Used memory: %d\n", get_used_memory());
 
                 char* file = (char*) stack_state.ebx;
                 const char** argv = (const char**) stack_state.ecx;
@@ -288,6 +288,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     process->regs.eax = -1;
 
                 }
+
+                printf("SYS_execvp: Used memory: %d\n", get_used_memory());
 
                 // Since we have changed entire process then we need
                 //  to reload those changes
