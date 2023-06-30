@@ -142,6 +142,8 @@ void switchProcess(void);
 void runCurrentProcess(void);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
+int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);
+int unsetEnvVariable(process_t* process, const char* key);
 file_t* getFileWEnv(process_t* process, char* path);
 
 void handleWaitpid(process_t* process);

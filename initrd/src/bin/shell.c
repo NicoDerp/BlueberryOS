@@ -32,6 +32,93 @@ void execArgs(char** args) {
     }
 }
 
+void cmdEcho(unsigned int argCount, char** parsedArgs) {
+
+    for (size_t i = 1; i < argCount; i++) {
+        printf("%s ", parsedArgs[i]);
+    }
+    putchar('\n');
+}
+
+void cmdExit(unsigned int argCount, char** parsedArgs) {
+
+    (void) parsedArgs;
+
+    if (argCount == 1) {
+        exit(0);
+    }
+
+    else if (argCount == 2) {
+        printf("not supported yet\n");
+        //exit(0);
+    }
+
+    else {
+        printf("exit: too many arguments\n");
+    }
+}
+
+void cmdCd(unsigned int argCount, char** parsedArgs) {
+
+    if (argCount == 1) {
+        // Should actually go to home
+        printf("too few arguments\n");
+    }
+
+    else if (argCount == 2) {
+
+        int status = chdir(parsedArgs[1]);
+        if (status == -1) {
+            printf("error: chdir failed\n");
+        }
+
+    }
+
+    else {
+        printf("too many arguments\n");
+    }
+}
+
+void cmdExport(unsigned int argCount, char** parsedArgs) {
+
+    if (argCount == 1) {
+        printf("too few arguments\n");
+    }
+
+    else if (argCount == 2) {
+
+        // Seperate by '='
+        char* tok = strchr(parsedArgs[1], '=');
+
+        // If tok is NULL, then value is ""
+        if (tok == NULL) {
+            tok = "";
+        }
+        else {
+            *tok = '\0';
+            tok++;
+        }
+
+        if (setenv(parsedArgs[1], tok, 1) != 0)
+            printf("setenv error\n");
+    }
+
+    else if (argCount == 3) {
+        if (strcmp(parsedArgs[1], "-n") == 0) {
+
+            if (unsetenv(parsedArgs[2]) != 0)
+                printf("unsetenv error\n");
+
+        } else {
+            printf("invalid flag '%s'\n", parsedArgs[1]);
+        }
+    }
+
+    else {
+        printf("too many arguments\n");
+    }
+}
+
 char cmd[MAX_LINE_LENGTH+1];
 char history[MAX_LINE_LENGTH][HISTORY_SIZE];
 size_t historyCount = 0;
@@ -187,48 +274,27 @@ void main() {
 
         if (argCount == 0) {
             continue;
-        } else if (strcmp(parsedArgs[0], "exit") == 0) {
+        }
+        else if (strcmp(parsedArgs[0], "exit") == 0) {
+            cmdExit(argCount, parsedArgs);
+        }
+        else if (strcmp(parsedArgs[0], "clear") == 0) {
 
-            if (argCount == 1) {
-                exit(0);
-            } else if (argCount == 2) {
-                printf("not supported yet\n");
-                exit(0);
-            } else {
-                printf("exit: too many arguments\n");
-            }
-
-        } else if (strcmp(parsedArgs[0], "clear") == 0) {
-
-        } else if (strcmp(parsedArgs[0], "echo") == 0) {
-
-            for (size_t i = 0; i < argCount; i++) {
-                printf("%s", parsedArgs[i]);
-            }
-            putchar('\n');
-
-        } else if (strcmp(parsedArgs[0], "cd") == 0) {
-
-            if (argCount == 1) {
-                // Should actually go to home
-                printf("too few arguments\n");
-            } else if (argCount == 2) {
-
-                int status = chdir(parsedArgs[1]);
-                if (status == -1) {
-                    printf("error: chdir failed\n");
-                }
-
-            } else {
-                printf("too many arguments\n");
-            }
-
-        } else {
+        }
+        else if (strcmp(parsedArgs[0], "echo") == 0) {
+            cmdEcho(argCount, parsedArgs);
+        }
+        else if (strcmp(parsedArgs[0], "cd") == 0) {
+            cmdCd(argCount, parsedArgs);
+        }
+        else if (strcmp(parsedArgs[0], "export") == 0) {
+            cmdExport(argCount, parsedArgs);
+        }
+        else {
             execArgs(parsedArgs);
         }
     }
 
 }
-
 
 

@@ -4,6 +4,7 @@
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
 #include <kernel/logging.h>
+#include <kernel/errors.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -295,7 +296,6 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     uint32_t oldIndexInParent = process->indexInParent;
     directory_t* oldCwdir = process->cwdir;
 
-    //memset(process, 0, sizeof(process_t));
     memset(&process->fds, 0, sizeof(fd_t) * MAX_FILE_DESCRIPTORS);
     memset(&process->regs, 0, sizeof(regs_t));
 
@@ -340,9 +340,10 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     process->initialized = true;
     process->overwritten = true;
 
-    strcpy(process->variables[0].key, "PATH");
-    strcpy(process->variables[0].value, "/bin;/usr/bin");
-    process->variables[0].active = true;
+    // Keep enviromental vairables
+    //strcpy(process->variables[0].key, "PATH");
+    //strcpy(process->variables[0].value, "/bin;/usr/bin");
+    //process->variables[0].active = true;
 
     // Keep parent
     //process->parent = (process_t*) 0;
@@ -570,7 +571,7 @@ void forkProcess(process_t* parent) {
 
     strcpy(child->name, parent->name);
 
-    memcpy(&child->variables, &parent->variables, sizeof(env_variable_t));
+    memcpy(&child->variables, &parent->variables, sizeof(env_variable_t)*MAX_ENVIROMENT_VARIABLES);
 
     parent->regs.eax = child->id;
     child->regs.eax = 0;
@@ -646,6 +647,76 @@ env_variable_t* getEnvVariable(process_t* process, const char* key) {
     }
 
     return (env_variable_t*) 0;
+}
+
+int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite) {
+
+    size_t len;
+
+    len = strlen(key);
+    if (len > MAX_VARIABLE_KEY_LENGTH) {
+        ERROR("setEnvVariable: Key is over max length\n");
+        return -1;
+    }
+
+    len = strlen(value);
+    if (len > MAX_VARIABLE_VALUE_LENGTH) {
+        ERROR("setEnvVariable: Value is over max length\n");
+        return -1;
+    }
+
+    size_t index = 99;
+    bool found = false;
+    for (size_t i = 0; i < MAX_ENVIROMENT_VARIABLES; i++) {
+
+        env_variable_t* var = &process->variables[i];
+
+        if (var->active) {
+            if (overwrite && strcmp(var->key, key) == 0) {
+                strcpy(var->value, value);
+                return 0;
+            }
+        } else if (!found) {
+            index = i;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        FATAL("Max enviroment variables reached for process %d:%s\n", process->id, process->name);
+        kabort();
+        return -1;
+    }
+
+    if (index == 99) {
+        FATAL("setEnvVariable: huuh 99??\n");
+        kabort();
+        return -1;
+    }
+
+    env_variable_t* var = &process->variables[index];
+
+    strcpy(var->key, key);
+    strcpy(var->value, value);
+    var->active = true;
+
+    return 0;
+}
+
+int unsetEnvVariable(process_t* process, const char* key) {
+
+    for (size_t i = 0; i < MAX_ENVIROMENT_VARIABLES; i++) {
+
+        env_variable_t* var = &process->variables[i];
+
+        if (var->active && strcmp(var->key, key) == 0) {
+            var->active = false;
+            return 0;
+        }
+    }
+
+    // If it is not found then it is still sucess
+    return 0;
 }
 
 file_t* getFileWEnv(process_t* process, char* path) {

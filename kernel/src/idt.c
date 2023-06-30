@@ -102,14 +102,14 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
     //VERBOSE("Got syscall %d\n", stack_state.eax);
 
+    if (!(frame.cs & 0x3)) {
+        ERROR("Kernel called syscall with id %d\n", stack_state.eax);
+        for (;;) {}
+    }
+
     switch (stack_state.eax) {
         case (SYS_exit):
             {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called exit syscall?\n");
-                    for (;;) {}
-                }
-
                 //int status = stack_state.ebx;
 
                 //printf("Status: '%d'\n", status);
@@ -120,7 +120,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 handleWaitpidBlock(process);
 
                 VERBOSE("SYS_exit: switching to next process\n");
-                //printf("SYS_fork: %d\n", get_used_memory());
 
                 // Switch to next process
                 switchProcess();
@@ -153,13 +152,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             {
                 //printf("\nYield!\n");
 
-                // Don't know why kernel would call yield but just in case
-                //if (ss & 0x3) {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called yield syscall?\n");
-                    for (;;) {}
-                }
-
                 // Save registers
                 process_t* process = getCurrentProcess();
                 saveRegisters(process, &stack_state, &frame, esp);
@@ -172,12 +164,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_read):
             {
-                //if (!(ss & 0x3)) {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("[INFO] Kernel called read syscall syscall?\n");
-                    for (;;) {}
-                }
-
                 unsigned int fd = stack_state.ebx;
 
                 if (fd == STDIN_FILENO) {
@@ -209,12 +195,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_fork):
             {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called fork syscall?\n");
-                    for (;;) {}
-                }
-
-                printf("SYS_fork: %d\n", get_used_memory());
+                //printf("SYS_fork: %d\n", get_used_memory());
 
                 process_t* process = getCurrentProcess();
 
@@ -231,12 +212,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_waitpid):
             {
-                //if (!(ss & 0x3)) {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called waitpid?\n");
-                    for (;;) {}
-                }
-
                 process_t* process = getCurrentProcess();
 
                 process->blocked_regs.eax = stack_state.eax;
@@ -260,12 +235,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_execvp):
             {
-                //if (!(ss & 0x3)) {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called execvp?\n");
-                    for (;;) {}
-                }
-
                 char* file = (char*) stack_state.ebx;
                 const char** argv = (const char**) stack_state.ecx;
 
@@ -292,11 +261,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_getcwd):
             {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called getcwd?\n");
-                    for (;;) {}
-                }
-
                 char* buf = (char*) stack_state.ebx;
                 size_t size = stack_state.ecx;
 
@@ -328,11 +292,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_chdir):
             {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called chdir?\n");
-                    for (;;) {}
-                }
-
                 char* path = (char*) stack_state.ebx;
 
                 process_t* process = getCurrentProcess();
@@ -368,11 +327,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_getenv):
             {
-                if (!(frame.cs & 0x3)) {
-                    ERROR("Kernel called getenv?\n");
-                    for (;;) {}
-                }
-
                 const char* env = (char*) stack_state.ebx;
                 char* buf = (char*) stack_state.ecx;
                 size_t size = stack_state.edx;
@@ -404,6 +358,38 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     // Signal error
                     process->regs.eax = -1;
                 }
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_setenv):
+            {
+                const char* key = (const char*) stack_state.ebx;
+                const char* value = (const char*) stack_state.ecx;
+                int overwrite = stack_state.edx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status;
+
+                // No value means unset
+                if (value) {
+                    status = setEnvVariable(process, key, value, overwrite);
+                    VERBOSE("SYS_setenv: setting %s=%s\n", key, value);
+                }
+                else {
+                    status = unsetEnvVariable(process, key);
+                    VERBOSE("SYS_setenv: unsetting %s\n", key);
+                }
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();
