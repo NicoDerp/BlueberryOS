@@ -26,6 +26,8 @@
 
 #define MAX_CHILDREN 32
 
+#define MAX_ENVIROMENT_LENGTH 128
+
 
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
@@ -89,22 +91,22 @@ typedef struct process {
     struct process* children[MAX_CHILDREN];
     regs_t blocked_regs; // Registers when block happened
     regs_t regs;
-    uint32_t esp;
-    uint32_t eip;
-    char name[PROCESS_MAX_NAME_LENGTH+1];
     pagedirectory_t pd;
     process_state_t state;
     struct process* parent;
-    uint32_t indexInParent;
+    pageframe_t physical_stack;
     file_t* file;
     directory_t* cwdir;
+    uint32_t indexInParent;
     uint32_t entryPoint;
-    pageframe_t physical_stack;
+    uint32_t esp;
+    uint32_t eip;
     uint32_t virtual_stack;
     uint32_t virtual_stack_top;
     uint32_t id;
     bool initialized;
     bool overwritten;
+    char name[PROCESS_MAX_NAME_LENGTH+1];
 } process_t;
 
 

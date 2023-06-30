@@ -729,9 +729,13 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
 
     rootDir.directoryCount = 0;
     rootDir.fileCount = 0;
-    //printf("mode: %s\n", rootDir.mode);
 
-    //printf("a: '%s'\n", (char*) tar_start);
+    // Create '.'
+    createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode);
+
+    // Create '..'
+    createSymbolicDirectory(&rootDir, &rootDir, "..", rootDir.mode);
+
 
     while ((tar_start + offset) <= tar_end) {
 

@@ -192,7 +192,7 @@ void main() {
             if (argCount == 1) {
                 exit(0);
             } else if (argCount == 2) {
-                printf("");
+                printf("not supported yet\n");
                 exit(0);
             } else {
                 printf("exit: too many arguments\n");
