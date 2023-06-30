@@ -219,6 +219,10 @@ process_t* newProcess(file_t* file) {
     process->overwritten = false;
     process->parent = (process_t*) 0;
 
+    strcpy(process->variables[0].key, "PATH");
+    strcpy(process->variables[0].value, "/bin;/usr/bin");
+    process->variables[0].active = true;
+
     return process;
 }
 
@@ -279,7 +283,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     VERBOSE("overwriteArgs: Overwriting process %d:%s with %s\n", process->id, process->name, filename);
 
-    file_t* file = getFileFrom(process->cwdir, filename);
+    file_t* file = getFileWEnv(process, filename);
     if (!file) {
         return -1;
     }
@@ -333,6 +337,10 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     process->file = file;
     process->initialized = true;
     process->overwritten = true;
+
+    strcpy(process->variables[0].key, "PATH");
+    strcpy(process->variables[0].value, "/bin;/usr/bin");
+    process->variables[0].active = true;
 
     // Keep parent
     //process->parent = (process_t*) 0;
@@ -552,11 +560,13 @@ void forkProcess(process_t* parent) {
     child->eip = parent->eip;
     child->entryPoint = parent->entryPoint;
     child->cwdir = parent->cwdir;
+    child->file = parent->file;
     child->indexInParent = index;
     parent->children[index] = child;
 
     strcpy(child->name, parent->name);
-    child->file = parent->file;
+
+    memcpy(&child->variables, &parent->variables, sizeof(env_variable_t));
 
     parent->regs.eax = child->id;
     child->regs.eax = 0;
@@ -619,6 +629,60 @@ void runCurrentProcess(void) {
     enter_usermode(process->eip, process->esp, process->regs);
 
     __builtin_unreachable();
+}
+
+file_t* getFileWEnv(process_t* process, char* path) {
+
+    file_t* file;
+
+    file = getFileFrom(process->cwdir, path);
+    if (file)
+        return file;
+
+    for (size_t i = 0; i < MAX_ENVIROMENT_VARIABLES; i++) {
+
+        env_variable_t* var = &process->variables[i];
+
+        if (var->active && strcmp(var->key, "PATH") == 0) {
+
+            char* ptr;
+            char* last = var->value;
+            bool done = false;
+            while (!done) {
+
+                ptr = strchr(last, ';');
+                if (ptr == NULL) {
+                    ptr = var->value + strlen(var->value);
+                    done = true;
+                }
+
+                uint32_t len = ptr - last;
+                char str[len+1];
+                memcpy(str, last, len);
+                str[len] = '\0';
+
+                VERBOSE("getFileWEnv: Trying path '%s'\n", str);
+
+                directory_t* dir = getDirectory(str);
+
+                if (dir) {
+                    file = getFileFrom(dir, path);
+                    
+                    if (file)
+                        return file;
+                }
+
+                if (done)
+                    break;
+
+                last = ptr + 1;
+            }
+
+            return (file_t*) 0;
+        }
+    }
+
+    return (file_t*) 0;
 }
 
 void handleWaitpidBlock(process_t* process) {

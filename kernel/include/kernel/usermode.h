@@ -26,7 +26,9 @@
 
 #define MAX_CHILDREN 32
 
-#define MAX_ENVIROMENT_LENGTH 128
+#define MAX_ENVIROMENT_VARIABLES 32
+#define MAX_VARIABLE_KEY_LENGTH 32
+#define MAX_VARIABLE_VALUE_LENGTH 64
 
 
 typedef struct {
@@ -84,6 +86,12 @@ typedef enum {
     BLOCKED_WAITPID,
 } process_state_t;
 
+typedef struct {
+    char key[MAX_VARIABLE_KEY_LENGTH+1];
+    char value[MAX_VARIABLE_VALUE_LENGTH+1];
+    bool active;
+} env_variable_t;
+
 struct process;
 
 typedef struct process {
@@ -91,6 +99,7 @@ typedef struct process {
     struct process* children[MAX_CHILDREN];
     regs_t blocked_regs; // Registers when block happened
     regs_t regs;
+    env_variable_t variables[MAX_ENVIROMENT_VARIABLES];
     pagedirectory_t pd;
     process_state_t state;
     struct process* parent;
@@ -121,7 +130,6 @@ void use_system_tss(void);
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 
-process_t* newProcessAt(file_t* file, uint32_t pid);
 process_t* newProcessArgs(file_t* file, char* args[]);
 void setProcessArgs(process_t* process, char* args[]);
 int overwriteArgs(process_t* process, char* filename, const char** args);
@@ -131,6 +139,8 @@ void runProcess(process_t* process);
 void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
+
+file_t* getFileWEnv(process_t* process, char* path);
 
 void handleWaitpidBlock(process_t* process);
 void handleKeyboardBlock(char c);

@@ -358,7 +358,11 @@ file_t* getFileFromParent(directory_t* parent, char* name) {
 directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
     for (size_t i = 0; i < parent->directoryCount; i++) {
-        if (strcmp(parent->directories[i]->name, name) == 0) {
+        size_t len = strlen(name);
+        if (name[len-1] == '/')
+            len--;
+
+        if (strncmp(parent->directories[i]->name, name, len) == 0) {
             directory_t* dir = parent->directories[i];
 
             if (dir->type == NORMAL_DIR) {
