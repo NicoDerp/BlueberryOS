@@ -14,6 +14,9 @@
 #define SYS_execvp  7
 #define SYS_getcwd  8
 #define SYS_chdir   9
+#define SYS_getenv  10
+#define SYS_setenv  11
+
 
 #endif
 

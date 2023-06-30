@@ -295,7 +295,9 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     uint32_t oldIndexInParent = process->indexInParent;
     directory_t* oldCwdir = process->cwdir;
 
-    memset(process, 0, sizeof(process_t));
+    //memset(process, 0, sizeof(process_t));
+    memset(&process->fds, 0, sizeof(fd_t) * MAX_FILE_DESCRIPTORS);
+    memset(&process->regs, 0, sizeof(regs_t));
 
     size_t len = strlen(file->fullpath);
     if (len > PROCESS_MAX_NAME_LENGTH) {
@@ -347,6 +349,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Keep cwdir
     //process->cwdir = getDirectory("/");
+
+    // Keep enviroment variables
 
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
@@ -631,6 +635,19 @@ void runCurrentProcess(void) {
     __builtin_unreachable();
 }
 
+env_variable_t* getEnvVariable(process_t* process, const char* key) {
+
+    for (size_t i = 0; i < MAX_ENVIROMENT_VARIABLES; i++) {
+
+        env_variable_t* var = &process->variables[i];
+
+        if (var->active && strcmp(var->key, key) == 0)
+            return var;
+    }
+
+    return (env_variable_t*) 0;
+}
+
 file_t* getFileWEnv(process_t* process, char* path) {
 
     file_t* file;
@@ -639,68 +656,98 @@ file_t* getFileWEnv(process_t* process, char* path) {
     if (file)
         return file;
 
-    for (size_t i = 0; i < MAX_ENVIROMENT_VARIABLES; i++) {
+    env_variable_t* var = getEnvVariable(process, "PATH");
 
-        env_variable_t* var = &process->variables[i];
+    if (!var) {
+        ERROR("Process %d:%s doesn't have enviroment variable PATH\n", process->id, process->name);
+        return (file_t*) 0;
+    }
 
-        if (var->active && strcmp(var->key, "PATH") == 0) {
+    char* ptr;
+    char* last = var->value;
+    bool done = false;
+    while (!done) {
 
-            char* ptr;
-            char* last = var->value;
-            bool done = false;
-            while (!done) {
-
-                ptr = strchr(last, ';');
-                if (ptr == NULL) {
-                    ptr = var->value + strlen(var->value);
-                    done = true;
-                }
-
-                uint32_t len = ptr - last;
-                char str[len+1];
-                memcpy(str, last, len);
-                str[len] = '\0';
-
-                VERBOSE("getFileWEnv: Trying path '%s'\n", str);
-
-                directory_t* dir = getDirectory(str);
-
-                if (dir) {
-                    file = getFileFrom(dir, path);
-                    
-                    if (file)
-                        return file;
-                }
-
-                if (done)
-                    break;
-
-                last = ptr + 1;
-            }
-
-            return (file_t*) 0;
+        ptr = strchr(last, ';');
+        if (ptr == NULL) {
+            ptr = var->value + strlen(var->value);
+            done = true;
         }
+
+        uint32_t len = ptr - last;
+        char str[len+1];
+        memcpy(str, last, len);
+        str[len] = '\0';
+
+        VERBOSE("getFileWEnv: Trying path '%s'\n", str);
+
+        directory_t* dir = getDirectory(str);
+
+        if (dir) {
+            file = getFileFrom(dir, path);
+            
+            if (file)
+                return file;
+        }
+
+        if (done)
+            break;
+
+        last = ptr + 1;
     }
 
     return (file_t*) 0;
 }
 
+void handleWaitpid(process_t* process) {
+
+    for (size_t i = 0; i < MAX_CHILDREN; i++) {
+
+        if (process->children[i] != 0 && process->children[i]->state == ZOMBIE) {
+            VERBOSE("handleWaitpid: Terminating zombie child\n");
+
+            // TODO status. Shouldn't be passed to terminateProcess
+            terminateProcess(process->children[i], 0);
+
+            return;
+        }
+
+    }
+
+    // If no children are zombie then we wait
+    process->state = BLOCKED_WAITPID;
+}
+
 void handleWaitpidBlock(process_t* process) {
 
-    if (!(process->parent && process->parent->state == BLOCKED_WAITPID)) {
+    // No parent that could wait for this process
+    if (!process->parent) {
+        terminateProcess(process, 0);
         return;
     }
 
-    process->parent->state = RUNNING;
+    // Parent is waiting
+    if (process->parent->state == BLOCKED_WAITPID) {
+        process->parent->state = RUNNING;
 
-    // Sucess
-    process->parent->regs.eax = process->id;
+        // Sucess
+        process->parent->regs.eax = process->id;
 
-    int* status = (int*) process->parent->blocked_regs.ebx;
-    if (status != NULL) {
-        VERBOSE("handleWaitpidBlock: Satus from waitpid used but is unimplemented\n");
-        loadPageDirectory(process->parent->pd);
-        *status = 0; // TODO unimplemented WIFEXITED n shi
+        int* status = (int*) process->parent->blocked_regs.ebx;
+        if (status != NULL) {
+            VERBOSE("handleWaitpidBlock: Satus from waitpid used but is unimplemented\n");
+            loadPageDirectory(process->parent->pd);
+            *status = 0; // TODO unimplemented WIFEXITED n shi
+        }
+
+        terminateProcess(process, 0);
+    }
+
+    // Parent is not waiting (yet (probably))
+    else {
+
+        // Now child process is in zombie state waiting to be 'wait()'ed for
+        process->state = ZOMBIE;
     }
 }
 

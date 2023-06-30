@@ -82,6 +82,7 @@ typedef struct {
 
 typedef enum {
     RUNNING,
+    ZOMBIE,
     BLOCKED_KEYBOARD,
     BLOCKED_WAITPID,
 } process_state_t;
@@ -140,8 +141,10 @@ void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
 
+env_variable_t* getEnvVariable(process_t* process, const char* key);
 file_t* getFileWEnv(process_t* process, char* path);
 
+void handleWaitpid(process_t* process);
 void handleWaitpidBlock(process_t* process);
 void handleKeyboardBlock(char c);
 

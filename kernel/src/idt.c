@@ -110,17 +110,14 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
-                int status = stack_state.ebx;
+                //int status = stack_state.ebx;
 
                 //printf("Status: '%d'\n", status);
 
                 process_t* process = getCurrentProcess();
+                VERBOSE("SYS_exit: Process called exit: %d %s\n", process->id, process->name);
 
                 handleWaitpidBlock(process);
-                loadPageDirectory(process->pd);
-
-                VERBOSE("SYS_exit: Process called exit: %d %s\n", process->id, process->name);
-                terminateProcess(process, status);
 
                 VERBOSE("SYS_exit: switching to next process\n");
                 //printf("SYS_fork: %d\n", get_used_memory());
@@ -217,7 +214,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     for (;;) {}
                 }
 
-                //printf("SYS_fork: %d\n", get_used_memory());
+                printf("SYS_fork: %d\n", get_used_memory());
 
                 process_t* process = getCurrentProcess();
 
@@ -241,7 +238,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 }
 
                 process_t* process = getCurrentProcess();
-                process->state = BLOCKED_WAITPID;
 
                 process->blocked_regs.eax = stack_state.eax;
                 process->blocked_regs.ebx = stack_state.ebx;
@@ -253,6 +249,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 // Save registers
                 saveRegisters(process, &stack_state, &frame, esp);
+
+                handleWaitpid(process);
 
                 // Switch to next process
                 switchProcess();
@@ -368,6 +366,50 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
+        case (SYS_getenv):
+            {
+                if (!(frame.cs & 0x3)) {
+                    ERROR("Kernel called getenv?\n");
+                    for (;;) {}
+                }
+
+                const char* env = (char*) stack_state.ebx;
+                char* buf = (char*) stack_state.ecx;
+                size_t size = stack_state.edx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                env_variable_t* var = getEnvVariable(process, env);
+
+                if (var) {
+
+                    size_t len = strlen(var->value);
+                    if (size > len) {
+
+                        memcpy(buf, var->value, len+1);
+
+                        // Signal sucess
+                        process->regs.eax = 0;
+                    }
+                    else {
+                        // Signal error
+                        process->regs.eax = -1;
+                    }
+
+                }
+                else {
+                    // Signal error
+                    process->regs.eax = -1;
+                }
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
 
         default:
             printf("Invalid syscall id '%d'\n", stack_state.eax);
