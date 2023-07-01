@@ -12,7 +12,7 @@ extern unsigned int _kernelstart;
 #define KERNEL_START ((unsigned int) &_kernelstart)
 
 // TODO remove after kmalloc
-#define FRAME_MAP_SIZE 64
+#define FRAME_MAP_SIZE 70
 
 #define FRAME_1KB ((unsigned int) 0x400)
 #define FRAME_4KB ((unsigned int) 0x1000)

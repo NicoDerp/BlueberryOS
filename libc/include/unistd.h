@@ -26,6 +26,7 @@ pid_t fork(void);
 int execvp(const char* file, char* const argv[]);
 char* getcwd(char* buf, size_t size);
 int chdir(const char* path);
+int close(int fd);
 
 #ifdef __cplusplus
 }

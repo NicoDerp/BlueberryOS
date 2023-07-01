@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+
 // Function prototypes
 void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags);
 void PIC_remap(int offset1, int offset2);
@@ -162,6 +163,26 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
+        case (SYS_open):
+            {
+                char* pathname = (char*) stack_state.ebx;
+                int flags = stack_state.ecx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = openProcessFile(process, pathname, flags);
+                process->regs.eax = status;
+
+                // Since we have changed registers in current process we
+                //  can't simply iret, but also load registers
+                runCurrentProcess();
+            }
+
+            break;
+
         case (SYS_read):
             {
                 unsigned int fd = stack_state.ebx;
@@ -186,16 +207,61 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                     // Switch to next process
                     switchProcess();
-                } else {
-                    printf("Invalid fd '%d'\n", fd);
                 }
+                else if (fd == STDOUT_FILENO) {
+
+                    // Read from stdout?
+
+                }
+                else if (fd == STDERR_FILENO) {
+
+                }
+                else {
+
+                    char* buf = (char*) stack_state.ecx;
+                    size_t count = stack_state.edx;
+
+                    process_t* process = getCurrentProcess();
+
+                    // Save registers
+                    saveRegisters(process, &stack_state, &frame, esp);
+
+                    int status = readProcessFd(process, buf, count, fd);
+                    process->regs.eax = status;
+
+                    // Since we have changed registers in current process we
+                    //  can't simply iret, but also load registers
+                    runCurrentProcess();
+                }
+            }
+
+            break;
+
+        case (SYS_close):
+            {
+                unsigned int fd = stack_state.ebx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = closeProcessFd(process, fd);
+                process->regs.eax = status;
+
+                // Since we have changed registers in current process we
+                //  can't simply iret, but also load registers
+                runCurrentProcess();
             }
 
             break;
 
         case (SYS_fork):
             {
-                //printf("SYS_fork: %d\n", get_used_memory());
+                /*
+                extern uint32_t get_used_memory(void);
+                printf("SYS_fork: %d\n", get_used_memory());
+                */
 
                 process_t* process = getCurrentProcess();
 

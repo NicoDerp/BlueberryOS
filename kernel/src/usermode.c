@@ -8,8 +8,7 @@
 
 #include <string.h>
 #include <stdio.h>
-
-#include <kernel/memory.h>
+#include <fcntl.h>
 
 
 extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
@@ -296,7 +295,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     uint32_t oldIndexInParent = process->indexInParent;
     directory_t* oldCwdir = process->cwdir;
 
-    memset(&process->fds, 0, sizeof(fd_t) * MAX_FILE_DESCRIPTORS);
+    memset(&process->pfds, 0, sizeof(pfd_t) * MAX_FILE_DESCRIPTORS);
     memset(&process->regs, 0, sizeof(regs_t));
 
     size_t len = strlen(file->fullpath);
@@ -382,10 +381,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory
     VERBOSE("overwriteArgs: freeing pagedirectory\n");
-    //printf("overwriteArgs: Used memory: %d\n", get_used_memory());
     freeProcessPagedirectory(oldPD, oldParent == 0);
-
-    //printf("overwriteArgs: Used memory: %d\n", get_used_memory());
 
     return 0;
 }
@@ -428,10 +424,7 @@ void terminateProcess(process_t* process, int status) {
     }
 
     VERBOSE("terminateProcess: freeing pagedirectory\n");
-    //printf("terminateProcess: Used memory: %d\n", get_used_memory());
     freeProcessPagedirectory(process->pd, process->overwritten);
-
-    //printf("terminateProcess: Used memory: %d\n", get_used_memory());
 }
 
 void runProcess(process_t* process) {
@@ -768,6 +761,97 @@ file_t* getFileWEnv(process_t* process, char* path) {
     }
 
     return (file_t*) 0;
+}
+
+int openProcessFile(process_t* process, char* pathname, int flags) {
+
+    if (flags < O_RDONLY || flags > O_RDWR) {
+        ERROR("Flags are incorrect\n");
+        return -1;
+    }
+
+    size_t index;
+    bool found = false;
+    for (index = 0; index < MAX_FILE_DESCRIPTORS; index++) {
+
+        if (!process->pfds[index].active) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        ERROR("process %d:%s has reached max pfds\n", process->id, process->name);
+        return -1;
+    }
+
+    pfd_t* pfd = &process->pfds[index];
+
+    // Doesn't use PATH
+    //file_t* file = getFileWEnv(process, pathname);
+    file_t* file = getFileFrom(process->cwdir, pathname);
+
+    // TODO O_CREAT
+    if (!file) {
+        return -1;
+    }
+
+    pfd->position = 0;
+    pfd->fd = index + 3; // Because of stdin, out and err
+    pfd->file = file;
+    pfd->flags = flags;
+    pfd->active = true;
+
+    return pfd->fd;
+}
+
+int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd) {
+
+    pfd_t* pfd = getProcessPfd(process, fd);
+    if (!pfd)
+        return -1;
+
+    if (!pfd->active)
+        return -1;
+
+    // EOF
+    if (pfd->position >= pfd->file->size)
+        return 0;
+
+    // We read a maximum of bytes that the file has minus where we are
+    if (pfd->file->size - pfd->position < count)
+        count = pfd->file->size - pfd->position;
+
+    memcpy(buf, pfd->file->content, count);
+    pfd->position += count;
+
+    return count;
+}
+
+int closeProcessFd(process_t* process, unsigned int fd) {
+
+    pfd_t* pfd = getProcessPfd(process, fd);
+    if (!pfd)
+        return -1;
+
+    if (!pfd->active)
+        return -1;
+
+    process->pfds[fd].active = false;
+
+    return 0;
+}
+
+pfd_t* getProcessPfd(process_t* process, unsigned int fd) {
+
+    // Because of stdin, out and err
+    fd -= 3;
+    if (fd >= MAX_FILE_DESCRIPTORS) {
+        ERROR("fd is outside range\n");
+        return (pfd_t*) 0;
+    }
+
+    return &process->pfds[fd];
 }
 
 void handleWaitpid(process_t* process) {

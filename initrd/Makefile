@@ -30,6 +30,8 @@ ASMFLAGS = -felf32
 SRC_C = src/sbin/loop.c \
 		src/bin/shell.c \
 		src/bin/pwd.c \
+		src/bin/ls.c \
+		src/bin/cat.c \
 		src/usr/bin/printenv.c \
 		src/usr/bin/test.c \
 		src/usr/bin/test2.c \

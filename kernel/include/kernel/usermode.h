@@ -74,11 +74,12 @@ typedef struct {
 } regs_t;
 
 typedef struct {
-    bool used;
-    file_t* file;
-    char mode[4];
     size_t position;
-} fd_t;
+    size_t fd;
+    file_t* file;
+    int flags;
+    bool active;
+} pfd_t;
 
 typedef enum {
     RUNNING,
@@ -96,7 +97,7 @@ typedef struct {
 struct process;
 
 typedef struct process {
-    fd_t fds[MAX_FILE_DESCRIPTORS];
+    pfd_t pfds[MAX_FILE_DESCRIPTORS];
     struct process* children[MAX_CHILDREN];
     regs_t blocked_regs; // Registers when block happened
     regs_t regs;
@@ -145,6 +146,11 @@ env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);
 int unsetEnvVariable(process_t* process, const char* key);
 file_t* getFileWEnv(process_t* process, char* path);
+
+int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd);
+int openProcessFile(process_t* process, char* pathname, int flags);
+int closeProcessFd(process_t* process, unsigned int fd);
+pfd_t* getProcessPfd(process_t* process, unsigned int fd);
 
 void handleWaitpid(process_t* process);
 void handleWaitpidBlock(process_t* process);
