@@ -52,6 +52,24 @@ syscalla3:
     pop edi
     ret
 
+global syscalla4
+syscalla4:
+    push edi
+    push ebx
+    push esi
+
+    mov eax, [esp+4+3*4]
+    mov edi, [esp+8+3*4]
+    mov ebx, [edi+0]
+    mov ecx, [edi+4]
+    mov edx, [edi+8]
+    mov esi, [edi+8]
+    int 48
+
+    pop esi
+    pop ebx
+    pop edi
+    ret
 
 
 
@@ -100,6 +118,22 @@ syscall3:
     int 48
 
     ;pop edi
+    pop ebx
+    ret
+
+global syscall4
+syscall4:
+    push ebx
+    push esi
+
+    mov eax, [esp+12]
+    mov ebx, [esp+16]
+    mov ecx, [esp+20]
+    mov edx, [esp+24]
+    mov esi, [esp+28]
+    int 48
+
+    pop esi
     pop ebx
     ret
 

@@ -3,12 +3,17 @@
 #define _STDIO_H 1
 
 #include <sys/cdefs.h>
+#include <stdint.h>
 
 #define stdin  0
 #define stdout 1
 #define stderr 2
 
 #define EOF   (-1)
+
+
+struct _IO_FILE;
+typedef struct _IO_FILE FILE;
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +26,9 @@ int puts(const char*);
 
 int getc(unsigned int);
 int getchar(void);
+
+FILE* fopen(const char* path, const char* mode);
+int fclose(FILE* file);
 
 #ifdef __cplusplus
 }

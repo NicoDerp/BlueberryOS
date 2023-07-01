@@ -565,6 +565,7 @@ void forkProcess(process_t* parent) {
     strcpy(child->name, parent->name);
 
     memcpy(&child->variables, &parent->variables, sizeof(env_variable_t)*MAX_ENVIROMENT_VARIABLES);
+    memcpy(&child->pfds, &parent->pfds, sizeof(pfd_t)*MAX_FILE_DESCRIPTORS);
 
     parent->regs.eax = child->id;
     child->regs.eax = 0;

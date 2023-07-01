@@ -9,22 +9,24 @@ extern int syscalla0(int, ...);
 extern int syscalla1(int, ...);
 extern int syscalla2(int, ...);
 extern int syscalla3(int, ...);
+extern int syscalla4(int, ...);
 
 typedef int (*function_t)(int, ...);
 function_t lookup[] = {
-    syscalla1, /* SYS_exit    */
-    syscalla3, /* SYS_write   */
-    syscalla0, /* SYS_yield   */
-    syscalla2, /* SYS_open    */
-    syscalla3, /* SYS_read    */
-    syscalla1, /* SYS_close   */
-    syscalla0, /* SYS_fork    */
-    syscalla1, /* SYS_waitpid */
-    syscalla2, /* SYS_execvp  */
-    syscalla2, /* SYS_getcwd  */
-    syscalla1, /* SYS_chdir   */
-    syscalla3, /* SYS_getenv  */
-    syscalla3, /* SYS_setenv  */
+    syscalla1, /* SYS_exit          */
+    syscalla3, /* SYS_write         */
+    syscalla0, /* SYS_yield         */
+    syscalla2, /* SYS_open          */
+    syscalla3, /* SYS_read          */
+    syscalla1, /* SYS_close         */
+    syscalla0, /* SYS_fork          */
+    syscalla1, /* SYS_waitpid       */
+    syscalla2, /* SYS_execvp        */
+    syscalla2, /* SYS_getcwd        */
+    syscalla1, /* SYS_chdir         */
+    syscalla3, /* SYS_getenv        */
+    syscalla3, /* SYS_setenv        */
+    syscalla4, /* SYS_getdirentries */
 };
 
 

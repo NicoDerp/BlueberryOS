@@ -1,15 +1,63 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <dirent.h>
+#include <string.h>
+#include <stdbool.h>
+#include <dirent.h>
 
+
+void ls(char* path, bool list, bool showHidden) {
+
+    DIR* pdir = opendir(path);
+    if (pdir == NULL) {
+        printf("ls: cannot access '%s': No such file or directory\n", path);
+        exit(1);
+    }
+
+    //struct dirent* dent;
+    //pdir = readdir(fp);
+
+    if (closedir(pdir) == -1) {
+        printf("close failed\n");
+        exit(1);
+    }
+
+}
 
 void main(int argc, char** argv) {
 
-    (void) argc;
-    (void) argv;
+    if (argc == 1) {
 
-    printf("Nothing to see here yet...\n");
+        ls(".", false, false);
+        exit(0);
+    }
 
+    if (argc == 2) {
+
+        ls(argv[1], false, false);
+        exit(0);
+    }
+
+    if (argc > 3) {
+        printf("Usage: ls [OPTION] path");
+        exit(1);
+    }
+
+    bool showHidden = false;
+    bool list = false;
+    if (strncmp(argv[1], "-", 1) == 0) {
+
+        for (size_t i = 0; argv[1][i] != 0; i++) {
+
+            if (argv[1][i] == 'l') {
+                list = true;
+            }
+            else if(argv[1][i] == 'a') {
+                showHidden = true;
+            }
+        }
+    }
+
+    ls(argv[2], list, showHidden);
 }
 

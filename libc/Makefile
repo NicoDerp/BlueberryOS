@@ -36,6 +36,8 @@ FREEOBJS =\
 	stdio/puts.o \
 	stdio/getc.o \
 	stdio/getchar.o \
+	stdio/fopen.o \
+	stdio/fclose.o \
 	stdlib/abort.o \
 	stdlib/itoa.o \
 	stdlib/uitoa.o \
@@ -65,6 +67,9 @@ FREEOBJS =\
 	unistd/close.o \
 	fcntl/open.o \
 	sys/wait.o \
+	dirent/opendir.o \
+	dirent/getdirentries.o \
+	dirent/closedir.o \
 
 HOSTEDOBJS =
 
