@@ -17,10 +17,14 @@ function_t lookup[] = {
     syscalla0, /* SYS_yield   */
     syscalla2, /* SYS_open    */
     syscalla3, /* SYS_read    */
+    syscalla1, /* SYS_close   */
     syscalla0, /* SYS_fork    */
     syscalla1, /* SYS_waitpid */
     syscalla2, /* SYS_execvp  */
     syscalla2, /* SYS_getcwd  */
+    syscalla1, /* SYS_chdir   */
+    syscalla3, /* SYS_getenv  */
+    syscalla3, /* SYS_setenv  */
 };
 
 
