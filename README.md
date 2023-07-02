@@ -26,8 +26,8 @@ This is very in-development and just a hobby-project.
 - [x] Multiple processes
 - [x] Preemptive os
 - [x] Filesystem (with initrd)
-- [ ] Fancier terminal
-- [ ] Shell
+- [x] Fancier terminal
+- [x] Shell
 - [ ] Memory allocator
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
