@@ -26,9 +26,10 @@ void ls(char* path, bool list, bool showHidden) {
 
 void main(int argc, char** argv) {
 
+    printf("openinga\n");
     if (argc == 1) {
 
-        ls(".", false, false);
+        ls("./", false, false);
         exit(0);
     }
 
@@ -39,7 +40,7 @@ void main(int argc, char** argv) {
     }
 
     if (argc > 3) {
-        printf("Usage: ls [OPTION] path");
+        printf("Usage: ls [OPTION] path\n");
         exit(1);
     }
 

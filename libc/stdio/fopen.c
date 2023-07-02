@@ -9,10 +9,10 @@
 #include <stdbool.h>
 
 
-#define MAX_FILES 1024
+#define MAX_FILES 8
 
 extern int syscall2(int, int, int);
-FILE _files[MAX_FILES];
+static FILE _files[MAX_FILES];
 
 FILE* fopen(const char* filename, const char* mode) {
 

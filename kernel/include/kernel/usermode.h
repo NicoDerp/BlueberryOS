@@ -76,7 +76,7 @@ typedef struct {
 typedef struct {
     size_t position;
     size_t fd;
-    file_t* file;
+    uint32_t pointer;
     int flags;
     bool active;
 } pfd_t;

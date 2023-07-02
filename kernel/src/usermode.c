@@ -766,7 +766,7 @@ file_t* getFileWEnv(process_t* process, char* path) {
 
 int openProcessFile(process_t* process, char* pathname, int flags) {
 
-    if (flags < O_RDONLY || flags > O_RDWR) {
+    if (flags < O_RDONLY || flags > O_DIRECTORY) {
         ERROR("Flags are incorrect\n");
         return -1;
     }
@@ -789,17 +789,28 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
     pfd_t* pfd = &process->pfds[index];
 
     // Doesn't use PATH
-    //file_t* file = getFileWEnv(process, pathname);
-    file_t* file = getFileFrom(process->cwdir, pathname);
+    if (flags & O_DIRECTORY) {
+        directory_t* dir = getDirectoryFrom(process->cwdir, pathname);
 
-    // TODO O_CREAT
-    if (!file) {
-        return -1;
+        // TODO O_CREAT
+        if (!dir) {
+            return -1;
+        }
+
+        pfd->pointer = (uint32_t) dir;
+    } else {
+        file_t* file = getFileFrom(process->cwdir, pathname);
+
+        // TODO O_CREAT
+        if (!file) {
+            return -1;
+        }
+
+        pfd->pointer = (uint32_t) file;
     }
 
     pfd->position = 0;
     pfd->fd = index + 3; // Because of stdin, out and err
-    pfd->file = file;
     pfd->flags = flags;
     pfd->active = true;
 
@@ -815,15 +826,20 @@ int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd) 
     if (!pfd->active)
         return -1;
 
+    if (pfd->flags & O_DIRECTORY)
+        return -1;
+
+    file_t* file = (file_t*) pfd->pointer;
+
     // EOF
-    if (pfd->position >= pfd->file->size)
+    if (pfd->position >= file->size)
         return 0;
 
     // We read a maximum of bytes that the file has minus where we are
-    if (pfd->file->size - pfd->position < count)
-        count = pfd->file->size - pfd->position;
+    if (file->size - pfd->position < count)
+        count = file->size - pfd->position;
 
-    memcpy(buf, pfd->file->content, count);
+    memcpy(buf, file->content, count);
     pfd->position += count;
 
     return count;

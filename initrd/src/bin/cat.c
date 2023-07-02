@@ -36,7 +36,7 @@ void main(int argc, char** argv) {
         exit(1);
     }
 
-    FILE* fp = open(argv[1], O_RDONLY);
+    int fd = open(argv[1], O_RDONLY);
     if (fd == -1) {
         printf("%s: %s: No such file or directory\n", argv[0], argv[1]);
         exit(1);

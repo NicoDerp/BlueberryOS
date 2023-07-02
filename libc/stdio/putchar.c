@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+extern int syscall3(int, int, int, int);
+
 #endif
 
 int putchar(int ic) {
@@ -21,7 +23,7 @@ int putchar(int ic) {
 
 #else
 
-    syscall(SYS_write, STDOUT_FILENO, ic, 1);
+    syscall3(SYS_write, STDOUT_FILENO, ic, 1);
 
 #endif
 

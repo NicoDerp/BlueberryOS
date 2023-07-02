@@ -8,10 +8,10 @@
 #include <stdbool.h>
 
 
-#define MAX_DIRECTORIES 1024
+#define MAX_DIRECTORIES 1
 
 extern int syscall2(int, int, int);
-DIR _directories[MAX_DIRECTORIES];
+static DIR _directories[MAX_DIRECTORIES];
 
 __attribute__((__nonnull__))
 DIR* opendir(const char* name) {
@@ -31,7 +31,7 @@ DIR* opendir(const char* name) {
     }
 
     int fd = syscall2(SYS_open, (int) name, O_RDONLY | O_DIRECTORY);
-    if (!fd)
+    if (fd == -1)
         return (DIR*) 0;
 
     DIR* d = &_directories[i];

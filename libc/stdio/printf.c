@@ -23,13 +23,15 @@ static inline void printstring(const char* data) {
 #include <unistd.h>
 #include <sys/syscall.h>
 
+extern int syscall3(int, int, int, int);
+
 static inline void print(const char* data, size_t length) {
-    syscall(SYS_write, STDOUT_FILENO, data, length);
+    syscall3(SYS_write, STDOUT_FILENO, (int) data, length);
 }
 
 static inline void printstring(const char* data) {
     size_t length = strlen(data);
-    syscall(SYS_write, STDOUT_FILENO, data, length);
+    syscall3(SYS_write, STDOUT_FILENO, (int) data, length);
 }
 
 #endif

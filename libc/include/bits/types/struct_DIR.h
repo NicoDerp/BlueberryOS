@@ -7,11 +7,11 @@
 
 struct __dirstream
 {
-    struct dirent dd_buf[4096 / sizeof(struct dirent)];
+    struct dirent dd_buf[4];
     uint32_t dd_loc;
     uint32_t dd_size;
     uint32_t dd_fd;
-    uint32_t dd_used;
+    uint8_t dd_used;
 };
 
 #endif
