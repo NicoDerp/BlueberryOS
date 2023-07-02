@@ -6,18 +6,33 @@
 #include <dirent.h>
 
 
-void ls(char* path, bool list, bool showHidden) {
+void ls(char* path, bool showHidden, bool list) {
 
     DIR* pdir = opendir(path);
     if (pdir == NULL) {
-        printf("ls: cannot access '%s': No such file or directory\n", path);
+        printf("ls: cannot access '%s': No such directory\n", path);
         exit(1);
     }
 
     struct dirent* ent;
     while ((ent = readdir(pdir)) != NULL) {
-        printf("name: '%s'\n", ent->d_name);
+
+        if (strncmp(ent->d_name, ".", 1) == 0 && !showHidden)
+            continue;
+
+        if (ent->d_type == DT_DIR)
+            printf("\e[9;0m%s\e[0m", ent->d_name);
+        else
+            printf("%s", ent->d_name);
+
+        if (list)
+            putchar('\n');
+        else
+            printf("  ");
     }
+
+    if (!list)
+        putchar('\n');
 
     if (closedir(pdir) == -1) {
         printf("close failed\n");
@@ -26,9 +41,34 @@ void ls(char* path, bool list, bool showHidden) {
 
 }
 
+bool parseArg(char* arg, bool* showHidden, bool* list) {
+
+    *list = false;
+    *showHidden = false;
+
+    if (strncmp(arg, "-", 1) == 0) {
+
+        for (size_t i = 0; arg[i] != 0; i++) {
+
+            if (arg[i] == 'l') {
+                *list = true;
+            }
+            else if(arg[i] == 'a') {
+                *showHidden = true;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 void main(int argc, char** argv) {
 
-    printf("openinga\n");
+    bool showHidden;
+    bool list;
+
     if (argc == 1) {
 
         ls("./", false, false);
@@ -37,7 +77,11 @@ void main(int argc, char** argv) {
 
     if (argc == 2) {
 
-        ls(argv[1], false, false);
+        if (parseArg(argv[1], &showHidden, &list))
+            ls("./", showHidden, list);
+        else
+            ls(argv[1], false, false);
+
         exit(0);
     }
 
@@ -46,21 +90,11 @@ void main(int argc, char** argv) {
         exit(1);
     }
 
-    bool showHidden = false;
-    bool list = false;
-    if (strncmp(argv[1], "-", 1) == 0) {
-
-        for (size_t i = 0; argv[1][i] != 0; i++) {
-
-            if (argv[1][i] == 'l') {
-                list = true;
-            }
-            else if(argv[1][i] == 'a') {
-                showHidden = true;
-            }
-        }
+    if (!parseArg(argv[1], &showHidden, &list)) {
+        printf("Usage: ls [OPTION] path\n");
+        exit(1);
     }
 
-    ls(argv[2], list, showHidden);
+    ls(argv[2], showHidden, list);
 }
 
