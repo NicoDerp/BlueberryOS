@@ -7,6 +7,7 @@
 
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <sys/stat.h>
 
 #include <string.h>
 #include <stdbool.h>
@@ -476,6 +477,48 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 int status = getDirectoryEntries(process, fd, buf, nbytes, basep);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_stat):
+            {
+                char* path = (char*) stack_state.ebx;
+                struct stat* buf = (struct stat*) stack_state.ecx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = statPath(process, path, buf, true);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_lstat):
+            {
+                char* path = (char*) stack_state.ebx;
+                struct stat* buf = (struct stat*) stack_state.ecx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = statPath(process, path, buf, false);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;

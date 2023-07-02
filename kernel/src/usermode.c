@@ -932,6 +932,35 @@ int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, ui
     return bytesRead;
 }
 
+int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic) {
+
+    file_t* file = getFileFrom(process->cwdir, path);
+    if (!file) {
+        directory_t* dir = getDirectoryFrom(process->cwdir, path);
+        if (!dir)
+            return -1;
+
+        memset(buf, 0, sizeof(struct stat));
+        buf->st_mode = dir->mode | S_IFDIR;
+        buf->st_blksize = FRAME_4KB;
+
+        // TODO if symbolic then length of path it points to
+        //buf->st_size = dir->;
+
+        return 0;
+    }
+
+    memset(buf, 0, sizeof(struct stat));
+    buf->st_mode = file->mode | S_IFREG;
+    buf->st_blksize = FRAME_4KB;
+
+    // TODO if symbolic then length of path it points to
+    buf->st_size = file->size;
+
+    return 0;
+}
+
+
 void handleWaitpid(process_t* process) {
 
     for (size_t i = 0; i < MAX_CHILDREN; i++) {

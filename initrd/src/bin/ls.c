@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 
 void ls(char* path, bool showHidden, bool list) {
@@ -14,11 +15,45 @@ void ls(char* path, bool showHidden, bool list) {
         exit(1);
     }
 
+    struct stat stat_struct;
     struct dirent* ent;
     while ((ent = readdir(pdir)) != NULL) {
 
         if (strncmp(ent->d_name, ".", 1) == 0 && !showHidden)
             continue;
+
+        if (list) {
+            if (lstat(ent->d_name, &stat_struct) == -1) {
+                printf("lstat failed\n");
+                exit(1);
+            }
+
+            char sizeBuf[64];
+            itoa(stat_struct.st_size, sizeBuf, 10);
+            int sizeLen = strlen(sizeBuf);
+
+            printf("mode %d\n", stat_struct.st_mode);
+
+            char mode[] = "----------";
+            if (S_ISDIR(stat_struct.st_mode))
+                mode[0] = 'd';
+
+            for (int i = 0; i < 3; i++) {
+                if ((stat_struct.st_mode >> 3*i) & 1)
+                    mode[6 - 3*i + 3] = 'x';
+
+                if ((stat_struct.st_mode >> 3*i) & 2)
+                    mode[6 - 3*i + 2] = 'w';
+
+                if ((stat_struct.st_mode >> 3*i) & 4)
+                    mode[6 - 3*i + 1] = 'r';
+            }
+            printf("%s", mode);
+
+            for (int i = 0; i < (6-sizeLen); i++) { putchar(' '); }
+
+            printf("%s ", sizeBuf);
+        }
 
         if (ent->d_type == DT_DIR)
             printf("\e[9;0m%s\e[0m", ent->d_name);

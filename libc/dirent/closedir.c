@@ -1,6 +1,5 @@
 
 #include <sys/syscall.h>
-#include <unistd.h>
 #include <bits/types/struct_DIR.h>
 #include <stdbool.h>
 

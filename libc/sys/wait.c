@@ -1,7 +1,6 @@
 
 #include <sys/wait.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 
 
 extern int syscall1(int, int);

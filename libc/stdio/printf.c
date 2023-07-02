@@ -36,7 +36,7 @@ static inline void printstring(const char* data) {
 
 #endif
 
-int printf(const char* restrict format, ...) {
+int printf(const char* __restrict format, ...) {
     va_list parameters;
     unsigned int written = 0;
 

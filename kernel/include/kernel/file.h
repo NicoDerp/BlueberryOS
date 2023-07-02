@@ -19,14 +19,14 @@ struct directory;
 struct file;
 
 typedef enum {
-    NORMAL_DIR,
+    REGULAR_DIR,
     SYMBOLIC_LINK
 } dirtype_t;
 
 typedef struct directory {
     char fullpath[MAX_FULL_PATH_LENGTH+1];
     char name[MAX_NAME_LENGTH+1];
-    char mode[4];
+    uint32_t mode;
     struct directory* parent;
 
     // TODO should be linked. Waste especially if type is SYMBOLIC_LINK
@@ -44,7 +44,7 @@ typedef struct directory {
 typedef struct file {
     char fullpath[MAX_FULL_PATH_LENGTH+1];
     char name[MAX_NAME_LENGTH+1];
-    char mode[4];
+    uint32_t mode;
     struct directory* parent;
     size_t size;
     char* content;
@@ -76,7 +76,7 @@ typedef struct {
 typedef struct
 {
     char filename[100];
-    char mode[8];
+    unsigned char mode[8];
     unsigned char uid[8];
     unsigned char gid[8];
     unsigned char size[12];
@@ -107,8 +107,8 @@ file_t* getFile(char* filepath);
 directory_t* getDirectoryFrom(directory_t* dir, char* path);
 file_t* getFileFrom(directory_t* dir, char* filepath);
 
-directory_t* createDirectory(directory_t* parent, char* name, char mode[4]);
-directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, char mode[4]);
+directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode);
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode);
 
 void displayDirectory(directory_t* dir, size_t space);
 

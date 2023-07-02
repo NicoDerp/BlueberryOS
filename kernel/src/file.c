@@ -365,7 +365,7 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
         if (strncmp(parent->directories[i]->name, name, len) == 0) {
             directory_t* dir = parent->directories[i];
 
-            if (dir->type == NORMAL_DIR) {
+            if (dir->type == REGULAR_DIR) {
                 return dir;
             } else if (dir->type == SYMBOLIC_LINK) {
                 return dir->link;
@@ -539,9 +539,7 @@ void parseDirectory(tar_header_t* header) {
     memcpy(directory->name, header->filename + slash, len);
     directory->name[len] = '\0';
 
-    memcpy(directory->mode, header->mode+4, 3);
-    directory->mode[3] = '\0';
-
+    directory->mode = oct2bin(header->mode, 7);
 
     // Create '.'
     createSymbolicDirectory(directory, directory, ".", directory->mode);
@@ -552,7 +550,7 @@ void parseDirectory(tar_header_t* header) {
     VERBOSE("parseDirectory: end\n");
 }
 
-directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
+directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode) {
 
     directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
@@ -580,14 +578,13 @@ directory_t* createDirectory(directory_t* parent, char* name, char mode[4]) {
 
     memcpy(directory->name, name, len);
     directory->name[len] = '\0';
-
-    memcpy(directory->mode, mode, 3);
-    directory->mode[3] = '\0';
+    directory->mode = mode;
+    directory->type = REGULAR_DIR;
 
     return directory;
 }
 
-directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, char mode[4]) {
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode) {
 
     directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
@@ -616,9 +613,7 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
     memcpy(directory->name, name, len);
     directory->name[len] = '\0';
 
-    memcpy(directory->mode, mode, 3);
-    directory->mode[3] = '\0';
-
+    directory->mode = mode;
     directory->type = SYMBOLIC_LINK;
     directory->link = link;
 
@@ -677,9 +672,7 @@ void parseFile(tar_header_t* header) {
 
     memcpy(file->name, header->filename + slash, len+1);
 
-    memcpy(file->mode, header->mode+4, 3);
-    file->mode[3] = '\0';
-
+    file->mode = oct2bin(header->mode, 7);
     file->size = filesize;
 
     // ceil(file->size / FRAME_4KB)
@@ -728,8 +721,7 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
     header = (tar_header_t*) (uint32_t) tar_start;
     strcpy(rootDir.fullpath, "/");
     strcpy(rootDir.name, "/");
-    memcpy(rootDir.mode, header->mode+4, 3);
-    rootDir.mode[3] = '\0';
+    rootDir.mode = oct2bin(header->mode, 7);
 
     rootDir.directoryCount = 0;
     rootDir.fileCount = 0;

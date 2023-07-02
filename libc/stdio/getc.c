@@ -1,14 +1,14 @@
 
 #include <stdio.h>
-
 #include <sys/syscall.h>
-#include <unistd.h>
 
+
+extern int syscall3(int, int, int, int);
 
 int getc(unsigned int fd) {
 
     char result;
-    syscall(SYS_read, fd, &result, 1);
+    syscall3(SYS_read, fd, (int) &result, 1);
     return (int) result;
 }
 

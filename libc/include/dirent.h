@@ -37,7 +37,7 @@ struct dirent* readdir(DIR*);
 __attribute__((__nonnull__))
 int closedir (DIR*);
 
-int getdirentries(int, char*, size_t, uint32_t* restrict);
+int getdirentries(int, char*, size_t, uint32_t* __restrict);
 
 
 #ifdef __cplusplus

@@ -1,7 +1,6 @@
 
 #include <fcntl.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 
 
 extern int syscall2(int, int, int);

@@ -6,7 +6,7 @@
 #include <stdarg.h>
 
 
-extern int syscall1(int, ...);
+extern int syscall1(int, int);
 
 __attribute__((__noreturn__)) void exit(int status) {
     syscall1(SYS_exit, status);

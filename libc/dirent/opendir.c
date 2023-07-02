@@ -1,7 +1,6 @@
 
 #include <dirent.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <bits/types/struct_DIR.h>
 #include <stdio.h>

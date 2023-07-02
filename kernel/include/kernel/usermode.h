@@ -8,6 +8,7 @@
 #include <kernel/file.h>
 #include <kernel/idt.h>
 
+#include <sys/stat.h>
 #include <stdint.h>
 
 
@@ -153,6 +154,7 @@ int closeProcessFd(process_t* process, unsigned int fd);
 pfd_t* getProcessPfd(process_t* process, unsigned int fd);
 
 int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, uint32_t* basep);
+int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic);
 
 void handleWaitpid(process_t* process);
 void handleWaitpidBlock(process_t* process);

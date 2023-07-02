@@ -18,6 +18,8 @@
 #define SYS_getenv        11
 #define SYS_setenv        12
 #define SYS_getdirentries 13
+#define SYS_stat          14
+#define SYS_lstat         15
 
 
 #endif

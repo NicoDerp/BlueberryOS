@@ -139,7 +139,6 @@ void main() {
 
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
             printf("error, getcwd failed\n");
-            return -1;
         }
 
         printf("\e[a;0muser\e[0m:\e[9;0m%s\e[0m$ ", cwd);
