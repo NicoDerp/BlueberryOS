@@ -463,6 +463,29 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
+        case (SYS_getdirentries):
+            {
+                int fd = stack_state.ebx;
+                char* buf = (char*) stack_state.ecx;
+                size_t nbytes = stack_state.edx;
+                uint32_t* basep = (uint32_t*) stack_state.esi;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = getDirectoryEntries(process, fd, buf, nbytes, basep);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
         default:
             printf("Invalid syscall id '%d'\n", stack_state.eax);
     }

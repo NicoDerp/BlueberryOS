@@ -53,6 +53,7 @@ FREEOBJS =\
 	string/strcmp.o \
 	string/strncmp.o \
 	string/strcpy.o \
+	string/strncpy.o \
 	string/strtok.o \
 	string/strchr.o \
 	unistd/syscall.o \
@@ -68,6 +69,7 @@ FREEOBJS =\
 	fcntl/open.o \
 	sys/wait.o \
 	dirent/opendir.o \
+	dirent/readdir.o \
 	dirent/getdirentries.o \
 	dirent/closedir.o \
 

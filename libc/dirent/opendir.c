@@ -35,8 +35,9 @@ DIR* opendir(const char* name) {
         return (DIR*) 0;
 
     DIR* d = &_directories[i];
-    d->dd_size = getdirentries(fd, (char*) d->dd_buf, sizeof(d->dd_buf), &(d->dd_loc));
+    d->dd_size = 0;
     d->dd_loc = 0;
+    d->dd_off = 0;
     d->dd_fd = fd;
     d->dd_used = true;
 

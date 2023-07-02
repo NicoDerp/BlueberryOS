@@ -6,6 +6,7 @@
 #include <kernel/logging.h>
 #include <kernel/errors.h>
 
+#include <dirent.h>
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -766,7 +767,7 @@ file_t* getFileWEnv(process_t* process, char* path) {
 
 int openProcessFile(process_t* process, char* pathname, int flags) {
 
-    if (flags < O_RDONLY || flags > O_DIRECTORY) {
+    if (!(flags & O_RDONLY)) {
         ERROR("Flags are incorrect\n");
         return -1;
     }
@@ -869,6 +870,63 @@ pfd_t* getProcessPfd(process_t* process, unsigned int fd) {
     }
 
     return &process->pfds[fd];
+}
+
+int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, uint32_t* basep) {
+
+    pfd_t* pfd = getProcessPfd(process, fd);
+    if (!pfd)
+        return -1;
+
+    if (!(pfd->flags & O_DIRECTORY))
+        return -1;
+
+    directory_t* dir = (directory_t*) pfd->pointer;
+
+    size_t startIndex;
+    if (*basep == 0)
+        startIndex = 0;
+    else
+        startIndex = *basep / sizeof(struct dirent);
+
+    uint32_t bytesRead = 0;
+    for (size_t i = 0; i < nbytes/sizeof(struct dirent); i++) {
+
+        struct dirent* entry = &((struct dirent*) buf)[i];
+
+        if (startIndex + i < dir->directoryCount) {
+
+            directory_t* d = dir->directories[startIndex + i];
+
+            entry->d_type = DT_DIR;
+            strncpy(entry->d_name, d->name, 255);
+            entry->d_name[255] = '\0';
+        }
+
+        else if (startIndex - dir->directoryCount + i < dir->fileCount) {
+
+            file_t* f = dir->files[startIndex - dir->directoryCount + i];
+
+            entry->d_type = DT_REG;
+            strncpy(entry->d_name, f->name, 255);
+            entry->d_name[255] = '\0';
+        }
+
+        // No more to read
+        else {
+            break;
+        }
+
+        entry->d_ino = 0;
+        entry->d_off = 0;
+        entry->d_reclen = sizeof(struct dirent);
+
+        bytesRead += sizeof(struct dirent);
+    }
+
+    *basep += bytesRead;
+
+    return bytesRead;
 }
 
 void handleWaitpid(process_t* process) {

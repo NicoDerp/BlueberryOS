@@ -152,6 +152,8 @@ int openProcessFile(process_t* process, char* pathname, int flags);
 int closeProcessFd(process_t* process, unsigned int fd);
 pfd_t* getProcessPfd(process_t* process, unsigned int fd);
 
+int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, uint32_t* basep);
+
 void handleWaitpid(process_t* process);
 void handleWaitpidBlock(process_t* process);
 void handleKeyboardBlock(char c);

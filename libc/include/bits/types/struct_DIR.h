@@ -9,6 +9,7 @@ struct __dirstream
 {
     struct dirent dd_buf[4];
     uint32_t dd_loc;
+    uint32_t dd_off;
     uint32_t dd_size;
     uint32_t dd_fd;
     uint8_t dd_used;

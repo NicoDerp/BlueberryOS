@@ -14,8 +14,10 @@ void ls(char* path, bool list, bool showHidden) {
         exit(1);
     }
 
-    //struct dirent* dent;
-    //pdir = readdir(fp);
+    struct dirent* ent;
+    while ((ent = readdir(pdir)) != NULL) {
+        printf("name: '%s'\n", ent->d_name);
+    }
 
     if (closedir(pdir) == -1) {
         printf("close failed\n");
