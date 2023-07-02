@@ -830,6 +830,9 @@ int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd) 
     if (pfd->flags & O_DIRECTORY)
         return -1;
 
+    if (!(pfd->flags & O_RDONLY))
+        return -1;
+
     file_t* file = (file_t*) pfd->pointer;
 
     // EOF
