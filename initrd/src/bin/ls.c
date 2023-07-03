@@ -32,8 +32,6 @@ void ls(char* path, bool showHidden, bool list) {
             itoa(stat_struct.st_size, sizeBuf, 10);
             int sizeLen = strlen(sizeBuf);
 
-            printf("mode %d\n", stat_struct.st_mode);
-
             char mode[] = "----------";
             if (S_ISDIR(stat_struct.st_mode))
                 mode[0] = 'd';

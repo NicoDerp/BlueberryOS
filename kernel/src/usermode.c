@@ -945,7 +945,7 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
         buf->st_blksize = FRAME_4KB;
 
         // TODO if symbolic then length of path it points to
-        //buf->st_size = dir->;
+        buf->st_size = sizeof(directory_t);
 
         return 0;
     }

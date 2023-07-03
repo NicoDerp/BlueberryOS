@@ -357,12 +357,15 @@ file_t* getFileFromParent(directory_t* parent, char* name) {
 
 directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
 
-    for (size_t i = 0; i < parent->directoryCount; i++) {
-        size_t len = strlen(name);
-        if (name[len-1] == '/')
-            len--;
+    size_t len = strlen(name);
+    char nameBuf[len+1];
+    memcpy(nameBuf, name, len+1);
+    if (name[len-1] == '/')
+        nameBuf[len-1] = '\0';
 
-        if (strncmp(parent->directories[i]->name, name, len) == 0) {
+    for (size_t i = 0; i < parent->directoryCount; i++) {
+
+        if (strcmp(parent->directories[i]->name, nameBuf) == 0) {
             directory_t* dir = parent->directories[i];
 
             if (dir->type == REGULAR_DIR) {
