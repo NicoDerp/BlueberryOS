@@ -10,7 +10,7 @@
 
 void kalloc_cache();
 
-frame_map_t frame_map[FRAME_MAP_SIZE];
+char frame_map[FRAME_MAP_SIZE/8];
 pageframe_t cached_frame_map[FRAME_CACHE_SIZE];
 
 uint32_t framestart;
@@ -65,7 +65,7 @@ pageframe_t kalloc_frames(unsigned int count) {
     size_t index = 0;
     size_t cons = 0;
     while (cons != count) {
-        if (frame_map[index] == FREE) {
+        if ((frame_map[index >> 3] & (1 << (index & 0x7))) == 0) {
             
             if (cons == 0) {
                 startindex = index;
@@ -87,7 +87,7 @@ pageframe_t kalloc_frames(unsigned int count) {
     }
 
     for (size_t i = startindex; i < startindex + count; i++) {
-        frame_map[i] = USED;
+        frame_map[i >> 3] |= (1 << (i & 0x7));
     }
 
     pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + framestart);
@@ -113,7 +113,7 @@ void kfree_frame(pageframe_t frame) {
         return;
     }
 
-    frame_map[index] = FREE;
+    frame_map[index >> 3] &= ~(1 << (index & 0x7));
 }
 
 void kalloc_cache(void) {
@@ -121,7 +121,8 @@ void kalloc_cache(void) {
 
     for (size_t c = 0; c < FRAME_CACHE_SIZE; c++) {
 
-        while (frame_map[index] != FREE) {
+        // Check for first free bit
+        while ((frame_map[index >> 3] & (1 << (index & 0x7))) != 0) {
             index++;
             if (index >= FRAME_MAP_SIZE) {
                 FATAL("Out of memory!\n");
@@ -130,7 +131,7 @@ void kalloc_cache(void) {
             }
         }
 
-        frame_map[index] = USED;
+        frame_map[index >> 3] |= (1 << (index & 0x7));
         cached_frame_map[c] = (pageframe_t) (index*FRAME_SIZE + framestart);
     }
 }
@@ -139,7 +140,7 @@ uint32_t get_used_memory(void) {
 
     uint32_t count = 0;
     for (size_t i = 0; i < FRAME_MAP_SIZE; i++) {
-        if (frame_map[i] == USED) {
+        if ((frame_map[i >> 3] & (1 << (i & 0x7))) == 1) {
             count++;
         }
     }
