@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 #include <string.h>
 #include <stdbool.h>
@@ -525,6 +526,49 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_mmap):
+            {
+                void* address = (void*) stack_state.ebx;
+                size_t length = stack_state.ecx;
+                int prot = stack_state.edx;
+                int flags = stack_state.esi;
+                int fd = stack_state.edi;
+                uint32_t offset = stack_state.ebp;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status;
+                (void) address;
+
+                // Not supported
+                if (prot & PROT_EXEC || prot == PROT_NONE || fd != 0 || offset != 0 || flags & MAP_SHARED) {
+                    status = -1;
+                } else {
+
+                    // Find virtual space enough for 'chunks' chunks
+                    uint32_t chunks = ((FRAME_SIZE - (length & (FRAME_SIZE-1)) + length)) >> 12;
+
+                    printf("finding space for %d chunks\n", chunks);
+                }
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_munmap):
+            {
             }
 
             break;

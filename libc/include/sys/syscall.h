@@ -20,6 +20,8 @@
 #define SYS_getdirentries 13
 #define SYS_stat          14
 #define SYS_lstat         15
+#define SYS_mmap          16
+#define SYS_munmap        17
 
 
 #endif

@@ -67,9 +67,11 @@ FREEOBJS =\
 	unistd/chdir.o \
 	unistd/close.o \
 	fcntl/open.o \
-	sys/wait.o \
-	sys/stat.o \
-	sys/lstat.o \
+	sys/wait/wait.o \
+	sys/stat/stat.o \
+	sys/stat/lstat.o \
+	sys/mman/mmap.o \
+	sys/mman/munmap.o \
 	dirent/opendir.o \
 	dirent/readdir.o \
 	dirent/getdirentries.o \

@@ -137,4 +137,25 @@ syscall4:
     pop ebx
     ret
 
+global syscall6
+syscall6:
+    push ebx
+    push esi
+    push edi
+    push ebp
+
+    mov eax, [esp+20]
+    mov ebx, [esp+24]
+    mov ecx, [esp+28]
+    mov edx, [esp+32]
+    mov esi, [esp+36]
+    mov edi, [esp+40]
+    mov ebp, [esp+44]
+    int 48
+
+    pop ebp
+    pop edi
+    pop esi
+    pop ebx
+    ret
 
