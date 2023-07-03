@@ -718,7 +718,7 @@ file_t* getFileWEnv(process_t* process, char* path) {
 
     file_t* file;
 
-    file = getFileFrom(process->cwdir, path);
+    file = getFileFrom(process->cwdir, path, true);
     if (file)
         return file;
 
@@ -750,7 +750,7 @@ file_t* getFileWEnv(process_t* process, char* path) {
         directory_t* dir = getDirectory(str);
 
         if (dir) {
-            file = getFileFrom(dir, path);
+            file = getFileFrom(dir, path, true);
             
             if (file)
                 return file;
@@ -791,7 +791,7 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
 
     // Doesn't use PATH
     if (flags & O_DIRECTORY) {
-        directory_t* dir = getDirectoryFrom(process->cwdir, pathname);
+        directory_t* dir = getDirectoryFrom(process->cwdir, pathname, true);
 
         // TODO O_CREAT
         if (!dir) {
@@ -800,7 +800,7 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
 
         pfd->pointer = (uint32_t) dir;
     } else {
-        file_t* file = getFileFrom(process->cwdir, pathname);
+        file_t* file = getFileFrom(process->cwdir, pathname, true);
 
         // TODO O_CREAT
         if (!file) {
@@ -934,9 +934,9 @@ int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, ui
 
 int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic) {
 
-    file_t* file = getFileFrom(process->cwdir, path);
+    file_t* file = getFileFrom(process->cwdir, path, redirectSymbolic);
     if (!file) {
-        directory_t* dir = getDirectoryFrom(process->cwdir, path);
+        directory_t* dir = getDirectoryFrom(process->cwdir, path, redirectSymbolic);
         if (!dir)
             return -1;
 

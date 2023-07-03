@@ -344,18 +344,34 @@ pagedirectory_t loadBinaryIntoMemory(file_t* file) {
     return pd;
 }
 
-file_t* getFileFromParent(directory_t* parent, char* name) {
+file_t* getFileFromParent(directory_t* parent, char* name, bool redirectSymbolic) {
 
     for (size_t i = 0; i < parent->fileCount; i++) {
         if (strcmp(parent->files[i]->name, name) == 0) {
-            return parent->files[i];
+
+            file_t* file = parent->files[i];
+
+            if (file->type == SYMBOLIC_FILE) {
+                if (redirectSymbolic)
+                    return file->link;
+
+                return file;
+            }
+            else if (file->type == REGULAR_FILE) {
+                return file;
+            }
+            else {
+                ERROR("Unknown file type %d\n", file->type);
+                for (;;) {}
+                return (file_t*) 0;
+            }
         }
     }
 
     return (file_t*) 0;
 }
 
-directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
+directory_t* getDirectoryFromParent(directory_t* parent, char* name, bool redirectSymbolic) {
 
     size_t len = strlen(name);
     char nameBuf[len+1];
@@ -366,13 +382,20 @@ directory_t* getDirectoryFromParent(directory_t* parent, char* name) {
     for (size_t i = 0; i < parent->directoryCount; i++) {
 
         if (strcmp(parent->directories[i]->name, nameBuf) == 0) {
+
             directory_t* dir = parent->directories[i];
 
-            if (dir->type == REGULAR_DIR) {
+            if (dir->type == SYMBOLIC_DIR) {
+                if (redirectSymbolic)
+                    return dir->link;
+
                 return dir;
-            } else if (dir->type == SYMBOLIC_LINK) {
-                return dir->link;
-            } else {
+            }
+            else if (dir->type == REGULAR_DIR) {
+                return dir;
+            }
+            else
+            {
                 ERROR("Unknown directory type %d\n", dir->type);
                 for (;;) {}
                 return (directory_t*) 0;
@@ -429,7 +452,7 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
                 }
 
                 //printf("name so far: %s\n", name);
-                directory_t* p = getDirectoryFromParent(parent, name);
+                directory_t* p = getDirectoryFromParent(parent, name, true);
                 if (!p) {
                     //ERROR("Directory '%s' not found in parent '%s'\n", name, parent->name);
                     return (directory_t*) 0;
@@ -617,7 +640,7 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
     directory->name[len] = '\0';
 
     directory->mode = mode;
-    directory->type = SYMBOLIC_LINK;
+    directory->type = SYMBOLIC_DIR;
     directory->link = link;
 
     return directory;
@@ -677,6 +700,7 @@ void parseFile(tar_header_t* header) {
 
     file->mode = oct2bin(header->mode, 7);
     file->size = filesize;
+    file->type = REGULAR_FILE;
 
     // ceil(file->size / FRAME_4KB)
     //printf("Size is %d, looping %d times\n", filesize);
@@ -796,7 +820,7 @@ directory_t* getDirectory(char* path) {
 
     VERBOSE("getDirectory: Got parent %s\n", parent->fullpath);
 
-    return getDirectoryFromParent(parent, path + slash);
+    return getDirectoryFromParent(parent, path + slash, true);
 }
 
 file_t* getFile(char* filepath) {
@@ -808,10 +832,10 @@ file_t* getFile(char* filepath) {
         return (file_t*) 0;
     }
 
-    return getFileFromParent(parent, filepath + slash);
+    return getFileFromParent(parent, filepath + slash, true);
 }
 
-directory_t* getDirectoryFrom(directory_t* dir, char* path) {
+directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymbolic) {
 
     size_t slash;
     directory_t* parent = findParent(dir, path, &slash, false);
@@ -827,10 +851,10 @@ directory_t* getDirectoryFrom(directory_t* dir, char* path) {
 
     VERBOSE("getDirectory: Got parent %s\n", parent->fullpath);
 
-    return getDirectoryFromParent(parent, path + slash);
+    return getDirectoryFromParent(parent, path + slash, redirectSymbolic);
 }
 
-file_t* getFileFrom(directory_t* dir, char* filepath) {
+file_t* getFileFrom(directory_t* dir, char* filepath, bool redirectSymbolic) {
 
     size_t slash;
     directory_t* parent = findParent(dir, filepath, &slash, false);
@@ -839,7 +863,7 @@ file_t* getFileFrom(directory_t* dir, char* filepath) {
         return (file_t*) 0;
     }
 
-    return getFileFromParent(parent, filepath + slash);
+    return getFileFromParent(parent, filepath + slash, redirectSymbolic);
 }
 
 unsigned int oct2bin(unsigned char* str, int size) {

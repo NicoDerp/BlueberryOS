@@ -20,8 +20,13 @@ struct file;
 
 typedef enum {
     REGULAR_DIR,
-    SYMBOLIC_LINK
+    SYMBOLIC_DIR
 } dirtype_t;
+
+typedef enum {
+    REGULAR_FILE,
+    SYMBOLIC_FILE
+} filetype_t;
 
 typedef struct directory {
     char fullpath[MAX_FULL_PATH_LENGTH+1];
@@ -47,6 +52,11 @@ typedef struct file {
     uint32_t mode;
     struct directory* parent;
     size_t size;
+    filetype_t type;
+
+    // Only used when type is SYMBOLIC_LINK
+    struct file* link;
+
     char* content;
 } file_t;
 
@@ -104,8 +114,8 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end);
 directory_t* getDirectory(char* path);
 file_t* getFile(char* filepath);
 
-directory_t* getDirectoryFrom(directory_t* dir, char* path);
-file_t* getFileFrom(directory_t* dir, char* filepath);
+directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymbolic);
+file_t* getFileFrom(directory_t* dir, char* filepath, bool redirectSymbolic);
 
 directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode);
 directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode);

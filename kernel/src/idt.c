@@ -369,7 +369,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                directory_t* dir = getDirectoryFrom(process->cwdir, path);
+                directory_t* dir = getDirectoryFrom(process->cwdir, path, true);
                 if (dir) {
 
                     VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
