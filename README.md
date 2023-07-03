@@ -29,6 +29,7 @@ This is very in-development and just a hobby-project.
 - [x] Fancier terminal
 - [x] Shell
 - [ ] Memory allocator
+- [ ] USB?
 - [ ] Graphics manager
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit
