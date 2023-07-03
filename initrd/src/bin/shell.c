@@ -134,6 +134,7 @@ void main() {
 
 
     char cwd[512];
+    char user[256];
 
     while (true) {
 
@@ -141,7 +142,11 @@ void main() {
             printf("error, getcwd failed\n");
         }
 
-        printf("\e[a;0muser\e[0m:\e[9;0m%s\e[0m$ ", cwd);
+        if (getenv("USER", user, sizeof(user)) == -1) {
+            printf("error, getenv failed\n");
+        }
+
+        printf("\e[a;0m%s\e[0m:\e[9;0m%s\e[0m$ ", user, cwd);
 
         char c;
         size_t index = 0;

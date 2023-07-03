@@ -20,6 +20,10 @@ void initialize_tss(tss_t* tss);
 process_t processes[PROCESSES_MAX];
 uint32_t currentProcessID;
 
+user_t users[MAX_USERS];
+user_t* rootUser;
+user_t* currentUser;
+
 tss_t sys_tss;
 
 void tss_initialize() {
@@ -147,7 +151,7 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcess(file_t* file) {
+process_t* newProcess(file_t* file, bool root) {
 
     process_t* process;
     bool found = false;
@@ -216,6 +220,21 @@ process_t* newProcess(file_t* file) {
         ERROR("Failed to find root directory for process\n");
     }
 
+    if (!rootUser) {
+        FATAL("No root user!\n");
+        kabort();
+    }
+
+    if (!currentUser) {
+        FATAL("No current user!\n");
+        kabort();
+    }
+
+    if (root)
+        process->user = rootUser;
+    else
+        process->user = currentUser;
+
     process->initialized = true;
     process->overwritten = false;
     process->parent = (process_t*) 0;
@@ -224,12 +243,16 @@ process_t* newProcess(file_t* file) {
     strcpy(process->variables[0].value, "/bin;/usr/bin");
     process->variables[0].active = true;
 
+    strcpy(process->variables[1].key, "USER");
+    strcpy(process->variables[1].value, process->user->name);
+    process->variables[1].active = true;
+
     return process;
 }
 
-process_t* newProcessArgs(file_t* file, char* args[]) {
+process_t* newProcessArgs(file_t* file, char* args[], bool root) {
 
-    process_t* process = newProcess(file);
+    process_t* process = newProcess(file, root);
     setProcessArgs(process, args);
 
     return process;
@@ -629,6 +652,66 @@ void runCurrentProcess(void) {
     enter_usermode(process->eip, process->esp, process->regs);
 
     __builtin_unreachable();
+}
+
+void createUser(char* name, char* password, bool createHome, bool root) {
+
+    bool found = false;
+    size_t index;
+    for (index = 0; index < MAX_USERS; index++) {
+        if (!users[index].active) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        ERROR("Max users reached!\n");
+        return;
+    }
+
+    user_t* user = &users[index];
+
+    if (strlen(name) > MAX_USERNAME_LENGTH) {
+        ERROR("Username exceeds max length\n");
+        return;
+    }
+
+    if (strlen(password) > MAX_PASSWORD_LENGTH) {
+        ERROR("Password exceeds max length\n");
+        return;
+    }
+
+    strcpy(user->name, name);
+    strcpy(user->password, password);
+
+    user->root = root;
+    user->active = true;
+
+    if (root)
+        rootUser = user;
+    else
+        currentUser = user;
+
+    if (createHome) {
+        directory_t* homeDir = getDirectory("/home");
+        if (!homeDir) {
+            homeDir = createDirectory(&rootDir, "home", 0755);
+
+            if (!homeDir) {
+                FATAL("Failed to create /home directory\n");
+                kabort();
+            }
+        }
+
+        user->home = createDirectory(homeDir, name, 0755);
+        if (!user->home) {
+            FATAL("Failed to create /home/%s directory\n", name);
+        }
+
+    } else {
+        user->home = (directory_t*) 0;
+    }
 }
 
 env_variable_t* getEnvVariable(process_t* process, const char* key) {

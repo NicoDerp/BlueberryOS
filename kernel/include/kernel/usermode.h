@@ -31,6 +31,10 @@
 #define MAX_VARIABLE_KEY_LENGTH 32
 #define MAX_VARIABLE_VALUE_LENGTH 64
 
+#define MAX_USERS           4
+#define MAX_USERNAME_LENGTH 64
+#define MAX_PASSWORD_LENGTH 64
+
 
 typedef struct {
     uint32_t prev_tss; // The previous TSS - with hardware task switching these form a kind of backward linked list.
@@ -95,6 +99,14 @@ typedef struct {
     bool active;
 } env_variable_t;
 
+typedef struct {
+    char name[MAX_USERNAME_LENGTH+1];
+    char password[MAX_PASSWORD_LENGTH+1];
+    directory_t* home;
+    bool root;
+    bool active;
+} user_t;
+
 struct process;
 
 typedef struct process {
@@ -109,6 +121,7 @@ typedef struct process {
     pageframe_t physical_stack;
     file_t* file;
     directory_t* cwdir;
+    user_t* user;
     uint32_t indexInParent;
     uint32_t entryPoint;
     uint32_t esp;
@@ -124,6 +137,9 @@ typedef struct process {
 
 extern void flush_tss(void);
 
+extern user_t* rootUser;
+extern user_t* currentUser;
+
 void tss_initialize(void);
 //void install_tss(struct GDT* source);
 void install_tss(uint8_t* entryBytes);
@@ -133,7 +149,7 @@ void use_system_tss(void);
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 
-process_t* newProcessArgs(file_t* file, char* args[]);
+process_t* newProcessArgs(file_t* file, char* args[], bool root);
 void setProcessArgs(process_t* process, char* args[]);
 int overwriteArgs(process_t* process, char* filename, const char** args);
 
@@ -142,6 +158,8 @@ void runProcess(process_t* process);
 void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
+
+void createUser(char* name, char* password, bool createHome, bool root);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);

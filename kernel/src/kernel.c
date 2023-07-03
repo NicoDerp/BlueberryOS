@@ -313,11 +313,16 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
     }
 
+    /*
 #ifdef _VERBOSE
     displayDirectory(&rootDir, 0);
 #endif
+    */
 
-
+    printf("Setting up users ...       ");
+    createUser("root", "password123", false, true);
+    createUser("nico", "myuser345", true, false);
+    printf("\e[2;0m[OK]\e[0m\n");
 
     printf("\n%s\n", titleText);
 
@@ -332,7 +337,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         ERROR("Failed to load application /sbin/loop\n");
         for (;;) {}
     }
-    process_t* loop = newProcessArgs(file, args);
+    process_t* loop = newProcessArgs(file, args, true);
     (void) loop;
 
     file = getFile("/bin/shell");
@@ -341,7 +346,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         ERROR("Failed to load application /bin/shell\n");
         for (;;) {}
     }
-    process_t* process = newProcessArgs(file, args);
+    process_t* process = newProcessArgs(file, args, false);
     //printProcessInfo(process);
     (void) process;
 
