@@ -113,6 +113,9 @@ void kfree_frame(pageframe_t frame) {
         return;
     }
 
+    if ((frame_map[index >> 3] & (1 << (index & 0x7))) == 0) {
+        ERROR("Frame at 0x%x freed multiple times!\n", frame);
+    }
     frame_map[index >> 3] &= ~(1 << (index & 0x7));
 }
 
