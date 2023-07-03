@@ -31,6 +31,7 @@ This is very in-development and just a hobby-project.
 - [ ] Memory allocator
 - [ ] USB?
 - [ ] Graphics manager
+- [ ] Multiple CPU cores
 - [ ] Fully adapted cross-compiler
 - [ ] 64-bit
 - [ ] UEFI
