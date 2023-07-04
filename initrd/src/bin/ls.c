@@ -1,10 +1,12 @@
 
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <dirent.h>
-#include <sys/stat.h>
+#include <pwd.h>
 
 
 void ls(char* path, bool showHidden, bool list) {
@@ -15,7 +17,10 @@ void ls(char* path, bool showHidden, bool list) {
         exit(1);
     }
 
-    struct stat stat_struct;
+    struct passwd passwdStruct;
+    struct passwd* tempPwdPointer;
+    char passwdBuf[256];
+    struct stat statStruct;
     struct dirent* ent;
     bool empty = true;
     while ((ent = readdir(pdir)) != NULL) {
@@ -24,34 +29,39 @@ void ls(char* path, bool showHidden, bool list) {
             continue;
 
         if (list) {
-            if (lstat(ent->d_name, &stat_struct) == -1) {
+            if (lstat(ent->d_name, &statStruct) == -1) {
                 printf("lstat failed\n");
                 exit(1);
             }
 
             char sizeBuf[64];
-            itoa(stat_struct.st_size, sizeBuf, 10);
+            itoa(statStruct.st_size, sizeBuf, 10);
             int sizeLen = strlen(sizeBuf);
 
             char mode[] = "----------";
-            if (S_ISDIR(stat_struct.st_mode))
+            if (S_ISDIR(statStruct.st_mode))
                 mode[0] = 'd';
 
             for (int i = 0; i < 3; i++) {
-                if ((stat_struct.st_mode >> 3*i) & 1)
+                if ((statStruct.st_mode >> 3*i) & 1)
                     mode[6 - 3*i + 3] = 'x';
 
-                if ((stat_struct.st_mode >> 3*i) & 2)
+                if ((statStruct.st_mode >> 3*i) & 2)
                     mode[6 - 3*i + 2] = 'w';
 
-                if ((stat_struct.st_mode >> 3*i) & 4)
+                if ((statStruct.st_mode >> 3*i) & 4)
                     mode[6 - 3*i + 1] = 'r';
             }
             printf("%s", mode);
 
             for (int i = 0; i < (6-sizeLen); i++) { putchar(' '); }
 
-            printf("%s %d %d ", sizeBuf,  stat_struct.st_uid, stat_struct.st_gid);
+            if (getpwuid_r(statStruct.st_uid, &passwdStruct, passwdBuffer, sizeof(passwdBuffer), &tempPwdPointer) != 0) {
+                printf("getpwuid error\n");
+                continue;
+            }
+
+            printf("%s %s %d ", sizeBuf, passwdStruct.pw_name, statStruct.st_gid);
         }
 
         if (ent->d_type == DT_DIR)

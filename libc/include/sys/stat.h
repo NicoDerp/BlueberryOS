@@ -3,6 +3,7 @@
 #define _SYS_STAT_H 1
 
 #include <sys/cdefs.h>
+#include <sys/types.h>
 #include <stdint.h>
 
 struct stat {
@@ -10,8 +11,8 @@ struct stat {
     uint32_t st_ino;
     uint32_t st_mode;
     uint32_t st_nlink;
-    uint32_t st_uid;
-    uint32_t st_gid;
+    uid_t st_uid;
+    gid_t st_gid;
     uint32_t st_rdev;
     uint32_t st_size;
     uint32_t st_atime;
