@@ -114,6 +114,8 @@ typedef struct user {
     struct group* groups[MAX_SECONDARY_GROUPS];
     struct group* pgroup;
     directory_t* home;
+    directory_t* iwdir;
+    file_t* program;
     uint32_t uid;
     bool root;
     bool active;
@@ -140,7 +142,7 @@ typedef struct process {
     pageframe_t physical_stack;
     file_t* file;
     directory_t* cwdir;
-    user_t* user;
+    user_t* owner;
     uint32_t indexInParent;
     uint32_t entryPoint;
     uint32_t esp;
@@ -169,7 +171,7 @@ void use_system_tss(void);
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 
-process_t* newProcessArgs(file_t* file, char* args[], bool root);
+process_t* newProcessArgs(file_t* file, char* args[], user_t* user);
 void setProcessArgs(process_t* process, char* args[]);
 int overwriteArgs(process_t* process, char* filename, const char** args);
 
@@ -180,7 +182,10 @@ void switchProcess(void);
 void runCurrentProcess(void);
 
 group_t* createGroup(char* name);
-void createUser(char* name, char* password, bool createHome, bool root);
+user_t* createUser(char* name, char* password, bool createHome, bool root);
+
+user_t* getUserByUID(uint32_t uid);
+group_t* getGroupByGID(uint32_t gid);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);

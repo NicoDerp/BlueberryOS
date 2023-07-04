@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <pwd.h>
 
 
 extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
@@ -24,7 +25,6 @@ user_t users[MAX_USERS];
 group_t groups[MAX_GROUPS];
 
 user_t* rootUser = &users[0];
-user_t* currentUser;
 group_t* rootPGroup = &groups[0];
 
 tss_t sys_tss;
@@ -154,7 +154,7 @@ process_t* getCurrentProcess(void) {
     return &processes[currentProcessID];
 }
 
-process_t* newProcess(file_t* file, bool root) {
+process_t* newProcess(file_t* file, user_t* user) {
 
     process_t* process;
     bool found = false;
@@ -217,7 +217,8 @@ process_t* newProcess(file_t* file, bool root) {
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
-    process->cwdir = getDirectory("/");
+    process->cwdir = user->iwdir;
+    process->owner = user;
 
     if (!process->cwdir) {
         ERROR("Failed to find root directory for process\n");
@@ -228,15 +229,10 @@ process_t* newProcess(file_t* file, bool root) {
         kabort();
     }
 
-    if (!currentUser) {
+    if (!user) {
         FATAL("No current user!\n");
         kabort();
     }
-
-    if (root)
-        process->user = rootUser;
-    else
-        process->user = currentUser;
 
     process->initialized = true;
     process->overwritten = false;
@@ -247,15 +243,15 @@ process_t* newProcess(file_t* file, bool root) {
     process->variables[0].active = true;
 
     strcpy(process->variables[1].key, "USER");
-    strcpy(process->variables[1].value, process->user->name);
+    strcpy(process->variables[1].value, user->name);
     process->variables[1].active = true;
 
     return process;
 }
 
-process_t* newProcessArgs(file_t* file, char* args[], bool root) {
+process_t* newProcessArgs(file_t* file, char* args[], user_t* user) {
 
-    process_t* process = newProcess(file, root);
+    process_t* process = newProcess(file, user);
     setProcessArgs(process, args);
 
     return process;
@@ -692,7 +688,7 @@ group_t* createGroup(char* name) {
     return group;
 }
 
-void createUser(char* name, char* password, bool createHome, bool root) {
+user_t* createUser(char* name, char* password, bool createHome, bool root) {
 
     bool found = false;
     size_t index;
@@ -705,19 +701,19 @@ void createUser(char* name, char* password, bool createHome, bool root) {
 
     if (!found) {
         ERROR("Max users reached!\n");
-        return;
+        return (user_t*) 0;
     }
 
     user_t* user = &users[index];
 
     if (strlen(name) > MAX_USERNAME_LENGTH) {
         ERROR("Username exceeds max length\n");
-        return;
+        return (user_t*) 0;
     }
 
     if (strlen(password) > MAX_PASSWORD_LENGTH) {
         ERROR("Password exceeds max length\n");
-        return;
+        return (user_t*) 0;
     }
 
     strcpy(user->name, name);
@@ -727,6 +723,13 @@ void createUser(char* name, char* password, bool createHome, bool root) {
     user->pgroup = createGroup(name);
     user->uid = index;
     user->active = true;
+
+    file_t* program = getFile("/bin/shell");
+    if (!program) {
+        FATAL("Couldn't find /bin/shell as initial program for user\n");
+        kabort();
+    }
+    user->program = program;
 
     if (root) {
         if (user != &users[0]) {
@@ -738,8 +741,7 @@ void createUser(char* name, char* password, bool createHome, bool root) {
             FATAL("Root user is not first user!\n");
             kabort();
         }
-    } else
-        currentUser = user;
+    }
 
     if (createHome) {
         directory_t* homeDir = getDirectory("/home");
@@ -757,11 +759,74 @@ void createUser(char* name, char* password, bool createHome, bool root) {
             FATAL("Failed to create /home/%s directory\n", name);
             kabort();
         }
+        user->iwdir = user->home;
 
     } else {
         user->home = (directory_t*) 0;
+        user->iwdir = &rootDir;
     }
 
+    return user;
+}
+
+user_t* getUserByUID(uint32_t uid) {
+
+    for (size_t i = 0; i < MAX_USERS; i++) {
+        if (users[i].active && users[i].uid == uid)
+            return &users[i];
+    }
+
+    return (user_t*) 0;
+}
+
+group_t* getGroupByGID(uint32_t gid) {
+
+    for (size_t i = 0; i < MAX_GROUPS; i++) {
+        if (groups[i].active && groups[i].gid == gid)
+            return &groups[i];
+    }
+
+    return (group_t*) 0;
+}
+
+int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bufsize, struct passwd** result) {
+
+    *result = NULL;
+
+    // TODO error value
+    user_t* user = getUserByUID(uid);
+    if (!user) {
+        return 1;
+    }
+
+    if (strlen(user->name)+strlen(user->iwdir->fullpath)+strlen(user->program->fullpath)+3 > bufsize)
+        return 1;
+
+    /* pw_name */
+    pwd->pw_name = buffer;
+    strcpy(buffer, user->name);
+    size_t index = strlen(user->name) + 1;
+
+    /* pw_uid */
+    pwd->pw_uid = uid;
+
+    /* pw_gid */
+    if (user->pgroup)
+        pwd->pw_gid = user->pgroup->gid;
+    else
+        pwd->pw_gid = 0;
+
+    /* pw_dir */
+    pwd->pw_dir = buffer + index;
+    strcpy(buffer + index, user->iwdir->fullpath);
+    index += strlen(user->iwdir->fullpath) + 1;
+
+    /* pw_shell */
+    pwd->pw_shell = buffer + index;
+    strcpy(buffer + index, user->program->fullpath);
+    index += strlen(user->program->fullpath) + 1;
+
+    return 0;
 }
 
 env_variable_t* getEnvVariable(process_t* process, const char* key) {

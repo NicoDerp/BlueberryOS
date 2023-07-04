@@ -573,6 +573,30 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
+        case (SYS_getpwuid):
+            {
+                uint32_t uid = stack_state.ebx;
+                struct passwd* pwd = (struct passwd*) stack_state.ecx;
+                char* buffer = (char*) stack_state.edx;
+                uint32_t bufsize = stack_state.esi;
+                struct passwd** result = (struct passwd**) stack_state.edi;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = getPasswdStructR(uid, pwd, buffer, bufsize, result);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
         default:
             printf("Invalid syscall id '%d'\n", stack_state.eax);
     }

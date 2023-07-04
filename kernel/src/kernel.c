@@ -315,7 +315,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Setting up users         ... ");
     createUser("root", "password123", false, true);
-    createUser("nico", "myuser345", true, false);
+    user_t* currentUser = createUser("nico", "myuser345", true, false);
     printf("\e[2;0m[OK]\e[0m\n");
 
     /*
@@ -333,19 +333,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     // TODO only run when there are no other processes
     file = getFile("/sbin/loop");
     if (!file) {
-        ERROR("Failed to load application /sbin/loop\n");
-        for (;;) {}
+        FATAL("Failed to load system program /sbin/loop\n");
+        kabort();
     }
-    process_t* loop = newProcessArgs(file, args, true);
+    process_t* loop = newProcessArgs(file, args, rootUser);
     (void) loop;
 
-    file = getFile("/bin/shell");
-    //file = getFile("/bin/test2");
+    file = currentUser->program;
     if (!file) {
-        ERROR("Failed to load application /bin/shell\n");
-        for (;;) {}
+        FATAL("Failed to load initial user program %s\n", currentUser->program);
+        kabort();
     }
-    process_t* process = newProcessArgs(file, args, false);
+    process_t* process = newProcessArgs(file, args, currentUser);
     //printProcessInfo(process);
     (void) process;
 
@@ -355,7 +354,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     irq_clear_mask(IRQ_TIMER);
 
     // Skip waiting
-    //runProcess(loop);
     runProcess(process);
 
 

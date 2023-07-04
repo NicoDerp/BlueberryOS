@@ -34,6 +34,11 @@ void ls(char* path, bool showHidden, bool list) {
                 exit(1);
             }
 
+            if (getpwuid_r(statStruct.st_uid, &passwdStruct, passwdBuf, sizeof(passwdBuf), &tempPwdPointer) != 0) {
+                printf("getpwuid error\n");
+                continue;
+            }
+
             char sizeBuf[64];
             itoa(statStruct.st_size, sizeBuf, 10);
             int sizeLen = strlen(sizeBuf);
@@ -55,11 +60,6 @@ void ls(char* path, bool showHidden, bool list) {
             printf("%s", mode);
 
             for (int i = 0; i < (6-sizeLen); i++) { putchar(' '); }
-
-            if (getpwuid_r(statStruct.st_uid, &passwdStruct, passwdBuffer, sizeof(passwdBuffer), &tempPwdPointer) != 0) {
-                printf("getpwuid error\n");
-                continue;
-            }
 
             printf("%s %s %d ", sizeBuf, passwdStruct.pw_name, statStruct.st_gid);
         }
