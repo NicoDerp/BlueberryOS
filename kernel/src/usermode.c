@@ -21,8 +21,11 @@ process_t processes[PROCESSES_MAX];
 uint32_t currentProcessID;
 
 user_t users[MAX_USERS];
-user_t* rootUser;
+group_t groups[MAX_GROUPS];
+
+user_t* rootUser = &users[0];
 user_t* currentUser;
+group_t* rootPGroup = &groups[0];
 
 tss_t sys_tss;
 
@@ -311,6 +314,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
     if (!file) {
         return -1;
     }
+
+    //if (file.mode & )
 
     // Backup
     pagedirectory_t oldPD = process->pd;
@@ -654,6 +659,39 @@ void runCurrentProcess(void) {
     __builtin_unreachable();
 }
 
+group_t* createGroup(char* name) {
+
+    bool found = false;
+    size_t index;
+    for (index = 0; index < MAX_GROUPS; index++) {
+        if (!groups[index].active) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        FATAL("Max groups reached!\n");
+        kabort();
+        return (group_t*) 0;
+    }
+
+    group_t* group = &groups[index];
+
+    if (strlen(name) > MAX_GROUP_NAME_LENGTH) {
+        FATAL("Group name exceeds max length\n");
+        kabort();
+        return (group_t*) 0;
+    }
+
+    strcpy(group->name, name);
+    memset(group->users, 0, sizeof(user_t*)*MAX_GROUP_USERS);
+    group->gid = index;
+    group->active = true;
+
+    return group;
+}
+
 void createUser(char* name, char* password, bool createHome, bool root) {
 
     bool found = false;
@@ -686,17 +724,27 @@ void createUser(char* name, char* password, bool createHome, bool root) {
     strcpy(user->password, password);
 
     user->root = root;
+    user->pgroup = createGroup(name);
+    user->uid = index;
     user->active = true;
 
-    if (root)
-        rootUser = user;
-    else
+    if (root) {
+        if (user != &users[0]) {
+            FATAL("Root user is not first user!\n");
+            kabort();
+        }
+
+        if (rootUser->pgroup != &groups[0]) {
+            FATAL("Root user is not first user!\n");
+            kabort();
+        }
+    } else
         currentUser = user;
 
     if (createHome) {
         directory_t* homeDir = getDirectory("/home");
         if (!homeDir) {
-            homeDir = createDirectory(&rootDir, "home", 0755);
+            homeDir = createDirectory(&rootDir, "home", 0755, rootUser, rootUser->pgroup);
 
             if (!homeDir) {
                 FATAL("Failed to create /home directory\n");
@@ -704,14 +752,16 @@ void createUser(char* name, char* password, bool createHome, bool root) {
             }
         }
 
-        user->home = createDirectory(homeDir, name, 0755);
+        user->home = createDirectory(homeDir, name, 0755, user, user->pgroup);
         if (!user->home) {
             FATAL("Failed to create /home/%s directory\n", name);
+            kabort();
         }
 
     } else {
         user->home = (directory_t*) 0;
     }
+
 }
 
 env_variable_t* getEnvVariable(process_t* process, const char* key) {
@@ -1023,6 +1073,16 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
         if (!dir)
             return -1;
 
+        if (!dir->owner) {
+            FATAL("Directory doesn't have owner!\n");
+            kabort();
+        }
+
+        if (!dir->group) {
+            FATAL("Directory doesn't have group!\n");
+            kabort();
+        }
+
         memset(buf, 0, sizeof(struct stat));
         buf->st_mode = dir->mode | S_IFDIR;
         buf->st_blksize = FRAME_4KB;
@@ -1030,7 +1090,20 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
         // TODO if symbolic then length of path it points to
         buf->st_size = sizeof(directory_t);
 
+        buf->st_uid = dir->owner->uid;
+        buf->st_gid = dir->group->gid;
+
         return 0;
+    }
+
+    if (!file->owner) {
+        FATAL("File doesn't have owner!\n");
+        kabort();
+    }
+
+    if (!file->group) {
+        FATAL("File doesn't have group!\n");
+        kabort();
     }
 
     memset(buf, 0, sizeof(struct stat));
@@ -1039,6 +1112,9 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
 
     // TODO if symbolic then length of path it points to
     buf->st_size = file->size;
+
+    buf->st_uid = file->owner->uid;
+    buf->st_gid = file->group->gid;
 
     return 0;
 }

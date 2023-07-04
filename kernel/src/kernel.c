@@ -143,30 +143,30 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("\nStarting BlueberryOS\n");
 
-    printf("Settings up System TSS ... ");
+    printf("Settings up System TSS   ... ");
     tss_initialize();
     printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Setting up GDT ...         ");
+    printf("Setting up GDT           ... ");
     gdt_initialize();
     printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Flushing TSS ...           ");
+    printf("Flushing TSS             ... ");
     flush_tss();
     printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Setting up IDT ...         ");
+    printf("Setting up IDT           ... ");
     idt_initialize();
     printf("\e[2;0m[OK]\e[0m\n");
 
-    printf("Setting up Paging ...      ");
+    printf("Setting up Paging        ... ");
     paging_initialize();
     printf("\e[2;0m[OK]\e[0m\n");
 
     struct multiboot_tag_module modules[32];
     size_t moduleCount = 0;
 
-    printf("Setting up Kernel Stack ...");
+    printf("Setting up Kernel Stack  ... ");
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
@@ -292,7 +292,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     void* dest = (void*) modules[0].mod_end + FRAME_4KB;
     uint32_t sourceLen = (uint32_t) modules[0].mod_end - (uint32_t) modules[0].mod_start;
 
-    printf("Decompressing initrd ...   ");
+    printf("Decompressing initrd     ... ");
     int status = tinf_gzip_uncompress(dest, &destLen, (void*) modules[0].mod_start, sourceLen);
 
     if (status == TINF_BUF_ERROR) {
@@ -313,16 +313,15 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
     }
 
-    /*
-#ifdef _VERBOSE
-    displayDirectory(&rootDir, 0);
-#endif
-    */
-
-    printf("Setting up users ...       ");
+    printf("Setting up users         ... ");
     createUser("root", "password123", false, true);
     createUser("nico", "myuser345", true, false);
     printf("\e[2;0m[OK]\e[0m\n");
+
+    /*
+    displayDirectory(&rootDir, 0);
+    for (;;) {}
+    */
 
     printf("\n%s\n", titleText);
 

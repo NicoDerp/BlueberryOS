@@ -50,7 +50,7 @@ void ls(char* path, bool showHidden, bool list) {
 
             for (int i = 0; i < (6-sizeLen); i++) { putchar(' '); }
 
-            printf("%s ", sizeBuf);
+            printf("%s %d %d ", sizeBuf,  stat_struct.st_uid, stat_struct.st_gid);
         }
 
         if (ent->d_type == DT_DIR)

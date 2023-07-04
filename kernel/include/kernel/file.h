@@ -18,6 +18,9 @@
 struct directory;
 struct file;
 
+struct user;
+struct group;
+
 typedef enum {
     REGULAR_DIR,
     SYMBOLIC_DIR
@@ -38,6 +41,9 @@ typedef struct directory {
     struct directory* directories[MAX_DIRECTORIES];
     struct file* files[MAX_FILES];
 
+    struct user* owner;
+    struct group* group;
+
     uint32_t directoryCount;
     uint32_t fileCount;
     dirtype_t type;
@@ -51,6 +57,10 @@ typedef struct file {
     char name[MAX_NAME_LENGTH+1];
     uint32_t mode;
     struct directory* parent;
+
+    struct user* owner;
+    struct group* group;
+
     size_t size;
     filetype_t type;
 
@@ -117,8 +127,8 @@ file_t* getFile(char* filepath);
 directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymbolic);
 file_t* getFileFrom(directory_t* dir, char* filepath, bool redirectSymbolic);
 
-directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode);
-directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode);
+directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, struct user* owner, struct group* group);
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, struct user* owner, struct group* group);
 
 void displayDirectory(directory_t* dir, size_t space);
 

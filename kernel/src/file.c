@@ -3,6 +3,7 @@
 #include <kernel/memory.h>
 #include <kernel/paging.h>
 #include <kernel/errors.h>
+#include <kernel/usermode.h>
 #include <kernel/logging.h>
 
 #include <stdbool.h>
@@ -564,19 +565,20 @@ void parseDirectory(tar_header_t* header) {
 
     memcpy(directory->name, header->filename + slash, len);
     directory->name[len] = '\0';
-
     directory->mode = oct2bin(header->mode, 7);
+    directory->owner = rootUser;
+    directory->group = rootPGroup;
 
     // Create '.'
-    createSymbolicDirectory(directory, directory, ".", directory->mode);
+    createSymbolicDirectory(directory, directory, ".", directory->mode, rootUser, rootPGroup);
 
     // Create '..'
-    createSymbolicDirectory(directory, parent, "..", parent->mode);
+    createSymbolicDirectory(directory, parent, "..", parent->mode, rootUser, rootPGroup);
 
     VERBOSE("parseDirectory: end\n");
 }
 
-directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode) {
+directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, user_t* owner, group_t* group) {
 
     directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
@@ -606,11 +608,19 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode) {
     directory->name[len] = '\0';
     directory->mode = mode;
     directory->type = REGULAR_DIR;
+    directory->owner = owner;
+    directory->group = group;
+
+    // Create '.'
+    createSymbolicDirectory(directory, directory, ".", directory->mode, owner, group);
+
+    // Create '..'
+    createSymbolicDirectory(directory, parent, "..", parent->mode, parent->owner, parent->group);
 
     return directory;
 }
 
-directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode) {
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, user_t* owner, group_t* group) {
 
     directory_t* directory = allocateDirectory();
     memset(directory, 0, sizeof(directory_t));
@@ -642,6 +652,8 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
     directory->mode = mode;
     directory->type = SYMBOLIC_DIR;
     directory->link = link;
+    directory->owner = owner;
+    directory->group = group;
 
     return directory;
 }
@@ -701,6 +713,8 @@ void parseFile(tar_header_t* header) {
     file->mode = oct2bin(header->mode, 7);
     file->size = filesize;
     file->type = REGULAR_FILE;
+    file->owner = rootUser;
+    file->group = rootPGroup;
 
     // ceil(file->size / FRAME_4KB)
     //printf("Size is %d, looping %d times\n", filesize);
@@ -749,15 +763,16 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
     strcpy(rootDir.fullpath, "/");
     strcpy(rootDir.name, "/");
     rootDir.mode = oct2bin(header->mode, 7);
-
     rootDir.directoryCount = 0;
     rootDir.fileCount = 0;
+    rootDir.owner = rootUser;
+    rootDir.group = rootPGroup;
 
     // Create '.'
-    createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode);
+    createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode, rootUser, rootPGroup);
 
     // Create '..'
-    createSymbolicDirectory(&rootDir, &rootDir, "..", rootDir.mode);
+    createSymbolicDirectory(&rootDir, &rootDir, "..", rootDir.mode, rootUser, rootPGroup);
 
 
     while ((tar_start + offset) <= tar_end) {

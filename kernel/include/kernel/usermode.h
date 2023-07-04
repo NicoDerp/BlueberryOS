@@ -31,9 +31,18 @@
 #define MAX_VARIABLE_KEY_LENGTH 32
 #define MAX_VARIABLE_VALUE_LENGTH 64
 
-#define MAX_USERS           4
-#define MAX_USERNAME_LENGTH 64
-#define MAX_PASSWORD_LENGTH 64
+#define MAX_USERS             4
+#define MAX_USERNAME_LENGTH   64
+#define MAX_PASSWORD_LENGTH   64
+#define MAX_SECONDARY_GROUPS  4
+
+#define MAX_GROUPS            4
+#define MAX_GROUP_NAME_LENGTH 64
+#define MAX_GROUP_USERS       8
+
+
+struct user;
+struct group;
 
 
 typedef struct {
@@ -99,13 +108,23 @@ typedef struct {
     bool active;
 } env_variable_t;
 
-typedef struct {
+typedef struct user {
     char name[MAX_USERNAME_LENGTH+1];
     char password[MAX_PASSWORD_LENGTH+1];
+    struct group* groups[MAX_SECONDARY_GROUPS];
+    struct group* pgroup;
     directory_t* home;
+    uint32_t uid;
     bool root;
     bool active;
 } user_t;
+
+typedef struct group {
+    char name[MAX_GROUP_NAME_LENGTH+1];
+    struct user* users[MAX_GROUP_USERS];
+    uint32_t gid;
+    bool active;
+} group_t;
 
 struct process;
 
@@ -139,6 +158,7 @@ extern void flush_tss(void);
 
 extern user_t* rootUser;
 extern user_t* currentUser;
+extern group_t* rootPGroup;
 
 void tss_initialize(void);
 //void install_tss(struct GDT* source);
@@ -159,6 +179,7 @@ void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
 
+group_t* createGroup(char* name);
 void createUser(char* name, char* password, bool createHome, bool root);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
