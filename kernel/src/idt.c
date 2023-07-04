@@ -376,6 +376,16 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
                     process->cwdir = dir;
 
+                    env_variable_t* var = getEnvVariable(process, "PWD");
+                    if (var) {
+                        size_t dirlen = strlen(dir->fullpath);
+                        if (dirlen > MAX_VARIABLE_VALUE_LENGTH) {
+                            ERROR("Can't update enviroment variable PWD because dir string is too long!\n");
+                        } else {
+                            memcpy(var->value, dir->fullpath, dirlen+1);
+                        }
+                    }
+
                     // Indicate sucess
                     process->regs.eax = 0;
 

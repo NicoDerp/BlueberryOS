@@ -247,6 +247,10 @@ process_t* newProcess(file_t* file, user_t* user) {
     strcpy(process->variables[1].value, user->name);
     process->variables[1].active = true;
 
+    strcpy(process->variables[2].key, "PWD");
+    strcpy(process->variables[2].value, user->iwdir->fullpath);
+    process->variables[2].active = true;
+
     return process;
 }
 
