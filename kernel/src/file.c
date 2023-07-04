@@ -591,8 +591,8 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
     parent->directories[parent->directoryCount++] = directory;
     directory->parent = parent;
 
-
     size_t len = strlen(name);
+    size_t parentLen = strlen(parent->fullpath);
 
     // Ignore slash at the end
     if (name[len-1] == '/') {
@@ -604,8 +604,24 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
         for (;;) {}
     }
 
+    if (parentLen + len + 1 > MAX_FULL_PATH_LENGTH) {
+        ERROR("Fullpath is too large!\n");
+        for (;;) {}
+    }
+
     memcpy(directory->name, name, len);
     directory->name[len] = '\0';
+
+    memcpy(directory->fullpath, parent->fullpath, parentLen);
+
+    if (parent->fullpath[parentLen-1] != '/') {
+        directory->fullpath[parentLen] = '/';
+        parentLen++;
+    }
+
+    memcpy(directory->fullpath + parentLen, name, len);
+    directory->fullpath[parentLen + len] = '\0';
+
     directory->mode = mode;
     directory->type = REGULAR_DIR;
     directory->owner = owner;

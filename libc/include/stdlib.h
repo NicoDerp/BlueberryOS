@@ -16,7 +16,7 @@ char* uitoa(unsigned int, char*, int);
 
 __attribute__((__noreturn__)) void exit(int);
 
-int getenv(const char*, char*, size_t);
+int getenv_r(const char*, char*, size_t);
 int setenv(const char*, const char*, int);
 int unsetenv(const char*);
 

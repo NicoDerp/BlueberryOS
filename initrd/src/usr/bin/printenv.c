@@ -11,7 +11,7 @@ void main(int argc, char* argv[]) {
     }
 
     char buf[256];
-    if (getenv(argv[1], buf, sizeof(buf)) == 0) {
+    if (getenv_r(argv[1], buf, sizeof(buf)) == 0) {
         printf("%s\n", buf);
     }
 }

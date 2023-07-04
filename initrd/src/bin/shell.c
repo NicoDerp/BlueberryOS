@@ -142,7 +142,7 @@ void main() {
             printf("error, getcwd failed\n");
         }
 
-        if (getenv("USER", user, sizeof(user)) == -1) {
+        if (getenv_r("USER", user, sizeof(user)) == -1) {
             printf("error, getenv failed\n");
         }
 

@@ -17,6 +17,7 @@ void ls(char* path, bool showHidden, bool list) {
 
     struct stat stat_struct;
     struct dirent* ent;
+    bool empty = true;
     while ((ent = readdir(pdir)) != NULL) {
 
         if (strncmp(ent->d_name, ".", 1) == 0 && !showHidden)
@@ -62,9 +63,11 @@ void ls(char* path, bool showHidden, bool list) {
             putchar('\n');
         else
             printf("  ");
+
+        empty = false;
     }
 
-    if (!list)
+    if (!list && !empty)
         putchar('\n');
 
     if (closedir(pdir) == -1) {

@@ -42,7 +42,7 @@ FREEOBJS =\
 	stdlib/itoa.o \
 	stdlib/uitoa.o \
 	stdlib/exit.o \
-	stdlib/getenv.o \
+	stdlib/getenv_r.o \
 	stdlib/setenv.o \
 	stdlib/unsetenv.o \
 	string/memcmp.o \
