@@ -11,6 +11,9 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
+#include <pwd.h>
+#include <grp.h>
+
 
 #define PROCESS_MAX_NAME_LENGTH (256+64)
 #define PROCESSES_MAX 32
@@ -34,15 +37,15 @@
 #define MAX_USERS             4
 #define MAX_USERNAME_LENGTH   64
 #define MAX_PASSWORD_LENGTH   64
-#define MAX_SECONDARY_GROUPS  4
+#define MAX_USER_GROUPS  4
 
 #define MAX_GROUPS            4
 #define MAX_GROUP_NAME_LENGTH 64
-#define MAX_GROUP_USERS       8
+#define MAX_GROUP_MEMBERS     8
 
 
 struct user;
-struct group;
+struct kgroup;
 
 
 typedef struct {
@@ -111,8 +114,7 @@ typedef struct {
 typedef struct user {
     char name[MAX_USERNAME_LENGTH+1];
     char password[MAX_PASSWORD_LENGTH+1];
-    struct group* groups[MAX_SECONDARY_GROUPS];
-    struct group* pgroup;
+    struct kgroup* groups[MAX_USER_GROUPS];
     directory_t* home;
     directory_t* iwdir;
     file_t* program;
@@ -121,9 +123,9 @@ typedef struct user {
     bool active;
 } user_t;
 
-typedef struct group {
+typedef struct kgroup {
     char name[MAX_GROUP_NAME_LENGTH+1];
-    struct user* users[MAX_GROUP_USERS];
+    struct user* members[MAX_GROUP_MEMBERS];
     uint32_t gid;
     bool active;
 } group_t;
@@ -181,11 +183,15 @@ void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
 
+void addUserToGroup(user_t* user, group_t* group);
 group_t* createGroup(char* name);
 user_t* createUser(char* name, char* password, bool createHome, bool root);
 
 user_t* getUserByUID(uint32_t uid);
 group_t* getGroupByGID(uint32_t gid);
+
+int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bufsize, struct passwd** result);
+int getGroupStructR(uint32_t gid, struct group* grp, char* buffer, size_t bufsize, struct group** result);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);

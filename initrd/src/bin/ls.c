@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <dirent.h>
 #include <pwd.h>
+#include <grp.h>
 
 
 void ls(char* path, bool showHidden, bool list) {
@@ -20,6 +21,11 @@ void ls(char* path, bool showHidden, bool list) {
     struct passwd passwdStruct;
     struct passwd* tempPwdPointer;
     char passwdBuf[256];
+
+    struct group groupStruct;
+    struct group* tempGrpPointer;
+    char groupBuf[256];
+
     struct stat statStruct;
     struct dirent* ent;
     bool empty = true;
@@ -36,6 +42,11 @@ void ls(char* path, bool showHidden, bool list) {
 
             if (getpwuid_r(statStruct.st_uid, &passwdStruct, passwdBuf, sizeof(passwdBuf), &tempPwdPointer) != 0) {
                 printf("getpwuid error\n");
+                continue;
+            }
+
+            if (getgrgid_r(statStruct.st_gid, &groupStruct, groupBuf, sizeof(groupBuf), &tempGrpPointer) != 0) {
+                printf("getgrgid error\n");
                 continue;
             }
 
@@ -61,7 +72,7 @@ void ls(char* path, bool showHidden, bool list) {
 
             for (int i = 0; i < (6-sizeLen); i++) { putchar(' '); }
 
-            printf("%s %s %d ", sizeBuf, passwdStruct.pw_name, statStruct.st_gid);
+            printf("%s %s %s ", sizeBuf, passwdStruct.pw_name, groupStruct.gr_name);
         }
 
         if (ent->d_type == DT_DIR)

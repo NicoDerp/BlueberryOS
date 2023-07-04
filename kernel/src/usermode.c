@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 
 
 extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
@@ -655,6 +656,40 @@ void runCurrentProcess(void) {
     __builtin_unreachable();
 }
 
+void addUserToGroup(user_t* user, group_t* group) {
+
+    bool found = false;
+    size_t gindex;
+    for (gindex = 0; gindex < MAX_GROUP_MEMBERS; gindex++) {
+        if (!group->members[gindex]) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        ERROR("Max users for group %s reached!\n", group->name);
+        return;
+    }
+
+    found = false;
+    size_t uindex;
+    for (uindex = 0; uindex < MAX_USER_GROUPS; uindex++) {
+        if (!user->groups[uindex]) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        FATAL("Max groups for user %s reached!\n", user->name);
+        return;
+    }
+
+    group->members[gindex] = user;
+    user->groups[uindex] = group;
+}
+
 group_t* createGroup(char* name) {
 
     bool found = false;
@@ -681,7 +716,7 @@ group_t* createGroup(char* name) {
     }
 
     strcpy(group->name, name);
-    memset(group->users, 0, sizeof(user_t*)*MAX_GROUP_USERS);
+    memset(group->members, 0, sizeof(user_t*)*MAX_GROUP_MEMBERS);
     group->gid = index;
     group->active = true;
 
@@ -705,6 +740,7 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
     }
 
     user_t* user = &users[index];
+    memset(user, 0, sizeof(user));
 
     if (strlen(name) > MAX_USERNAME_LENGTH) {
         ERROR("Username exceeds max length\n");
@@ -719,8 +755,8 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
     strcpy(user->name, name);
     strcpy(user->password, password);
 
+    addUserToGroup(user, createGroup(name));
     user->root = root;
-    user->pgroup = createGroup(name);
     user->uid = index;
     user->active = true;
 
@@ -737,7 +773,7 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
             kabort();
         }
 
-        if (rootUser->pgroup != &groups[0]) {
+        if (rootUser->groups[0] != &groups[0]) {
             FATAL("Root user is not first user!\n");
             kabort();
         }
@@ -746,7 +782,7 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
     if (createHome) {
         directory_t* homeDir = getDirectory("/home");
         if (!homeDir) {
-            homeDir = createDirectory(&rootDir, "home", 0755, rootUser, rootUser->pgroup);
+            homeDir = createDirectory(&rootDir, "home", 0755, rootUser, rootUser->groups[0]);
 
             if (!homeDir) {
                 FATAL("Failed to create /home directory\n");
@@ -754,7 +790,7 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
             }
         }
 
-        user->home = createDirectory(homeDir, name, 0755, user, user->pgroup);
+        user->home = createDirectory(homeDir, name, 0755, user, user->groups[0]);
         if (!user->home) {
             FATAL("Failed to create /home/%s directory\n", name);
             kabort();
@@ -811,8 +847,8 @@ int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bu
     pwd->pw_uid = uid;
 
     /* pw_gid */
-    if (user->pgroup)
-        pwd->pw_gid = user->pgroup->gid;
+    if (user->groups[0])
+        pwd->pw_gid = user->groups[0]->gid;
     else
         pwd->pw_gid = 0;
 
@@ -825,6 +861,70 @@ int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bu
     pwd->pw_shell = buffer + index;
     strcpy(buffer + index, user->program->fullpath);
     index += strlen(user->program->fullpath) + 1;
+
+    *result = pwd;
+
+    return 0;
+}
+
+int getGroupStructR(uint32_t gid, struct group* grp, char* buffer, size_t bufsize, struct group** result) {
+
+    *result = NULL;
+
+    // TODO error value
+    group_t* group = getGroupByGID(gid);
+    if (!group) {
+        return 1;
+    }
+
+    size_t groupNameLen = strlen(group->name);
+    if (groupNameLen+1 > bufsize)
+        return 1;
+
+    /* gr_name */
+    grp->gr_name = buffer;
+    memcpy(buffer, group->name, groupNameLen);
+    size_t index = groupNameLen + 1;
+
+    /* gr_gid */
+    grp->gr_gid = gid;
+
+    /* gr_mem */
+    size_t oldIndex = index;
+
+    // First write strings
+    for (size_t i = 0; i < MAX_GROUP_MEMBERS; i++) {
+        if (group->members[i]) {
+            int memberLen = strlen(group->members[i]->name);
+            if (memberLen+index+1 > bufsize)
+                return 1;
+
+            memcpy(buffer + index, group->members[i]->name, memberLen+1);
+            index += memberLen + 1;
+        }
+    }
+
+    //index /= sizeof(char**);
+    size_t bakIndex = index;
+
+    // Then write array of those string pointers
+    for (size_t i = 0; i < MAX_GROUP_MEMBERS; i++) {
+        if (group->members[i]) {
+            size_t memberLen = strlen(group->members[i]->name);
+            if (index+1 > bufsize)
+                return 1;
+
+            ((char**) buffer)[index++] = buffer + oldIndex;
+            oldIndex += memberLen + 1;
+        }
+    }
+
+    // Zero terminate array
+    buffer[index] = '\0';
+
+    grp->gr_mem = &((char**) buffer)[bakIndex];
+
+    *result = grp;
 
     return 0;
 }
@@ -1139,12 +1239,12 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
             return -1;
 
         if (!dir->owner) {
-            FATAL("Directory doesn't have owner!\n");
+            FATAL("Directory %s at %s doesn't have owner!\n", dir->name, process->cwdir->name);
             kabort();
         }
 
         if (!dir->group) {
-            FATAL("Directory doesn't have group!\n");
+            FATAL("Directory %s at %s doesn't have group!\n", dir->name, process->cwdir->name);
             kabort();
         }
 

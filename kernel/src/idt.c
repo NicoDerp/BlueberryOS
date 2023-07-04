@@ -573,7 +573,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
-        case (SYS_getpwuid):
+        case (SYS_getpwuidr):
             {
                 uint32_t uid = stack_state.ebx;
                 struct passwd* pwd = (struct passwd*) stack_state.ecx;
@@ -587,6 +587,30 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 int status = getPasswdStructR(uid, pwd, buffer, bufsize, result);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_getgrgidr):
+            {
+                uint32_t gid = stack_state.ebx;
+                struct group* grp = (struct group*) stack_state.ecx;
+                char* buffer = (char*) stack_state.edx;
+                uint32_t bufsize = stack_state.esi;
+                struct group** result = (struct group**) stack_state.edi;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = getGroupStructR(gid, grp, buffer, bufsize, result);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;

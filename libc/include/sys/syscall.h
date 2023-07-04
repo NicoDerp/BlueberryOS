@@ -22,8 +22,8 @@
 #define SYS_lstat         15
 #define SYS_mmap          16
 #define SYS_munmap        17
-#define SYS_getpwuid      18
-#define SYS_getgrgid      19
+#define SYS_getpwuidr     18
+#define SYS_getgrgidr     19
 
 
 #endif

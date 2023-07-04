@@ -77,6 +77,7 @@ FREEOBJS =\
 	dirent/getdirentries.o \
 	dirent/closedir.o \
 	pwd/getpwuid_r.o \
+	grp/getgrgid_r.o \
 
 HOSTEDOBJS =
 
