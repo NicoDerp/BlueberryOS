@@ -183,6 +183,10 @@ void forkProcess(process_t* parent);
 void switchProcess(void);
 void runCurrentProcess(void);
 
+bool fileAccessAllowed(process_t* process, file_t* file, uint32_t check);
+bool directoryAccessAllowed(process_t* process, directory_t* dir, uint32_t check);
+
+bool userInGroup(user_t* user, group_t* group);
 void addUserToGroup(user_t* user, group_t* group);
 group_t* createGroup(char* name);
 user_t* createUser(char* name, char* password, bool createHome, bool root);

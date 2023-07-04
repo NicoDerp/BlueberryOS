@@ -371,9 +371,10 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 directory_t* dir = getDirectoryFrom(process->cwdir, path, true);
-                if (dir) {
+                if (dir && directoryAccessAllowed(process, dir, P_READ)) {
 
                     VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
+
                     process->cwdir = dir;
 
                     env_variable_t* var = getEnvVariable(process, "PWD");

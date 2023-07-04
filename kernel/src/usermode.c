@@ -316,7 +316,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
         return -1;
     }
 
-    //if (file.mode & )
+    if (!fileAccessAllowed(process, file, P_EXECUTE))
+        return -1;
 
     // Backup
     pagedirectory_t oldPD = process->pd;
@@ -589,6 +590,7 @@ void forkProcess(process_t* parent) {
     child->entryPoint = parent->entryPoint;
     child->cwdir = parent->cwdir;
     child->file = parent->file;
+    child->owner = parent->owner;
     child->indexInParent = index;
     parent->children[index] = child;
 
@@ -658,6 +660,70 @@ void runCurrentProcess(void) {
     enter_usermode(process->eip, process->esp, process->regs);
 
     __builtin_unreachable();
+}
+
+bool fileAccessAllowed(process_t* process, file_t* file, uint32_t check) {
+
+    uint32_t mode = file->mode;
+
+    /* Use 'user' permissions*/
+    if (file->owner->uid == process->owner->uid) {
+
+        mode >>= 6;
+    }
+
+    /* Use 'group' permissions */
+    else if (userInGroup(process->owner, file->group)) {
+
+        mode >>= 3;
+
+    }
+
+    /* Use 'other' permissions */
+    /*
+    else {
+
+    }
+    */
+
+    return (mode & check) > 0;
+}
+
+bool directoryAccessAllowed(process_t* process, directory_t* dir, uint32_t check) {
+
+    uint32_t mode = dir->mode;
+
+    /* Use 'user' permissions*/
+    if (dir->owner->uid == process->owner->uid) {
+
+        mode >>= 6;
+    }
+
+    /* Use 'group' permissions */
+    else if (userInGroup(process->owner, dir->group)) {
+
+        mode >>= 3;
+
+    }
+
+    /* Use 'other' permissions */
+    /*
+    else {
+
+    }
+    */
+
+    return (mode & check) > 0;
+}
+
+bool userInGroup(user_t* user, group_t* group) {
+
+    for (size_t i = 0; i < MAX_GROUP_MEMBERS; i++) {
+        if (group->members[i] && group->members[i]->uid == user->uid)
+            return true;
+    }
+
+    return false;
 }
 
 void addUserToGroup(user_t* user, group_t* group) {
@@ -1100,6 +1166,9 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
             return -1;
         }
 
+        if (!directoryAccessAllowed(process, dir, P_READ))
+            return -1;
+
         pfd->pointer = (uint32_t) dir;
     } else {
         file_t* file = getFileFrom(process->cwdir, pathname, true);
@@ -1108,6 +1177,9 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
         if (!file) {
             return -1;
         }
+
+        if (!fileAccessAllowed(process, file, P_READ))
+            return -1;
 
         pfd->pointer = (uint32_t) file;
     }
