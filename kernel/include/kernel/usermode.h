@@ -175,7 +175,7 @@ process_t* getCurrentProcess(void);
 
 process_t* newProcessArgs(file_t* file, char* args[], user_t* user);
 void setProcessArgs(process_t* process, char* args[]);
-int overwriteArgs(process_t* process, char* filename, const char** args);
+int overwriteArgs(process_t* process, char* filename, const char** args, int* errnum);
 
 void terminateProcess(process_t* process, int status);
 void runProcess(process_t* process);

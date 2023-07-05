@@ -147,6 +147,16 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     }
                 } else {
                     ERROR("Invalid fd '%d'\n", fd);
+
+                    process_t* process = getCurrentProcess();
+                    saveRegisters(process, &stack_state, &frame, esp);
+
+                    /* fd is not a valid file descriptor or is not open for writing. */
+                    process->regs.ecx = EBADF;
+
+                    // Since we have changed registers in current process we
+                    //  can't simply iret, but also load registers
+                    runCurrentProcess();
                 }
             }
 
@@ -179,7 +189,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 int errnum = 0;
                 int status = openProcessFile(process, pathname, flags, &errnum);
                 process->regs.eax = status;
-                process->regs.ebx = errnum;
+                process->regs.ecx = errnum;
 
                 // Since we have changed registers in current process we
                 //  can't simply iret, but also load registers
@@ -197,7 +207,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     process->state = BLOCKED_KEYBOARD;
 
                     process->blocked_regs.eax = stack_state.eax;
-                    process->blocked_regs.ebx = stack_state.ebx;
+                    process->blocked_regs.ecx = stack_state.ebx;
                     process->blocked_regs.ecx = stack_state.ecx;
                     process->blocked_regs.edx = stack_state.edx;
                     process->blocked_regs.ebp = stack_state.ebp;
@@ -286,7 +296,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 process_t* process = getCurrentProcess();
 
                 process->blocked_regs.eax = stack_state.eax;
-                process->blocked_regs.ebx = stack_state.ebx;
+                process->blocked_regs.ecx = stack_state.ebx;
                 process->blocked_regs.ecx = stack_state.ecx;
                 process->blocked_regs.edx = stack_state.edx;
                 process->blocked_regs.ebp = stack_state.ebp;
@@ -314,14 +324,12 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers incase overwriteArgs fails
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                int result = overwriteArgs(process, file, argv);
+                int errnum = 0;
+                int result = overwriteArgs(process, file, argv, &errnum);
 
-                if (result == -1) {
-
-                    // Indicate error
-                    process->regs.eax = -1;
-
-                }
+                // Indicate error
+                process->regs.eax = result;
+                process->regs.ecx = errnum;
 
                 // Since we have changed entire process then we need
                 //  to reload those changes
@@ -343,16 +351,27 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Null character included
                 size_t len = strlen(process->cwdir->fullpath) + 1;
 
-                if (len > size) {
-
+                if (buf == NULL || size == 0) {
                     // Indicate error
                     process->regs.eax = 0;
+
+                    /* The size argument is zero and buf is not a null pointer. */
+                    /* buf is NULL */
+                    process->regs.ecx = EINVAL;
+                }
+
+                if (len > size) {
+                    // Indicate error
+                    process->regs.eax = 0;
+                    /* The size argument is less than the length of the absolute pathname of the working directory. */
+                    process->regs.ecx = ERANGE;
 
                 } else {
                     memcpy(buf, process->cwdir->fullpath, len);
 
                     // Indicate sucess
                     process->regs.eax = (uint32_t) buf;
+                    process->regs.ecx = 0;
                 }
 
                 // Since we changed registers we need to reload those
@@ -374,24 +393,32 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 directory_t* dir = getDirectoryFrom(process->cwdir, path, true);
-                if (dir && directoryAccessAllowed(process, dir, P_READ)) {
+                if (dir) {
 
-                    VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
+                    if (!directoryAccessAllowed(process, dir, P_READ)) {
+                        // Indicate error
+                        process->regs.eax = -1;
+                        process->regs.ecx = ENOENT;
+                    } else {
+                        VERBOSE("SYS_chdir: Got directory %s\n", dir->fullpath);
 
-                    process->cwdir = dir;
+                        process->cwdir = dir;
 
-                    env_variable_t* var = getEnvVariable(process, "PWD");
-                    if (var) {
-                        size_t dirlen = strlen(dir->fullpath);
-                        if (dirlen > MAX_VARIABLE_VALUE_LENGTH) {
-                            ERROR("Can't update enviroment variable PWD because dir string is too long!\n");
-                        } else {
-                            memcpy(var->value, dir->fullpath, dirlen+1);
+                        env_variable_t* var = getEnvVariable(process, "PWD");
+                        if (var) {
+                            size_t dirlen = strlen(dir->fullpath);
+                            if (dirlen > MAX_VARIABLE_VALUE_LENGTH) {
+                                ERROR("Can't update enviroment variable PWD because dir string is too long!\n");
+                            } else {
+                                memcpy(var->value, dir->fullpath, dirlen+1);
+                            }
                         }
+
+                        // Indicate sucess
+                        process->regs.eax = 0;
+                        process->regs.ecx = 0;
                     }
 
-                    // Indicate sucess
-                    process->regs.eax = 0;
 
                 } else {
 
@@ -399,7 +426,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                     // Indicate error
                     process->regs.eax = -1;
-                    process->regs.ebx = ENOENT;
+                    process->regs.ecx = ENOENT;
                 }
 
                 // Since we changed registers we need to reload those
@@ -646,7 +673,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 // Set errno
-                process->regs.ebx = ENOSYS;
+                process->regs.ecx = ENOSYS;
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();

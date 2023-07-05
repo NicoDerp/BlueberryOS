@@ -6,9 +6,9 @@ syscalla0:
     mov eax, [esp+4]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
     ret
 
@@ -22,9 +22,9 @@ syscalla1:
     mov ebx, [edi]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop ebx
@@ -42,9 +42,9 @@ syscalla2:
     mov ecx, [edi+4]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop ebx
@@ -64,9 +64,9 @@ syscalla3:
     mov edx, [edi+8]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     ;pop edi
@@ -88,9 +88,9 @@ syscalla4:
     mov esi, [edi+8]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop esi
@@ -109,9 +109,9 @@ syscall0:
     mov eax, [esp+4]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     ret
@@ -124,9 +124,9 @@ syscall1:
     mov ebx, [esp+12]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop ebx
@@ -141,9 +141,9 @@ syscall2:
     mov ecx, [esp+16]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop ebx
@@ -160,9 +160,9 @@ syscall3:
     mov edx, [esp+20]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     ;pop edi
@@ -181,9 +181,9 @@ syscall4:
     mov esi, [esp+28]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop esi
@@ -204,9 +204,9 @@ syscall5:
     mov edi, [esp+36]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop edi
@@ -230,9 +230,9 @@ syscall6:
     mov ebp, [esp+44]
     int 48
 
-    test ebx, ebx
+    test ecx, ecx
     jz .skip
-    mov [__errno], ebx
+    mov [__errno], ecx
 .skip:
 
     pop ebp

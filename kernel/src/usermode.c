@@ -308,17 +308,31 @@ void setProcessArgs(process_t* process, char* args[]) {
     VERBOSE("setProcessArgs: Pushing argCount as %d\n", argCount);
 }
 
-int overwriteArgs(process_t* process, char* filename, const char** args) {
+int overwriteArgs(process_t* process, char* filename, const char** args, int* errnum) {
 
     VERBOSE("overwriteArgs: Overwriting process %d:%s with %s\n", process->id, process->name, filename);
 
     file_t* file = getFileWEnv(process, filename);
     if (!file) {
+        /* The file pathname or a script or ELF interpreter does not exist. */
+        *errnum = ENOENT;
         return -1;
     }
 
-    if (!fileAccessAllowed(process, file, P_EXECUTE))
+    if (!fileAccessAllowed(process, file, P_EXECUTE)) {
+        /* Execute permission is denied for the file or a script or ELF interpreter. */
+        *errnum = EACCES;
         return -1;
+    }
+
+    size_t len = strlen(file->fullpath);
+    if (len > PROCESS_MAX_NAME_LENGTH) {
+        ERROR("Max process name reached!\n");
+        /* Insufficient kernel memory was available */
+        *errnum = ENOMEM;
+        return -1;
+    }
+
 
     // Backup
     pagedirectory_t oldPD = process->pd;
@@ -329,12 +343,6 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
 
     memset(&process->pfds, 0, sizeof(pfd_t) * MAX_FILE_DESCRIPTORS);
     memset(&process->regs, 0, sizeof(regs_t));
-
-    size_t len = strlen(file->fullpath);
-    if (len > PROCESS_MAX_NAME_LENGTH) {
-        ERROR("Max process name reached!\n");
-        len = PROCESS_MAX_NAME_LENGTH;
-    }
 
     memcpy(process->name, file->fullpath, len);
     process->name[len] = '\0';
@@ -397,6 +405,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args) {
         size_t len = strlen(args[i]);
         if (len > MAX_ARG_LENGTH) {
             ERROR("Argument is over max length\n");
+            /* The total number of bytes in the environment (envp) and argument list (argv) is too large. */
+            *errnum = E2BIG;
             for (;;) {}
         }
 

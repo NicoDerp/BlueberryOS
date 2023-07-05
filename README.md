@@ -79,7 +79,11 @@ Download from [https://wiki.osdev.org/GCC_Cross-Compiler](https://wiki.osdev.org
 ### Syscalls
 
 Instead of the conventional `int $80` for linux-based operating systems, this os uses the interrupt `$30` or decimal `48`.
+Return values of syscalls are returned in register `eax`, and the errno is returned in register `ecx`. The rest of the registers are saved.
 
+### Libc
+
+Is pretty POSIX compliant, with a lot of functions implemented.
 
 ## License
 
