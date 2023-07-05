@@ -5,11 +5,12 @@
 #include <kernel/tty.h>
 #include <kernel/usermode.h>
 
-#include <unistd.h>
+#include <asm-generic/errno-values.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include <asm-generic/errno-values.h>
+#include <shadow.h>
+#include <unistd.h>
 
 #include <string.h>
 #include <stdbool.h>
@@ -632,6 +633,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
+                process->regs.ecx = status;
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();
@@ -656,6 +658,48 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
+                process->regs.ecx = status;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_getuid):
+            {
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                // Return uid
+                process->regs.eax = process->owner->uid;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_getspnamr):
+            {
+                char* name = (char*) stack_state.ebx;
+                struct spwd* spbuf = (struct spwd*) stack_state.ecx;
+                char* buffer = (char*) stack_state.edx;
+                uint32_t bufsize = stack_state.esi;
+                struct spwd** result = (struct spwd**) stack_state.edi;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = getSpwdStructR(name, spbuf, buffer, bufsize, result);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+                process->regs.ecx = status;
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();
@@ -665,7 +709,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         default:
             {
-                printf("Invalid syscall id '%d'\n", stack_state.eax);
+                ERROR("Invalid syscall id '%d'\n", stack_state.eax);
 
                 process_t* process = getCurrentProcess();
 

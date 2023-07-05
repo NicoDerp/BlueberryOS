@@ -4,6 +4,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/syscall.h>  /* Definition of SYS_* constants */
+#include <sys/types.h>
 
 #include <stddef.h>
 
@@ -27,6 +28,8 @@ int execvp(const char* file, char* const argv[]);
 char* getcwd(char* buf, size_t size);
 int chdir(const char* path);
 int close(int fd);
+
+uid_t getuid(void);
 
 #ifdef __cplusplus
 }

@@ -24,6 +24,8 @@
 #define SYS_munmap        17
 #define SYS_getpwuidr     18
 #define SYS_getgrgidr     19
+#define SYS_getuid        20
+#define SYS_getspnamr     21
 
 
 #endif

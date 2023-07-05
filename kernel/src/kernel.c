@@ -314,8 +314,8 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
 
     printf("Setting up users         ... ");
-    createUser("root", "password123", false, true);
-    user_t* currentUser = createUser("nico", "myuser345", true, false);
+    createUser("root", "root", false, true);
+    user_t* currentUser = createUser("nico", "password123", true, false);
     printf("\e[2;0m[OK]\e[0m\n");
 
     /*

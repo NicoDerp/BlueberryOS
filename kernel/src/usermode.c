@@ -6,13 +6,14 @@
 #include <kernel/logging.h>
 #include <kernel/errors.h>
 
+#include <asm-generic/errno-values.h>
+#include <shadow.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
-#include <asm-generic/errno-values.h>
 
 
 extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
@@ -284,6 +285,9 @@ void setProcessArgs(process_t* process, char* args[]) {
         strPointers[i] = processPushStr(process, args[i]);
     }
 
+    // argv must be zero-terminated
+    processPush(process, 0);
+
     // Push string pointers
     for (int i = 0; i < argCount; i++) {
         int j = argCount - i - 1;
@@ -295,9 +299,6 @@ void setProcessArgs(process_t* process, char* args[]) {
     }
 
     uint32_t esp = process->esp;
-
-    // argv must be zero-terminated
-    processPush(process, 0);
 
     // argv
     processPush(process, esp);
@@ -896,6 +897,16 @@ user_t* getUserByUID(uint32_t uid) {
     return (user_t*) 0;
 }
 
+user_t* getUserByName(char* name) {
+
+    for (size_t i = 0; i < MAX_USERS; i++) {
+        if (users[i].active && strcmp(users[i].name, name) == 0)
+            return &users[i];
+    }
+
+    return (user_t*) 0;
+}
+
 group_t* getGroupByGID(uint32_t gid) {
 
     for (size_t i = 0; i < MAX_GROUPS; i++) {
@@ -913,11 +924,14 @@ int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bu
     // TODO error value
     user_t* user = getUserByUID(uid);
     if (!user) {
-        return 1;
+        /* The user profile associated with the UID was not found. */
+        return ENOENT;
     }
 
-    if (strlen(user->name)+strlen(user->iwdir->fullpath)+strlen(user->program->fullpath)+3 > bufsize)
-        return 1;
+    if (strlen(user->name)+strlen(user->iwdir->fullpath)+strlen(user->program->fullpath)+3 > bufsize) {
+        /* Insufficient storage was supplied through buffer and bufsize to contain the data to be referenced by the resulting group structure. */
+        return ERANGE;
+    }
 
     /* pw_name */
     pwd->pw_name = buffer;
@@ -1006,6 +1020,47 @@ int getGroupStructR(uint32_t gid, struct group* grp, char* buffer, size_t bufsiz
     grp->gr_mem = &((char**) buffer)[bakIndex];
 
     *result = grp;
+
+    return 0;
+}
+
+int getSpwdStructR(char* name, struct spwd* spw, char* buffer, uint32_t bufsize, struct spwd** result) {
+
+    *result = NULL;
+
+    // TODO error value
+    user_t* user = getUserByName(name);
+    if (!user) {
+        /* The user profile associated with the name was not found. */
+        /* Not specified in linux man page! */
+        return ENOENT;
+    }
+
+    size_t userNameLen = strlen(user->name);
+    size_t userPassLen = strlen(user->password);
+    if (userNameLen+userPassLen+2 > bufsize) {
+        /* Supplied buffer is too small. */
+        return ERANGE;
+    }
+
+    /* sp_namp */
+    spw->sp_namp = buffer;
+    memcpy(buffer, user->name, userNameLen+1);
+    size_t index = userNameLen + 1;
+
+    /* sp_pwdp */
+    spw->sp_pwdp = buffer + index;
+    memcpy(buffer + index, user->password, userPassLen);
+    index += userPassLen + 1;
+
+    spw->sp_min = 0;
+    spw->sp_max = 0;
+    spw->sp_warn = 0;
+    spw->sp_inact = 0;
+    spw->sp_expire = 0;
+    spw->sp_flag = 0;
+
+    *result = spw;
 
     return 0;
 }

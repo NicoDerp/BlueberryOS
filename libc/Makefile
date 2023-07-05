@@ -67,6 +67,7 @@ FREEOBJS =\
 	unistd/getcwd.o \
 	unistd/chdir.o \
 	unistd/close.o \
+	unistd/getuid.o \
 	fcntl/open.o \
 	sys/wait/wait.o \
 	sys/stat/stat.o \
@@ -80,6 +81,7 @@ FREEOBJS =\
 	pwd/getpwuid_r.o \
 	grp/getgrgid_r.o \
 	errno/__errno_location.o \
+	shadow/getspnam_r.o \
 
 HOSTEDOBJS =
 

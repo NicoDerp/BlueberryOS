@@ -10,6 +10,8 @@ extern int syscalla1(int, ...);
 extern int syscalla2(int, ...);
 extern int syscalla3(int, ...);
 extern int syscalla4(int, ...);
+extern int syscalla5(int, ...);
+extern int syscalla6(int, ...);
 
 typedef int (*function_t)(int, ...);
 function_t lookup[] = {
@@ -27,6 +29,13 @@ function_t lookup[] = {
     syscalla3, /* SYS_getenv        */
     syscalla3, /* SYS_setenv        */
     syscalla4, /* SYS_getdirentries */
+    syscalla2, /* SYS_stat          */
+    syscalla2, /* SYS_lstat         */
+    syscalla6, /* SYS_mmap          */
+    syscalla2, /* SYS_munmap        */
+    syscalla5, /* SYS_getpwuidr     */
+    syscalla5, /* SYS_getgrgidr     */
+    syscalla0, /* SYS_getuid        */
 };
 
 

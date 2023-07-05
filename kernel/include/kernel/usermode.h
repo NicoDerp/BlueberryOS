@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 #include <stdint.h>
+#include <shadow.h>
 
 #include <pwd.h>
 #include <grp.h>
@@ -192,10 +193,12 @@ group_t* createGroup(char* name);
 user_t* createUser(char* name, char* password, bool createHome, bool root);
 
 user_t* getUserByUID(uint32_t uid);
+user_t* getUserByName(char* name);
 group_t* getGroupByGID(uint32_t gid);
 
 int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bufsize, struct passwd** result);
 int getGroupStructR(uint32_t gid, struct group* grp, char* buffer, size_t bufsize, struct group** result);
+int getSpwdStructR(char* name, struct spwd* spw, char* buffer, uint32_t bufsize, struct spwd** result);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);
