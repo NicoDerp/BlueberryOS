@@ -203,7 +203,7 @@ int unsetEnvVariable(process_t* process, const char* key);
 file_t* getFileWEnv(process_t* process, char* path);
 
 int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd);
-int openProcessFile(process_t* process, char* pathname, int flags);
+int openProcessFile(process_t* process, char* pathname, int flags, int* errnum);
 int closeProcessFd(process_t* process, unsigned int fd);
 pfd_t* getProcessPfd(process_t* process, unsigned int fd);
 

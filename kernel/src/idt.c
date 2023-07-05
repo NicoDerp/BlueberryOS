@@ -9,6 +9,7 @@
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <asm-generic/errno-values.h>
 
 #include <string.h>
 #include <stdbool.h>
@@ -56,7 +57,7 @@ typedef struct {
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
-void saveRegisters(process_t* process, stack_state_t* stack_state, interrupt_frame_t* frame, unsigned int esp) {
+inline void saveRegisters(process_t* process, stack_state_t* stack_state, interrupt_frame_t* frame, unsigned int esp) {
 
     process->regs.eax = stack_state->eax;
     process->regs.ebx = stack_state->ebx;
@@ -175,8 +176,10 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                int status = openProcessFile(process, pathname, flags);
+                int errnum = 0;
+                int status = openProcessFile(process, pathname, flags, &errnum);
                 process->regs.eax = status;
+                process->regs.ebx = errnum;
 
                 // Since we have changed registers in current process we
                 //  can't simply iret, but also load registers
@@ -396,6 +399,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                     // Indicate error
                     process->regs.eax = -1;
+                    process->regs.ebx = ENOENT;
                 }
 
                 // Since we changed registers we need to reload those
@@ -633,7 +637,20 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
             break;
 
         default:
-            printf("Invalid syscall id '%d'\n", stack_state.eax);
+            {
+                printf("Invalid syscall id '%d'\n", stack_state.eax);
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                // Set errno
+                process->regs.ebx = ENOSYS;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
     }
 }
 

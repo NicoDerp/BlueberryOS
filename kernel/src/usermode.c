@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#include <asm-generic/errno-values.h>
 
 
 extern __attribute__((noreturn)) void enter_usermode(uint32_t addr, uint32_t stack_ptr, regs_t regs);
@@ -1133,10 +1134,11 @@ file_t* getFileWEnv(process_t* process, char* path) {
     return (file_t*) 0;
 }
 
-int openProcessFile(process_t* process, char* pathname, int flags) {
+int openProcessFile(process_t* process, char* pathname, int flags, int* errnum) {
 
     if (!(flags & O_RDONLY)) {
         ERROR("Flags are incorrect\n");
+        *errnum = EINVAL;
         return -1;
     }
 
@@ -1152,10 +1154,13 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
 
     if (!found) {
         ERROR("process %d:%s has reached max pfds\n", process->id, process->name);
+        *errnum = ENOMEM;
         return -1;
     }
 
     pfd_t* pfd = &process->pfds[index];
+
+    // TODO EISDIR: Is a directory
 
     // Doesn't use PATH
     if (flags & O_DIRECTORY) {
@@ -1163,11 +1168,14 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
 
         // TODO O_CREAT
         if (!dir) {
+            *errnum = ENOENT;
             return -1;
         }
 
-        if (!directoryAccessAllowed(process, dir, P_READ))
+        if (!directoryAccessAllowed(process, dir, P_READ)) {
+            *errnum = EACCES;
             return -1;
+        }
 
         pfd->pointer = (uint32_t) dir;
     } else {
@@ -1175,11 +1183,14 @@ int openProcessFile(process_t* process, char* pathname, int flags) {
 
         // TODO O_CREAT
         if (!file) {
+            *errnum = ENOENT;
             return -1;
         }
 
-        if (!fileAccessAllowed(process, file, P_READ))
+        if (!fileAccessAllowed(process, file, P_READ)) {
+            *errnum = EACCES;
             return -1;
+        }
 
         pfd->pointer = (uint32_t) file;
     }

@@ -1,8 +1,15 @@
 
+extern __errno
+
 global syscalla0
 syscalla0:
     mov eax, [esp+4]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
     ret
 
 global syscalla1
@@ -14,6 +21,11 @@ syscalla1:
     mov edi, [esp+8+2*4]
     mov ebx, [edi]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop ebx
     pop edi
@@ -29,6 +41,11 @@ syscalla2:
     mov ebx, [edi+0]
     mov ecx, [edi+4]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop ebx
     pop edi
@@ -46,6 +63,11 @@ syscalla3:
     mov ecx, [edi+4]
     mov edx, [edi+8]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     ;pop edi
     pop ebx
@@ -66,6 +88,11 @@ syscalla4:
     mov esi, [edi+8]
     int 48
 
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
+
     pop esi
     pop ebx
     pop edi
@@ -81,6 +108,12 @@ global syscall0
 syscall0:
     mov eax, [esp+4]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
+
     ret
 
 global syscall1
@@ -90,6 +123,11 @@ syscall1:
     mov eax, [esp+8]
     mov ebx, [esp+12]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop ebx
     ret
@@ -102,6 +140,11 @@ syscall2:
     mov ebx, [esp+12]
     mov ecx, [esp+16]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop ebx
     ret
@@ -116,6 +159,11 @@ syscall3:
     mov ecx, [esp+16]
     mov edx, [esp+20]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     ;pop edi
     pop ebx
@@ -132,6 +180,11 @@ syscall4:
     mov edx, [esp+24]
     mov esi, [esp+28]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop esi
     pop ebx
@@ -150,6 +203,11 @@ syscall5:
     mov esi, [esp+32]
     mov edi, [esp+36]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop edi
     pop esi
@@ -171,6 +229,11 @@ syscall6:
     mov edi, [esp+40]
     mov ebp, [esp+44]
     int 48
+
+    test ebx, ebx
+    jz .skip
+    mov [__errno], ebx
+.skip:
 
     pop ebp
     pop edi

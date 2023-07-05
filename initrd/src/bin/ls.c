@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <dirent.h>
+#include <errno.h>
 #include <pwd.h>
 #include <grp.h>
 
@@ -14,7 +15,8 @@ void ls(char* path, bool showHidden, bool list) {
 
     DIR* pdir = opendir(path);
     if (pdir == NULL) {
-        printf("ls: cannot access '%s': No such directory\n", path);
+        int backup = errno;
+        printf("ls: cannot access '%s': %s\n", path, strerror(backup));
         exit(1);
     }
 

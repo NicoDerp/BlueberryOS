@@ -56,6 +56,7 @@ FREEOBJS =\
 	string/strncpy.o \
 	string/strtok.o \
 	string/strchr.o \
+	string/strerror.o \
 	unistd/syscall.o \
 	unistd/syscall_asm.o \
 	unistd/write.o \
@@ -78,6 +79,7 @@ FREEOBJS =\
 	dirent/closedir.o \
 	pwd/getpwuid_r.o \
 	grp/getgrgid_r.o \
+	errno/__errno_location.o \
 
 HOSTEDOBJS =
 

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -18,17 +19,18 @@ void execArgs(char** args) {
     pid_t pid = fork();
 
     if (pid == -1) {
-        printf("[ERROR] Fork error!\n");
+        int backup = errno;
+        printf("shell: fork error: %s\n", strerror(backup));
     } else if (pid == 0) {
         if (execvp(args[0], args) == -1) {
             printf("%s: command not found\n", args[0]);
+            exit(1);
         }
 
         exit(0);
     } else {
         int status;
         wait(&status);
-
     }
 }
 

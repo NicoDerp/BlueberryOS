@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -38,7 +39,8 @@ void main(int argc, char** argv) {
 
     int fd = open(argv[1], O_RDONLY);
     if (fd == -1) {
-        printf("%s: %s: No such file or directory\n", argv[0], argv[1]);
+        int backup = errno;
+        printf("%s: %s: %s\n", argv[0], argv[1], strerror(backup));
         exit(1);
     }
 

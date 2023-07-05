@@ -26,6 +26,8 @@ char* strncpy(char*, const char*, size_t);
 char* strtok(char*, const char*);
 char* strchr(const char*, int);
 
+char* strerror(int errnum);
+
 #ifdef __cplusplus
 }
 #endif
