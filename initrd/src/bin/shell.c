@@ -71,7 +71,8 @@ void cmdCd(unsigned int argCount, char** parsedArgs) {
 
         int status = chdir(parsedArgs[1]);
         if (status == -1) {
-            printf("error: chdir failed\n");
+            int backup = errno;
+            printf("cd: %s: %s\n", parsedArgs[1], strerror(backup));
         }
 
     }
