@@ -245,13 +245,11 @@ process_t* newProcess(file_t* file, user_t* user) {
     strcpy(process->variables[0].value, "/bin;/usr/bin");
     process->variables[0].active = true;
 
+    /*
     strcpy(process->variables[1].key, "USER");
     strcpy(process->variables[1].value, user->name);
     process->variables[1].active = true;
-
-    strcpy(process->variables[2].key, "PWD");
-    strcpy(process->variables[2].value, user->iwdir->fullpath);
-    process->variables[2].active = true;
+    */
 
     return process;
 }
@@ -341,6 +339,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
     process_t* oldParent = process->parent;
     uint32_t oldIndexInParent = process->indexInParent;
     directory_t* oldCwdir = process->cwdir;
+    user_t* oldOwner = process->owner;
 
     memset(&process->pfds, 0, sizeof(pfd_t) * MAX_FILE_DESCRIPTORS);
     memset(&process->regs, 0, sizeof(regs_t));
@@ -377,6 +376,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
     process->eip = process->entryPoint;
     process->esp = process->virtual_stack_top;
     process->file = file;
+    process->owner = oldOwner;
     process->initialized = true;
     process->overwritten = true;
 

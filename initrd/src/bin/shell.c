@@ -7,12 +7,17 @@
 
 #include <sys/wait.h>
 #include <unistd.h>
+#include <pwd.h>
 
 
 #define MAX_LINE_LENGTH 128
 #define HISTORY_SIZE    64
 #define MAX_ARGS        32
 
+char cmd[MAX_LINE_LENGTH+1];
+char history[MAX_LINE_LENGTH][HISTORY_SIZE];
+size_t historyCount = 0;
+char cwd[256];
 
 void execArgs(char** args) {
 
@@ -71,6 +76,13 @@ void cmdCd(unsigned int argCount, char** parsedArgs) {
         if (status == -1) {
             int backup = errno;
             printf("shell: cd: %s: %s\n", parsedArgs[1], strerror(backup));
+        } else {
+            setenv("PWD", parsedArgs[1], true);
+
+            if (getcwd(cwd, sizeof(cwd)) == NULL) {
+                int backup = errno;
+                printf("shell: cd: getcwd error: %s\n", strerror(backup));
+            }
         }
 
     }
@@ -100,7 +112,7 @@ void cmdExport(unsigned int argCount, char** parsedArgs) {
             tok++;
         }
 
-        if (setenv(parsedArgs[1], tok, 1) != 0)
+        if (setenv(parsedArgs[1], tok, true) != 0)
             printf("shell: export: setenv error\n");
     }
 
@@ -120,11 +132,6 @@ void cmdExport(unsigned int argCount, char** parsedArgs) {
     }
 }
 
-char cmd[MAX_LINE_LENGTH+1];
-char history[MAX_LINE_LENGTH][HISTORY_SIZE];
-size_t historyCount = 0;
-
-
 /*
 void main(int argc, char* argv[]) {
 
@@ -134,20 +141,34 @@ void main(int argc, char* argv[]) {
 void main() {
 
 
-    char cwd[512];
-    char user[256];
+    struct passwd pwd;
+    struct passwd* tmpPwdPtr;
+    char pwdBuf[256];
+    int error;
+
+    if ((error = getpwuid_r(getuid(), &pwd, pwdBuf, sizeof(pwdBuf), &tmpPwdPtr)) != 0) {
+        printf("shell: getpwuid error: %d:%s\n", error, strerror(error));
+        exit(1);
+    }
+
+    setenv("USER", pwd.pw_name, true);
+    setenv("HOME", pwd.pw_dir, true);
+    setenv("SHELL", pwd.pw_shell, true);
+
+    int status = chdir(pwd.pw_dir);
+    if (status == -1) {
+        int backup = errno;
+        printf("shell: cd: %s: %s\n", pwd.pw_dir, strerror(backup));
+    }
+
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        int backup = errno;
+        printf("shell: cd: getcwd error: %s\n", strerror(backup));
+    }
 
     while (true) {
 
-        if (getcwd(cwd, sizeof(cwd)) == NULL) {
-            printf("shell: getcwd failed\n");
-        }
-
-        if (getenv_r("USER", user, sizeof(user)) == -1) {
-            printf("shell: getenv failed\n");
-        }
-
-        printf("\e[a;0m%s\e[0m:\e[9;0m%s\e[0m$ ", user, cwd);
+        printf("\e[a;0m%s\e[0m:\e[9;0m%s\e[0m$ ", pwd.pw_name, cwd);
 
         char c;
         size_t index = 0;

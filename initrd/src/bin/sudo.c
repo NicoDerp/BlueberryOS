@@ -27,9 +27,10 @@ void getpass(char* buf, size_t buflen) {
             exit(1);
         }
 
-        if (c == '\b')
-            i--;
-        else
+        if (c == '\b') {
+            if (i > 0)
+                i--;
+        } else
             buf[i++] = c;
     }
     buf[i] = '\0';
