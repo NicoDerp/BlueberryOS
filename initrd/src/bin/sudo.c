@@ -28,10 +28,14 @@ void getpass(char* buf, size_t buflen) {
         }
 
         if (c == '\b') {
-            if (i > 0)
+            if (i > 0) {
                 i--;
-        } else
+                printf("\b \b");
+            }
+        } else {
             buf[i++] = c;
+            putchar('*');
+        }
     }
     buf[i] = '\0';
     putchar('\n');

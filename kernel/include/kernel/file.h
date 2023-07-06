@@ -113,9 +113,9 @@ typedef struct
     char prefix[155];
 } tar_header_t;
 
-#define P_READ    1
+#define P_READ    4
 #define P_WRITE   2
-#define P_EXECUTE 4
+#define P_EXECUTE 1
 #define P_ALL     7
 
 extern directory_t rootDir;

@@ -678,7 +678,7 @@ bool fileAccessAllowed(process_t* process, file_t* file, uint32_t check) {
 
     uint32_t mode = file->mode;
 
-    /* Use 'user' permissions*/
+    /* Use 'owner' permissions*/
     if (file->owner->uid == process->owner->uid) {
 
         mode >>= 6;
