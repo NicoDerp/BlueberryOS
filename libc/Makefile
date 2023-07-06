@@ -68,6 +68,7 @@ FREEOBJS =\
 	unistd/chdir.o \
 	unistd/close.o \
 	unistd/getuid.o \
+	unistd/setuid.o \
 	fcntl/open.o \
 	sys/wait/wait.o \
 	sys/stat/stat.o \

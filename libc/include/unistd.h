@@ -30,6 +30,7 @@ int chdir(const char* path);
 int close(int fd);
 
 uid_t getuid(void);
+int setuid(uid_t);
 
 #ifdef __cplusplus
 }

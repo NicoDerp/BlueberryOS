@@ -35,6 +35,7 @@ SRC_C = src/sbin/loop.c \
 		src/bin/cat.c \
 		src/usr/bin/printenv.c \
 		src/usr/bin/echo.c \
+		src/usr/bin/whoami.c \
 		src/usr/bin/test.c \
 		src/usr/bin/test2.c \
 		src/usr/bin/mmaptest.c \
@@ -81,7 +82,7 @@ initrd: $(BINS)
 	$(subst ^, ,$(join $(addprefix cp^,$(BINS)),$(patsubst %,^%;,$(OUT_BINS))))
 	chmod 755 initrd/usr/bin/*
 	chmod 755 initrd/bin/*
-	chmod 750 initrd/bin/sudo
+	chmod 4750 initrd/bin/sudo
 
 initrd.tar.gz: initrd
 	tar U --gzip -cvf initrd.tar.gz initrd

@@ -707,6 +707,46 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
             break;
 
+        case (SYS_setuid):
+            {
+                uint32_t uid = stack_state.ebx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = 0;
+                int errnum = 0;
+
+                if (process->file->owner->uid != uid) {
+                    status = -1;
+                    errnum = EINVAL;
+                } else if (process->file->mode & S_ISUID) {
+                    
+                    user_t* user = getUserByUID(uid);
+                    if (!user) {
+                        status = -1;
+                        errnum = EINVAL;
+                    } else {
+                        process->owner = user;
+                    }
+
+                } else {
+                    status = -1;
+                    errnum = EPERM;
+                }
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+                process->regs.ecx = errnum;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
         default:
             {
                 ERROR("Invalid syscall id '%d'\n", stack_state.eax);

@@ -315,7 +315,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Setting up users         ... ");
     createUser("root", "root", false, true);
-    user_t* currentUser = createUser("nico", "password123", true, false);
+    user_t* currentUser = createUser("nico", "pass", true, false);
 
     group_t* sudoers = createGroup("sudoers");
     addUserToGroup(currentUser, sudoers);

@@ -8,6 +8,7 @@
 #include <shadow.h>
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <pwd.h>
 #include <grp.h>
 
@@ -19,9 +20,17 @@ char spwBuf[256];
 
 void getpass(char* buf, size_t buflen) {
     char c;
-    size_t i;
-    for (i = 0; i < buflen && (c = getchar()) != '\n'; i++) {
-        buf[i] = c;
+    size_t i = 0;
+    while ((c = getchar()) != '\n') {
+        if (i >= buflen) {
+            printf("sudo: reached max password buffer\n");
+            exit(1);
+        }
+
+        if (c == '\b')
+            i--;
+        else
+            buf[i++] = c;
     }
     buf[i] = '\0';
     putchar('\n');
@@ -78,10 +87,34 @@ void main(int argc, char* argv[]) {
     getStructs();
     authenticateUser();
 
-    if (execvp(argv[1], &argv[1]) == -1) {
-        printf("sudo: %s: command not found\n", argv[1]);
+    pid_t pid = fork();
+    if (pid == -1) {
+        int backup = errno;
+        printf("sudo: fork error: %s\n", strerror(backup));
+    }
+    else if (pid == 0) {
+
+        if (setuid(0) == -1) {
+            int backup = errno;
+            printf("sudo: setuid failed: %s\n", strerror(backup));
+            exit(1);
+        }
+
+        execvp(argv[1], &argv[1]);
+
+        int backup = errno;
+        if (backup == ENOENT)
+            printf("sudo: %s: command not found\n", argv[1]);
+        else if (backup == EACCES)
+            printf("sudo: %s: permission denied\n", argv[1]);
+        else
+            printf("sudo: %s: %s\n", argv[1], strerror(backup));
         exit(1);
     }
+    else {
+        wait(NULL);
+    }
+
 
 }
 

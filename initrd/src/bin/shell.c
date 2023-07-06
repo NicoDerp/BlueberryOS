@@ -23,7 +23,13 @@ void execArgs(char** args) {
         printf("shell: fork error: %s\n", strerror(backup));
     } else if (pid == 0) {
         if (execvp(args[0], args) == -1) {
-            printf("%s: command not found\n", args[0]);
+            int backup = errno;
+            if (backup == ENOENT)
+                printf("shell: %s: command not found\n", args[0]);
+            else if (backup == EACCES)
+                printf("shell: %s: permission denied\n", args[0]);
+            else
+                printf("shell: %s: %s\n", args[0], strerror(backup));
             exit(1);
         }
 
@@ -43,12 +49,12 @@ void cmdExit(unsigned int argCount, char** parsedArgs) {
     }
 
     else if (argCount == 2) {
-        printf("not supported yet\n");
+        printf("shell: not supported yet\n");
         //exit(0);
     }
 
     else {
-        printf("exit: too many arguments\n");
+        printf("shell: exit: too many arguments\n");
     }
 }
 
@@ -56,7 +62,7 @@ void cmdCd(unsigned int argCount, char** parsedArgs) {
 
     if (argCount == 1) {
         // Should actually go to home
-        printf("too few arguments\n");
+        printf("shell: cd: too few arguments\n");
     }
 
     else if (argCount == 2) {
@@ -64,20 +70,20 @@ void cmdCd(unsigned int argCount, char** parsedArgs) {
         int status = chdir(parsedArgs[1]);
         if (status == -1) {
             int backup = errno;
-            printf("cd: %s: %s\n", parsedArgs[1], strerror(backup));
+            printf("shell: cd: %s: %s\n", parsedArgs[1], strerror(backup));
         }
 
     }
 
     else {
-        printf("too many arguments\n");
+        printf("shell: cd: too many arguments\n");
     }
 }
 
 void cmdExport(unsigned int argCount, char** parsedArgs) {
 
     if (argCount == 1) {
-        printf("too few arguments\n");
+        printf("shell: export: too few arguments\n");
     }
 
     else if (argCount == 2) {
@@ -95,22 +101,22 @@ void cmdExport(unsigned int argCount, char** parsedArgs) {
         }
 
         if (setenv(parsedArgs[1], tok, 1) != 0)
-            printf("setenv error\n");
+            printf("shell: export: setenv error\n");
     }
 
     else if (argCount == 3) {
         if (strcmp(parsedArgs[1], "-n") == 0) {
 
             if (unsetenv(parsedArgs[2]) != 0)
-                printf("unsetenv error\n");
+                printf("shell: export: unsetenv error\n");
 
         } else {
-            printf("invalid flag '%s'\n", parsedArgs[1]);
+            printf("shell: export: invalid flag '%s'\n", parsedArgs[1]);
         }
     }
 
     else {
-        printf("too many arguments\n");
+        printf("shell: export: too many arguments\n");
     }
 }
 
@@ -134,11 +140,11 @@ void main() {
     while (true) {
 
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
-            printf("error, getcwd failed\n");
+            printf("shell: getcwd failed\n");
         }
 
         if (getenv_r("USER", user, sizeof(user)) == -1) {
-            printf("error, getenv failed\n");
+            printf("shell: getenv failed\n");
         }
 
         printf("\e[a;0m%s\e[0m:\e[9;0m%s\e[0m$ ", user, cwd);
@@ -149,7 +155,7 @@ void main() {
         size_t historyScroll = 0;
         while ((c = getchar()) != '\n') {
             if (index >= MAX_LINE_LENGTH) {
-                printf("[ERROR] Reached max line length\n");
+                printf("shell: reached max line length\n");
                 continue;
             }
 
@@ -251,7 +257,7 @@ void main() {
 
         if (index != 0) {
             if (historyCount >= HISTORY_SIZE) {
-                printf("Max history reached\n");
+                printf("shell: max history reached\n");
             }
             else if(historyCount == 0 || strcmp(history[historyCount-1], cmd) != 0) {
                 strcpy(history[historyCount++], cmd);
@@ -269,7 +275,7 @@ void main() {
         while (tok != NULL)
         {
             if (argCount == MAX_ARGS) {
-                printf("Reached max args\n");
+                printf("shell: reached max arguments\n");
                 break;
             }
 

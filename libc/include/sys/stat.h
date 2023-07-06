@@ -60,8 +60,8 @@ struct stat {
 #define S_IWOTH 0000002    /* W for other */
 #define S_IXOTH 0000001    /* X for other */
 
-//#define S_ISUID 0004000    /* set user id on execution */
-//#define S_ISGID 0002000    /* set group id on execution */
+#define S_ISUID 0004000    /* set user id on execution */
+#define S_ISGID 0002000    /* set group id on execution */
 //#define S_ISVTX 0001000    /* save swapped text even after use */
 
 #ifdef __cplusplus
