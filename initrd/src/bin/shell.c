@@ -34,14 +34,6 @@ void execArgs(char** args) {
     }
 }
 
-void cmdEcho(unsigned int argCount, char** parsedArgs) {
-
-    for (size_t i = 1; i < argCount; i++) {
-        printf("%s ", parsedArgs[i]);
-    }
-    putchar('\n');
-}
-
 void cmdExit(unsigned int argCount, char** parsedArgs) {
 
     (void) parsedArgs;
@@ -294,9 +286,6 @@ void main() {
         }
         else if (strcmp(parsedArgs[0], "clear") == 0) {
 
-        }
-        else if (strcmp(parsedArgs[0], "echo") == 0) {
-            cmdEcho(argCount, parsedArgs);
         }
         else if (strcmp(parsedArgs[0], "cd") == 0) {
             cmdCd(argCount, parsedArgs);

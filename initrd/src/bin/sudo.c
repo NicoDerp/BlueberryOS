@@ -12,6 +12,11 @@
 #include <grp.h>
 
 
+struct passwd pwd;
+struct spwd spw;
+char pwdBuf[256];
+char spwBuf[256];
+
 void getpass(char* buf, size_t buflen) {
     char c;
     size_t i;
@@ -22,10 +27,8 @@ void getpass(char* buf, size_t buflen) {
     putchar('\n');
 }
 
-bool authenticateUser(void) {
+void getStructs(void) {
 
-    struct passwd pwd;
-    char pwdBuf[256];
     struct passwd* tmpPwdPtr;
     int error;
 
@@ -34,20 +37,35 @@ bool authenticateUser(void) {
         exit(1);
     }
 
-    struct spwd spw;
-    char spwBuf[256];
     struct spwd* tmpSpwPtr;
 
     if ((error = getspnam_r(pwd.pw_name, &spw, spwBuf, sizeof(spwBuf), &tmpSpwPtr)) != 0) {
         printf("getspnam error: %d:%s\n", error, strerror(error));
         exit(1);
     }
+}
+
+bool enterPassword(void) {
 
     printf("[sudo]: password for %s: ", pwd.pw_name);
 
     char passBuf[256];
     getpass(passBuf, sizeof(passBuf));
-    return strcmp(passBuf, spw.sp_pwdp) == 0;
+    return (strcmp(passBuf, spw.sp_pwdp) == 0);
+}
+
+void authenticateUser(void) {
+
+    for (size_t i = 0; i < 3; i++) {
+
+        if (enterPassword())
+            return;
+
+        printf("Sorry, try again.\n");
+    }
+
+    printf("sudo: 3 incorrect password attemps\n");
+    exit(1);
 }
 
 void main(int argc, char* argv[]) {
@@ -57,10 +75,8 @@ void main(int argc, char* argv[]) {
         exit(0);
     }
 
-    if (!authenticateUser()) {
-        printf("Invalid password!\n");
-        exit(1);
-    }
+    getStructs();
+    authenticateUser();
 
     if (execvp(argv[1], &argv[1]) == -1) {
         printf("sudo: %s: command not found\n", argv[1]);

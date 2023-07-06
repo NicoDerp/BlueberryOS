@@ -36,11 +36,12 @@ void ls(char* path, bool showHidden, bool list) {
         if (strncmp(ent->d_name, ".", 1) == 0 && !showHidden)
             continue;
 
+        if (lstat(ent->d_name, &statStruct) == -1) {
+            printf("lstat failed\n");
+            continue;
+        }
+
         if (list) {
-            if (lstat(ent->d_name, &statStruct) == -1) {
-                printf("lstat failed\n");
-                exit(1);
-            }
 
             if (getpwuid_r(statStruct.st_uid, &passwdStruct, passwdBuf, sizeof(passwdBuf), &tempPwdPointer) != 0) {
                 printf("getpwuid error\n");
@@ -79,6 +80,8 @@ void ls(char* path, bool showHidden, bool list) {
 
         if (ent->d_type == DT_DIR)
             printf("\e[9;0m%s\e[0m", ent->d_name);
+        else if (statStruct.st_mode & S_IXUSR || statStruct.st_mode & S_IXGRP || statStruct.st_mode & S_IXOTH)
+            printf("\e[a;0m%s\e[0m", ent->d_name);
         else
             printf("%s", ent->d_name);
 

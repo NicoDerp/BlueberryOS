@@ -978,7 +978,7 @@ int getGroupStructR(uint32_t gid, struct group* grp, char* buffer, size_t bufsiz
 
     /* gr_name */
     grp->gr_name = buffer;
-    memcpy(buffer, group->name, groupNameLen);
+    memcpy(buffer, group->name, groupNameLen+1);
     size_t index = groupNameLen + 1;
 
     /* gr_gid */

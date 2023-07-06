@@ -316,7 +316,26 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Setting up users         ... ");
     createUser("root", "root", false, true);
     user_t* currentUser = createUser("nico", "password123", true, false);
+
+    group_t* sudoers = createGroup("sudoers");
+    addUserToGroup(currentUser, sudoers);
+
     printf("\e[2;0m[OK]\e[0m\n");
+
+
+    printf("Setting up programs      ... ");
+
+    file_t* sudo = getFile("/bin/sudo");
+    if (!sudo) {
+        printf("\e[4;0m[ERROR]\e[0m\n");
+        FATAL("Missing essential program: /bin/sudo\n");
+        kabort();
+    }
+
+    sudo->group = sudoers;
+
+    printf("\e[2;0m[OK]\e[0m\n");
+
 
     /*
     displayDirectory(&rootDir, 0);
