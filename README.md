@@ -8,6 +8,7 @@ Made by NicoDerp.
 Big thanks to [wiki.osdev.org](wiki.osdev.org) for their wiki and forums.
 
 This project uses a slighly modified version of the [tinf](https://github.com/jibsen/tinf) library for decompressing the initrd.
+This OS uses a memory allocator heavily inspired by [liballoc](https://github.com/blanham/liballoc).
 
 Use BlueberryOS at our own risk. I'm not responsible for any damages or other things that can happen by using my operating system.
 This is very in-development and just a hobby-project.
@@ -31,8 +32,9 @@ This is very in-development and just a hobby-project.
 - [ ] Memory allocator
 - [ ] USB?
 - [ ] Graphics manager
+- [ ] Package manager (bpm (Blueberryos Package Manager))
 - [ ] Multiple CPU cores
-- [ ] Fully adapted cross-compiler
+- [ ] Fully adapted Cross-compiler
 - [ ] 64-bit
 - [ ] UEFI
 
