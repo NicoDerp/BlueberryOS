@@ -13,7 +13,7 @@ extern unsigned int _kernelstart;
 #define KERNEL_START ((unsigned int) &_kernelstart)
 
 // TODO remove after kmalloc
-#define FRAME_MAP_SIZE (16*8)
+#define FRAME_MAP_SIZE (20*8)
 
 #define FRAME_1KB ((unsigned int) 0x400)
 #define FRAME_4KB ((unsigned int) 0x1000)
@@ -35,13 +35,16 @@ typedef void* pageframe_t;
 
 struct tag;
 typedef struct tag {
-    char magic[4];
+    uint32_t magic;
     uint32_t size;
     uint32_t realsize;
     int index;
 
     struct tag* prev;
     struct tag* next;
+
+    struct tag* splitprev;
+    struct tag* splitnext;
 } tag_t;
 
 void memory_initialize(uint32_t framestart_, uint32_t bytes);

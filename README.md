@@ -34,6 +34,7 @@ This is very in-development and just a hobby-project.
 - [ ] Graphics manager
 - [ ] Package manager (bpm (Blueberryos Package Manager))
 - [ ] Multiple CPU cores
+- [ ] NVMe
 - [ ] Fully adapted Cross-compiler
 - [ ] 64-bit
 - [ ] UEFI

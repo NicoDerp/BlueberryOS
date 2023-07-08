@@ -20,6 +20,8 @@ size_t cachedIndex = 0;
 tag_t* freePages[MEMORY_MAX_EXP];
 int completePages[MEMORY_MAX_EXP];
 
+uint32_t framesUsed = 0;
+
 void memory_initialize(uint32_t framestart_, uint32_t bytes) {
 
     framestart = framestart_;
@@ -53,27 +55,33 @@ static inline int getIndex(unsigned int num) {
 void* kmalloc(size_t size) {
 
     tag_t* tag;
-    uint32_t index = getIndex(tag->realsize);
+    uint32_t index = getIndex(size);
 
-    tag = freePages(index);
+    printf("Index at %d\n", index);
+
+    tag = freePages[index];
     while ((tag != NULL) && (size + sizeof(tag_t) > tag->realsize)) {
         tag = tag->next;
     }
 
+    printf("tag 0x%x\n", tag);
+
     if (tag == NULL) {
         uint32_t realsize = size + sizeof(tag_t);
-        uint32_t pages = FRAME_SIZE - (tag->realsize & (FRAME_SIZE-1)) + tag->realsize;
+        uint32_t pages = realsize / FRAME_SIZE;
+        if ((realsize & (FRAME_SIZE-1)) != 0)
+            pages++;
 
         // TODO in usermode this is mmap
         tag = (tag_t*) kalloc_frames(pages);
 
         tag->magic = MEMORY_TAG_MAGIC;
-        tag->size = size;
         tag->realsize = pages * FRAME_SIZE;
-        tag->index = index;
+        tag->index = -1;
 
-        tag->prev = NULL;
-        tag->next = NULL;
+        tag->splitprev = NULL;
+        tag->splitnext = NULL;
+
     } else {
 
         // Check if tag is the first in the list
@@ -87,9 +95,45 @@ void* kmalloc(size_t size) {
             tag->next->prev = tag->prev;
 
         tag->index = -1;
-        tag->prev = NULL;
-        tag->next = NULL;
     }
+
+    tag->prev = NULL;
+    tag->next = NULL;
+    tag->size = size;
+
+    // Check if there is more space left in tag, in that case we split the tag
+    int remainder = tag->realsize - size - 2*sizeof(tag_t); // Both this tag and next tag
+
+    // Needs to be more than minimum to split
+    if (remainder > (1 << MEMORY_MIN_EXP)) {
+
+        VERBOSE("kmalloc: Splitting tag with size %d with remainder %s\n", size, remainder);
+
+        uint32_t splitIndex = getIndex(remainder);
+
+        tag_t* splitTag = (tag_t*) ((uint32_t) tag + tag->size);
+        splitTag->magic = MEMORY_TAG_MAGIC;
+        splitTag->next = NULL;
+        splitTag->prev = NULL;
+
+        splitTag->splitprev = tag;
+        splitTag->splitnext = tag->splitnext;
+
+        tag->splitnext = splitTag;
+
+        if (splitTag->splitnext != NULL)
+            splitTag->splitnext->splitprev = splitTag;
+
+        // Insert split tag at beginning
+        if (freePages[splitIndex] == NULL) {
+            freePages[splitIndex] = splitTag;
+        } else {
+            freePages[splitIndex]->prev = splitTag;
+            freePages[splitIndex] = splitTag;
+        }
+    }
+
+    return (void*) ((uint32_t) tag + sizeof(tag_t));
 }
 
 void kfree(void* ptr) {
@@ -100,16 +144,16 @@ void kfree(void* ptr) {
     tag_t* tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
     if (tag->magic != MEMORY_TAG_MAGIC) {
         ERROR("kfree: Tag at 0x%x has been corrupted!\n", ptr);
-        return 0;;
+        return;
     }
 
     // Merge with previous
-    while ((tag->prev != NULL) && (tag->prev->index >= 0)) {
-        tag->prev->realsize += tag->realsize;
+    while ((tag->splitprev != NULL) && (tag->splitprev->index >= 0)) {
+        tag->splitprev->realsize += tag->realsize;
 
-        tag->prev->next = tag->next;
-        if (tag->next != NULL)
-            tag->next->prev = tag->prev;
+        tag->splitprev->splitnext = tag->splitnext;
+        if (tag->splitnext != NULL)
+            tag->splitnext->splitprev = tag->splitprev;
 
         // Check if tag is the first in the list
         if (freePages[tag->index] == tag)
@@ -123,26 +167,28 @@ void kfree(void* ptr) {
     }
 
     // Merge with next
-    while ((tag->next != NULL) && (tag->next->index >= 0)) {
-        tag->realsize += tag->next->realsize;
+    while ((tag->splitnext != NULL) && (tag->splitnext->index >= 0)) {
+        tag->realsize += tag->splitnext->realsize;
 
-        tag->next->index = -1;
-        tag->next = NULL;
+        tag->splitnext->index = -1;
+        tag->splitnext = NULL;
     }
 
-    if (tag->prev == NULL && tag->next == NULL) {
-        
-        uint32_t index = getIndex(tag->realsize);
+    uint32_t index = getIndex(tag->realsize - sizeof(tag_t));
+    if (tag->prev == NULL && tag->next == NULL) {        
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
             freePages[index] = NULL;
 
-            uint32_t pages = FRAME_SIZE - (tag->realsize & (FRAME_SIZE-1)) + tag->realsize;
+            uint32_t pages = tag->realsize / FRAME_SIZE;
             kfree_frames((void*) tag, pages);
         }
 
         completePages[index]++;
     }
+
+    printf("realsiez: %d\n", tag->realsize);
+    printf("free index: %d, freePages[i]: 0x%x\n", index, freePages[index]);
 
     // Insert free tag at beginning
     if (freePages[index] == NULL) {
@@ -216,6 +262,7 @@ pageframe_t kalloc_frames(unsigned int count) {
     }
 
     pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + framestart);
+    framesUsed += count;
 
     VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
 
@@ -243,6 +290,7 @@ void kfree_frame(pageframe_t frame) {
         ERROR("Frame at 0x%x freed multiple times!\n", frame);
     }
     frame_map[index >> 3] &= ~(1 << (index & 0x7));
+    framesUsed--;
 }
 
 void kfree_frames(pageframe_t frame, unsigned int count) {
@@ -272,6 +320,7 @@ void kfree_frames(pageframe_t frame, unsigned int count) {
     for (size_t i = 0; i < count; i++) {
         frame_map[(index+i) >> 3] &= ~(1 << ((index+i) & 0x7));
     }
+    framesUsed -= count;
 }
 
 void kalloc_cache(void) {
@@ -292,10 +341,13 @@ void kalloc_cache(void) {
         frame_map[index >> 3] |= (1 << (index & 0x7));
         cached_frame_map[c] = (pageframe_t) (index*FRAME_SIZE + framestart);
     }
+
+    framesUsed += FRAME_CACHE_SIZE;
 }
 
 uint32_t get_used_memory(void) {
 
+    /*
     uint32_t count = 0;
     for (size_t i = 0; i < FRAME_MAP_SIZE; i++) {
         if ((frame_map[i >> 3] & (1 << (i & 0x7))) == 1) {
@@ -304,5 +356,8 @@ uint32_t get_used_memory(void) {
     }
 
     return count;
+    */
+
+    return framesUsed * FRAME_SIZE;
 }
 
