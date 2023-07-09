@@ -45,6 +45,8 @@ FREEOBJS =\
 	stdlib/getenv_r.o \
 	stdlib/setenv.o \
 	stdlib/unsetenv.o \
+	stdlib/malloc.o \
+	stdlib/free.o \
 	string/memcmp.o \
 	string/memcpy.o \
 	string/memmove.o \

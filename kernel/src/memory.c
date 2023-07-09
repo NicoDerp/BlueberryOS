@@ -36,11 +36,6 @@ void memory_initialize(uint32_t framestart_, uint32_t bytes) {
 
     cachedIndex = 0;
     kalloc_cache();
-
-    for (size_t i = 0; i < MEMORY_TOT_EXP; i++) {
-        freePages[i] = NULL;
-        completePages[i] = 0;
-    }
 }
 
 static inline int getIndex(unsigned int num) {

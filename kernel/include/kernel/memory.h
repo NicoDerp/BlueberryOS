@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <bits/memory.h>
 
 
 extern unsigned int _kernelend;
@@ -34,25 +35,7 @@ extern unsigned int _kernelstart;
 #define MEMORY_MIN_FRAMES   8
 
 typedef void* pageframe_t;
-
-struct tag;
-typedef struct tag {
-    uint32_t magic;
-    uint32_t size;
-    uint32_t realsize;
-    int index;
-
-    struct tag* prev;
-    struct tag* next;
-
-    struct tag* splitprev;
-    struct tag* splitnext;
-} tag_t;
-
 void memory_initialize(uint32_t framestart_, uint32_t bytes);
-
-void* kmalloc(size_t size);
-void kfree(void* ptr);
 
 pageframe_t kalloc_frame(void);
 pageframe_t kalloc_frames(unsigned int count);
