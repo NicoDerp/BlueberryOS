@@ -3,6 +3,7 @@
 #include <bits/memory.h>
 
 #if defined(__is_libk)
+#include <kernel/logging.h>
 #include <kernel/memory.h>
 #else
 #include <sys/mman.h>
@@ -11,6 +12,12 @@
 tag_t* freePages[MEMORY_TOT_EXP];
 int completePages[MEMORY_TOT_EXP];
 int initialized = 0;
+
+
+#if !defined(__is_libk)
+#define VERBOSE(format, ...)
+#define ERROR(format, ...)
+#endif
 
 
 static inline int getIndex(unsigned int num) {

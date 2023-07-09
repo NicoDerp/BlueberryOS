@@ -7,20 +7,16 @@
 
 
 void test(void) {
+
     int n = 5;
+    int* ptr1 = (int*) malloc(n*sizeof(int));
+    printf("Pointer at 0x%x\n", ptr1);
 
-    int* ptr = mmap(NULL, n*sizeof(int), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    int* ptr2 = (int*) malloc(n*sizeof(int));
+    printf("Pointer at 0x%x\n", ptr2);
 
-    if (ptr == MAP_FAILED) {
-        printf("Mapping failed\n");
-        exit(1);
-    }
-
-    int err = munmap(ptr, 10*sizeof(int));
-    if (err != 0) {
-        printf("Unmapping failed\n");
-        exit(1);
-    }
+    free(ptr1);
+    free(ptr2);
 }
 
 void main() {

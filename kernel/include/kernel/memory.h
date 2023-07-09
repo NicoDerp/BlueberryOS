@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <bits/memory.h>
 
 
@@ -36,6 +37,9 @@ extern unsigned int _kernelstart;
 
 typedef void* pageframe_t;
 void memory_initialize(uint32_t framestart_, uint32_t bytes);
+
+void* kmalloc(size_t);
+void kfree(void*);
 
 pageframe_t kalloc_frame(void);
 pageframe_t kalloc_frames(unsigned int count);

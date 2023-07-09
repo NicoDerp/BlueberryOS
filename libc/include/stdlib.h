@@ -20,13 +20,8 @@ int getenv_r(const char*, char*, size_t);
 int setenv(const char*, const char*, int);
 int unsetenv(const char*);
 
-#if defined(__is_libk)
-void* kmalloc(size_t);
-void kfree(void*);
-#else
 void* malloc(size_t);
 void free(void*);
-#endif
 
 #ifdef __cplusplus
 }

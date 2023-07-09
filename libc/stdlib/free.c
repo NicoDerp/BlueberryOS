@@ -9,6 +9,12 @@
 #endif
 
 
+#if !defined(__is_libk)
+#define VERBOSE(format, ...)
+#define ERROR(format, ...)
+#endif
+
+
 static inline int getIndex(unsigned int num) {
 
     if (num < (1 << MEMORY_MIN_EXP)) {

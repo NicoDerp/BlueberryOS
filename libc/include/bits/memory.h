@@ -39,10 +39,5 @@ typedef struct tag {
 extern tag_t* freePages[MEMORY_TOT_EXP];
 extern int completePages[MEMORY_TOT_EXP];
 
-#if !defined(__is_libk)
-#define VERBOSE(format, ...)
-#define ERROR(format, ...)
-#endif
-
 #endif
 
