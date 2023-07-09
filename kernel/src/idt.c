@@ -274,10 +274,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_fork):
             {
-                /*
-                extern uint32_t get_used_memory(void);
-                printf("SYS_fork: %d\n", get_used_memory());
-                */
+                printf("Used memory: %d KiB\n", get_used_memory() / FRAME_1KB);
 
                 process_t* process = getCurrentProcess();
 
@@ -330,7 +327,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 // Indicate error
                 process->regs.eax = result;
-                process->regs.ecx = errnum;
+
+                if (errnum != 0)
+                    process->regs.ecx = errnum;
 
                 // Since we have changed entire process then we need
                 //  to reload those changes
@@ -372,7 +371,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                     // Indicate sucess
                     process->regs.eax = (uint32_t) buf;
-                    process->regs.ecx = 0;
                 }
 
                 // Since we changed registers we need to reload those
@@ -417,7 +415,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                         // Indicate sucess
                         process->regs.eax = 0;
-                        process->regs.ecx = 0;
                     }
 
 

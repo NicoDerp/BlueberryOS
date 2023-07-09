@@ -11,8 +11,10 @@
 
 void kalloc_cache();
 
-char frame_map[FRAME_MAP_SIZE/8];
+char* frame_map;
 pageframe_t cached_frame_map[FRAME_CACHE_SIZE];
+uint32_t totalFrameMapSize;
+uint32_t frameMapSize;
 
 uint32_t framestart;
 size_t cachedIndex = 0;
@@ -24,10 +26,13 @@ uint32_t framesUsed = 0;
 
 void memory_initialize(uint32_t framestart_, uint32_t bytes) {
 
-    framestart = framestart_;
+    frame_map = (char*) framestart_;
 
-    // TODO FRAME_MAP_SIZE should be bytes / FRAME_4KB
-    (void) bytes;
+    totalFrameMapSize = bytes / FRAME_SIZE;
+
+    // Minimum requirement, increase if needed
+    frameMapSize = 2*FRAME_4MB;
+    framestart = framestart_ + frameMapSize/8;
 
     cachedIndex = 0;
     kalloc_cache();
@@ -306,7 +311,7 @@ pageframe_t kalloc_frames(unsigned int count) {
         }
 
         index++;
-        if (index >= FRAME_MAP_SIZE) {
+        if (index >= frameMapSize) {
             FATAL("Out of memory!\n");
             kabort();
             return (pageframe_t) -1;
@@ -337,7 +342,7 @@ void kfree_frame(pageframe_t frame) {
     if (index != 0) {
         index /= FRAME_SIZE;
     }
-    if (index >= FRAME_MAP_SIZE) {
+    if (index >= frameMapSize) {
         ERROR("Index not in correct range: 0x%x from frame 0x%x\n", index, frame);
         return;
     }
@@ -364,7 +369,7 @@ void kfree_frames(pageframe_t frame, unsigned int count) {
     if (index != 0) {
         index /= FRAME_SIZE;
     }
-    if (index + count >= FRAME_MAP_SIZE) {
+    if (index + count >= frameMapSize) {
         ERROR("Index not in correct range: 0x%x from frame 0x%x\n", index, frame);
         return;
     }
@@ -387,7 +392,7 @@ void kalloc_cache(void) {
         // Check for first free bit
         while ((frame_map[index >> 3] & (1 << (index & 0x7))) != 0) {
             index++;
-            if (index >= FRAME_MAP_SIZE) {
+            if (index >= frameMapSize) {
                 FATAL("Out of memory!\n");
                 kabort();
                 return;
@@ -405,7 +410,7 @@ uint32_t get_used_memory(void) {
 
     /*
     uint32_t count = 0;
-    for (size_t i = 0; i < FRAME_MAP_SIZE; i++) {
+    for (size_t i = 0; i < frameMapSize; i++) {
         if ((frame_map[i >> 3] & (1 << (i & 0x7))) == 1) {
             count++;
         }
