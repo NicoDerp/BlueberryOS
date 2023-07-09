@@ -1330,7 +1330,19 @@ file_t* getFileWEnv(process_t* process, char* path) {
 
 int openProcessFile(process_t* process, char* pathname, int flags, int* errnum) {
 
-    if (!(flags & O_RDONLY)) {
+    if (!(flags & O_RDONLY) && !(flags & O_WRONLY)) {
+        ERROR("Flags are incorrect\n");
+        *errnum = EINVAL;
+        return -1;
+    }
+
+    if ((flags & O_RDONLY) && (flags & O_TRUNC)) {
+        ERROR("Flags are incorrect\n");
+        *errnum = EINVAL;
+        return -1;
+    }
+
+    if ((flags & O_WRONLY || flags & O_TRUNC) && (flags & O_DIRECTORY)) {
         ERROR("Flags are incorrect\n");
         *errnum = EINVAL;
         return -1;
@@ -1387,6 +1399,11 @@ int openProcessFile(process_t* process, char* pathname, int flags, int* errnum) 
         }
 
         pfd->pointer = (uint32_t) file;
+
+        if (flags & O_TRUNC) {
+            memset(file->content, 0, file->size);
+            file->size = 0;
+        }
     }
 
     pfd->position = 0;
@@ -1423,6 +1440,55 @@ int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd) 
         count = file->size - pfd->position;
 
     memcpy(buf, file->content, count);
+    pfd->position += count;
+
+    return count;
+}
+
+int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd, int* errnum) {
+
+    pfd_t* pfd = getProcessPfd(process, fd);
+    if (!pfd) {
+        /* fd is not a valid file descriptor or is not open for writing. */
+        *errnum = EBADF;
+        return -1;
+    }
+
+    if (!pfd->active) {
+        /* fd is not a valid file descriptor or is not open for writing. */
+        *errnum = EBADF;
+        return -1;
+    }
+
+    if (pfd->flags & O_DIRECTORY) {
+        /* fd is not a valid file descriptor or is not open for writing. */
+        *errnum = EBADF;
+        return -1;
+    }
+
+    if (!(pfd->flags & O_WRONLY)) {
+        /* fd is not a valid file descriptor or is not open for writing. */
+        *errnum = EBADF;
+        return -1;
+    }
+
+    file_t* file = (file_t*) pfd->pointer;
+
+    if (pfd->position + count > file->size)
+        file->size = pfd->position + count;
+
+    // Reallocate
+    if (pfd->position + count > file->frames*FRAME_4KB) {
+        file->size = pfd->position + count;
+        file->frames = (file->size+FRAME_4KB-1)/FRAME_4KB;
+
+        pageframe_t content = kalloc_frames(file->frames);
+        memcpy(content, file->content, file->size);
+        kfree(file->content);
+        file->content = content;
+    }
+
+    memcpy(file->content + pfd->position, buf, count);
     pfd->position += count;
 
     return count;

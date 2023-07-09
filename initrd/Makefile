@@ -39,6 +39,7 @@ SRC_C = src/sbin/loop.c \
 		src/usr/bin/test.c \
 		src/usr/bin/test2.c \
 		src/usr/bin/mmaptest.c \
+		src/usr/bin/filetest.c \
 
 SRC_ASM = src/usr/bin/userfunc.asm \
 

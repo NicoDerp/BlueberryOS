@@ -139,20 +139,37 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 //printf("fd: %u\nbuf: 0x%x\ncount: %u\n", fd, buf, count);
 
-                if (fd == STDOUT_FILENO) {
+                if (fd == STDIN_FILENO) {
+
+                    // Write to stdin?
+                
+                }
+                else if (fd == STDOUT_FILENO) {
                     if (count == 1 && buf < 0xFF) {
                         terminal_writechar((char) buf, true);
                     } else {
                         terminal_write((void*) buf, count);
                     }
-                } else {
-                    ERROR("Invalid fd '%d'\n", fd);
+                }
+                else if (fd == STDERR_FILENO) {
+
+                }
+                else {
+
+                    char* buf = (char*) stack_state.ecx;
+                    size_t count = stack_state.edx;
 
                     process_t* process = getCurrentProcess();
+
+                    // Save registers
                     saveRegisters(process, &stack_state, &frame, esp);
 
-                    /* fd is not a valid file descriptor or is not open for writing. */
-                    process->regs.ecx = EBADF;
+                    int errnum = 0;
+                    int status = writeProcessFd(process, buf, count, fd, &errnum);
+                    process->regs.eax = status;
+
+                    if (errnum != 0)
+                        process->regs.ecx = errnum;
 
                     // Since we have changed registers in current process we
                     //  can't simply iret, but also load registers

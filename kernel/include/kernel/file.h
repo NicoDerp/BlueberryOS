@@ -63,6 +63,7 @@ typedef struct file {
 
     size_t size;
     filetype_t type;
+    uint32_t frames;
 
     // Only used when type is SYMBOLIC_LINK
     struct file* link;

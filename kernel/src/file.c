@@ -695,6 +695,7 @@ void parseFile(tar_header_t* header) {
     //printf("Size is %d, looping %d times\n", filesize);
 
     size_t count = (filesize+FRAME_4KB-1)/FRAME_4KB;
+    file->frames = count;
     VERBOSE("parseFile: Allocating %d consecutive frames\n", count);
     file->content = (char*) kalloc_frames(count);
     memcpy((void*) file->content, (void*) ((uint32_t) header + 512), filesize);
