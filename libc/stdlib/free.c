@@ -2,23 +2,33 @@
 #include <stdlib.h>
 #include <bits/memory.h>
 
+#include <stdio.h>
+
 #if defined(__is_libk)
+#include <kernel/logging.h>
 #include <kernel/memory.h>
 #else
 #include <sys/mman.h>
 #endif
 
 
+
 #if !defined(__is_libk)
 #define VERBOSE(format, ...)
-#define ERROR(format, ...)
+#define ERROR(format, ...) {printf("Error: "format, ## __VA_ARGS__);}
 #endif
+
+/*
+#if !defined(__is_libk)
+#define VERBOSE(format, ...) {printf("\e[f;0m[INFO]\e[0m "format, ## __VA_ARGS__);}
+#define ERROR(format, ...) {printf("ERROR!J "format, ## __VA_ARGS__);}
+#endif
+*/
 
 
 static inline int getIndex(unsigned int num) {
 
-    if (num < (1 << MEMORY_MIN_EXP)) {
-        ERROR("Got under minimum exponent\n");
+    if (num <= (1 << MEMORY_MIN_EXP)) {
         //return MEMORY_MIN_EXP-1;
         return 0;
     }
@@ -57,13 +67,16 @@ void free(void* ptr) {
 
     tag_t* tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
     if (tag->magic != MEMORY_TAG_MAGIC) {
-        ERROR("kfree: Tag at 0x%x has been corrupted!\n", ptr);
+        ERROR("free: Tag at 0x%x has been corrupted!\n", ptr);
         return;
     }
+
+    int oldIndex = getIndex(tag->realsize - sizeof(tag_t));
 
     // Merge with previous
     while ((tag->splitprev != NULL) && (tag->splitprev->index >= 0)) {
 
+        VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
 
         left->realsize += tag->realsize;
@@ -92,6 +105,7 @@ void free(void* ptr) {
     // Merge with next
     while ((tag->splitnext != NULL) && (tag->splitnext->index >= 0)) {
 
+        VERBOSE("free: Absorbing right\n");
         tag_t* right = tag->splitnext;
 
         tag->realsize += right->realsize;
@@ -116,23 +130,41 @@ void free(void* ptr) {
         right->index = -1;
     }
 
-    uint32_t index = getIndex(tag->realsize - sizeof(tag_t));
-    if (tag->prev == NULL && tag->next == NULL) {        
+    int index = getIndex(tag->realsize - sizeof(tag_t));
+    VERBOSE("Tag has size %d at index %d\n", tag->realsize, index);
+    if (tag->splitprev == NULL && tag->splitnext == NULL) {        
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
-            freePages[index] = NULL;
+            //freePages[index] = NULL;
 
             uint32_t pages = tag->realsize / FRAME_SIZE;
+            if ((tag->realsize & (FRAME_SIZE-1)) != 0)
+                pages++;
+
+            if (pages < MEMORY_MIN_FRAMES)
+                pages = MEMORY_MIN_FRAMES;
+
             freeFrames((void*) tag, pages);
+            return;
         }
 
         completePages[index]++;
     }
 
-    // Insert free tag at beginning
+    tag->index = index;
+
+    // Check if tag is the first in the list
+    if (freePages[oldIndex] == tag)
+        freePages[oldIndex] = tag->next;
+
+    tag->prev = NULL;
+    tag->next = NULL;
+
+    // Insert tag at start of new location
     if (freePages[index] == NULL) {
         freePages[index] = tag;
     } else {
+        tag->next = freePages[index];
         freePages[index]->prev = tag;
         freePages[index] = tag;
     }

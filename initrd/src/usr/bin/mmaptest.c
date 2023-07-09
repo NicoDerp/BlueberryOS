@@ -15,8 +15,11 @@ void test(void) {
     int* ptr2 = (int*) malloc(n*sizeof(int));
     printf("Pointer at 0x%x\n", ptr2);
 
+    printf("Freeing\n");
     free(ptr1);
+    printf("Freeing\n");
     free(ptr2);
+    printf("\n");
 }
 
 void main() {

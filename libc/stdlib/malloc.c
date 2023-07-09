@@ -1,6 +1,5 @@
 
 #include <stdlib.h>
-#include <bits/memory.h>
 
 #if defined(__is_libk)
 #include <kernel/logging.h>
@@ -9,20 +8,30 @@
 #include <sys/mman.h>
 #endif
 
+#include <bits/memory.h>
+
+#include <stdio.h>
+
 tag_t* freePages[MEMORY_TOT_EXP];
 int completePages[MEMORY_TOT_EXP];
 int initialized = 0;
 
-
 #if !defined(__is_libk)
 #define VERBOSE(format, ...)
-#define ERROR(format, ...)
+#define ERROR(format, ...) {printf("Error: "format, ## __VA_ARGS__);}
 #endif
+
+/*
+#if !defined(__is_libk)
+#define VERBOSE(format, ...) {printf("\e[f;0m[INFO]\e[0m "format, ## __VA_ARGS__);}
+#define ERROR(format, ...) {printf("Error: "format, ## __VA_ARGS__);}
+#endif
+*/
 
 
 static inline int getIndex(unsigned int num) {
 
-    if (num < (1 << MEMORY_MIN_EXP)) {
+    if (num <= (1 << MEMORY_MIN_EXP)) {
         return 0;
     }
 
@@ -44,7 +53,10 @@ static inline void* allocateFrames(unsigned int count) {
 #else
 
 static inline void* allocateFrames(unsigned int count) {
-    return mmap(NULL, count*FRAME_4KB, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    VERBOSE("Allocating %d frames\n", count);
+    void* ptr = mmap(NULL, count*FRAME_4KB, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    VERBOSE("Got ptr: 0x%x\n", ptr);
+    return ptr;
 }
 
 #endif
@@ -67,7 +79,7 @@ void* malloc(size_t size) {
     }
 
     tag_t* tag;
-    uint32_t index = getIndex(size);
+    int index = getIndex(size);
 
     uint32_t i;
     for (i = index; i < MEMORY_TOT_EXP; i++) {
@@ -89,12 +101,10 @@ void* malloc(size_t size) {
         if (pages < MEMORY_MIN_FRAMES)
             pages = MEMORY_MIN_FRAMES;
 
-        // TODO in usermode this is mmap
         tag = (tag_t*) allocateFrames(pages);
 
         tag->magic = MEMORY_TAG_MAGIC;
         tag->realsize = pages * FRAME_SIZE;
-        tag->index = -1;
 
         tag->splitprev = NULL;
         tag->splitnext = NULL;
@@ -102,7 +112,7 @@ void* malloc(size_t size) {
     } else {
 
         if (tag->magic != MEMORY_TAG_MAGIC) {
-            ERROR("Tag (0x%x) (%d) magic has been overwritten!\n", tag, tag->index);
+            ERROR("malloc: Tag (0x%x) (%d) magic has been overwritten!\n", tag, tag->index);
             for (;;) {}
         }
 
@@ -116,12 +126,14 @@ void* malloc(size_t size) {
         if (tag->next != NULL)
             tag->next->prev = tag->prev;
 
-        tag->index = -1;
+        if ((tag->splitprev == NULL) && (tag->splitnext == NULL))
+            completePages[index]--;
     }
 
     tag->prev = NULL;
     tag->next = NULL;
     tag->size = size;
+    tag->index = -1;
 
     // Check if there is more space left in tag, in that case we split the tag
     int remainder = tag->realsize - size - 2*sizeof(tag_t); // Both this tag and next tag
@@ -129,7 +141,7 @@ void* malloc(size_t size) {
     // Needs to be more than minimum to split
     if (remainder > (1 << MEMORY_MIN_EXP)) {
 
-        VERBOSE("kmalloc: Splitting tag with size %d with remainder %s\n", size, remainder);
+        VERBOSE("kmalloc: Splitting tag with size %d with remainder %d\n", size, remainder);
 
         tag_t* splitTag = (tag_t*) ((uint32_t) tag + sizeof(tag_t) + tag->size);
         splitTag->magic = MEMORY_TAG_MAGIC;
@@ -153,6 +165,7 @@ void* malloc(size_t size) {
         if (freePages[splitIndex] == NULL) {
             freePages[splitIndex] = splitTag;
         } else {
+            splitTag->next = freePages[splitIndex];
             freePages[splitIndex]->prev = splitTag;
             freePages[splitIndex] = splitTag;
         }

@@ -18,9 +18,10 @@
 #define MEMORY_TAG_MAGIC    0xFEAB0CBD
 #define MEMORY_MAX_COMPLETE 4
 #define MEMORY_MAX_EXP      32
-#define MEMORY_MIN_EXP      4
+//#define MEMORY_MIN_EXP      4
+#define MEMORY_MIN_EXP      0
 #define MEMORY_TOT_EXP      (MEMORY_MAX_EXP - MEMORY_MIN_EXP)
-#define MEMORY_MIN_FRAMES   8
+#define MEMORY_MIN_FRAMES   4
 
 struct tag;
 typedef struct tag {

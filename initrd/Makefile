@@ -63,7 +63,9 @@ DEPS = $(OBJS:.o=.d)
 .PHONY: all clean build rebuild check install
 #.SUFFIXES: .o .c .asm .d
 
-all: build install
+all:
+	$(MAKE) -j8 build
+	$(MAKE) install
 
 build: $(BINS)
 

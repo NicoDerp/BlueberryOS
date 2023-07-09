@@ -1147,7 +1147,7 @@ int mmapProcess(process_t* process, uint32_t address, uint32_t length, int prot,
     for (size_t i = 0; i < chunks; i++) {
         pageframe_t frame = kalloc_frame();
         uint32_t virtual = address + i * FRAME_SIZE;
-        map_page_wflags_pd(process->pd, v_to_p((uint32_t) frame), virtual, PAGE_MMAPPED | PAGE_READWRITE | PAGE_PRESENT);
+        map_page_wflags_pd(process->pd, v_to_p((uint32_t) frame), virtual, PAGE_MMAPPED | PAGE_USER | PAGE_READWRITE | PAGE_PRESENT);
     }
 
     return address;
