@@ -528,8 +528,6 @@ void parseDirectory(tar_header_t* header) {
     directory->owner = rootUser;
     directory->group = rootPGroup;
 
-    printf("parseDir: count: %d\n", directory->directoryCount);
-
     // Create '.'
     createSymbolicDirectory(directory, directory, ".", directory->mode, rootUser, rootPGroup);
 
@@ -588,8 +586,6 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
     directory->owner = owner;
     directory->group = group;
 
-    printf("createDir: count: %d\n", directory->directoryCount);
-    
     // Create '.'
     createSymbolicDirectory(directory, directory, ".", directory->mode, owner, group);
 
@@ -601,8 +597,6 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
 
 directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, user_t* owner, group_t* group) {
 
-    printf("createSymDir: count: %d\n", parent->directoryCount);
-
     if (parent->directoryCount >= MAX_DIRECTORIES) {
         ERROR("Max directories reached with count %d\n", parent->directoryCount);
         for (;;) {}
@@ -610,10 +604,6 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
 
     directory_t* directory = (directory_t*) kmalloc(sizeof(directory_t));
     memset(directory, 0, sizeof(directory_t));
-
-    printf("parent is %s\n", parent->name);
-    printf("Parent is %d\n", parent->directoryCount);
-    printf("New directory at 0x%x\n", (uint32_t) directory);
 
     parent->directories[parent->directoryCount++] = directory;
     directory->parent = parent;
@@ -752,8 +742,6 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
     rootDir.fileCount = 0;
     rootDir.owner = rootUser;
     rootDir.group = rootPGroup;
-
-    printf("rootDir: count: %d\n", rootDir.directoryCount);
 
     // Create '.'
     createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode, rootUser, rootPGroup);

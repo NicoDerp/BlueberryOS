@@ -72,11 +72,6 @@ void* kmalloc(size_t size) {
             break;
     }
 
-    if (tag == NULL)
-        printf("tag 0x%x\n", tag);
-    else
-        printf("tag 0x%x at %d (%d) \n", tag, i, tag->index);
-
     if (tag == NULL) {
         uint32_t realsize = size + sizeof(tag_t);
         uint32_t pages = realsize / FRAME_SIZE;
@@ -103,8 +98,6 @@ void* kmalloc(size_t size) {
             for (;;) {}
         }
 
-        printf("Magic: 0x%x\n", tag->magic);
-        printf("ajed index: %d\n", tag->index);
         // Check if tag is the first in the list
         if (freePages[tag->index] == tag)
             freePages[tag->index] = tag->next;
@@ -121,8 +114,6 @@ void* kmalloc(size_t size) {
     tag->prev = NULL;
     tag->next = NULL;
     tag->size = size;
-
-    printf("Tag at 0x%x size %d\n", tag, size);
 
     // Check if there is more space left in tag, in that case we split the tag
     int remainder = tag->realsize - size - 2*sizeof(tag_t); // Both this tag and next tag
@@ -158,13 +149,13 @@ void* kmalloc(size_t size) {
             freePages[splitIndex] = splitTag;
         }
         splitTag->index = splitIndex;
-        printf("Split tag at 0x%x with index %d and size %d\n", splitTag, splitTag->index, remainder - sizeof(tag_t));
+        VERBOSE("Split tag at 0x%x with index %d and size %d\n", splitTag, splitTag->index, remainder - sizeof(tag_t));
         /*
         printf("Split magic: 0x%x\n", splitTag->magic);
         */
     }
 
-    printf("Tag is at 0x%x with index %d\n", tag, tag->index);
+    VERBOSE("kmalloc: Returning tag at 0x%x with index %d\n", tag, tag->index);
     /*
     printf("Returning 0x%x for size %d\n", (uint32_t) tag + sizeof(tag_t), size);
     printf("allocMagic: 0x%x\n", tag->magic);
