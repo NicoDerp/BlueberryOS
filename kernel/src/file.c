@@ -477,52 +477,11 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
     return parent;
 }
 
-directory_t* allocateDirectory(void) {
-
-    VERBOSE("allocateDirectory: Allocating\n");
-
-    // Allocate new frame if we haven't yet or there isn't enough space left
-    if (currentPageframe == 0 || (currentLocation + sizeof(directory_t)) > ((uint32_t) currentPageframe + FRAME_4KB)) {
-        VERBOSE("allocateDirectory: Allocating new frame\n");
-        currentPageframe = kalloc_frame();
-        currentLocation = (uint32_t) currentPageframe;
-    }
-
-    directory_t* dir = (directory_t*) currentLocation;
-    currentLocation += sizeof(directory_t);
-
-    // Align to 4 bytes
-    currentLocation = (currentLocation + 4 - 1) & -4;
-
-    return dir;
-}
-
-file_t* allocateFile(void) {
-
-    VERBOSE("allocateFile: Allocating\n");
-
-    // Allocate new frame if we haven't yet or there isn't enough space left
-    if (currentPageframe == 0 || (currentLocation + sizeof(file_t)) > ((uint32_t) currentPageframe + FRAME_4KB)) {
-        VERBOSE("allocateFile: Allocating new frame\n");
-        currentPageframe = kalloc_frame();
-        currentLocation = (uint32_t) currentPageframe;
-    }
-
-    file_t* dir = (file_t*) currentLocation;
-    currentLocation += sizeof(file_t);
-
-    // Align to 4 bytes
-    currentLocation = (currentLocation + 4 - 1) & -4;
-
-    return dir;
-}
-
-
 void parseDirectory(tar_header_t* header) {
 
     VERBOSE("parseDirectory: parsing %s\n", header->filename);
 
-    directory_t* directory = allocateDirectory();
+    directory_t* directory = (directory_t*) kmalloc(sizeof(directory_t));
     memset(directory, 0, sizeof(directory_t));
 
     //printf("Parsing dir: %s\n", header->filename);
@@ -537,7 +496,7 @@ void parseDirectory(tar_header_t* header) {
     }
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
-        ERROR("Max directories reached\n");
+        ERROR("Max directories reached with count %d\n", parent->directoryCount);
         for (;;) {}
     }
 
@@ -569,6 +528,8 @@ void parseDirectory(tar_header_t* header) {
     directory->owner = rootUser;
     directory->group = rootPGroup;
 
+    printf("parseDir: count: %d\n", directory->directoryCount);
+
     // Create '.'
     createSymbolicDirectory(directory, directory, ".", directory->mode, rootUser, rootPGroup);
 
@@ -580,11 +541,11 @@ void parseDirectory(tar_header_t* header) {
 
 directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, user_t* owner, group_t* group) {
 
-    directory_t* directory = allocateDirectory();
+    directory_t* directory = (directory_t*) kmalloc(sizeof(directory_t));
     memset(directory, 0, sizeof(directory_t));
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
-        ERROR("Max directories reached\n");
+        ERROR("Max directories reached with count %d\n", parent->directoryCount);
         for (;;) {}
     }
 
@@ -627,6 +588,8 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
     directory->owner = owner;
     directory->group = group;
 
+    printf("createDir: count: %d\n", directory->directoryCount);
+    
     // Create '.'
     createSymbolicDirectory(directory, directory, ".", directory->mode, owner, group);
 
@@ -638,13 +601,19 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
 
 directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, user_t* owner, group_t* group) {
 
-    directory_t* directory = allocateDirectory();
-    memset(directory, 0, sizeof(directory_t));
+    printf("createSymDir: count: %d\n", parent->directoryCount);
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
-        ERROR("Max directories reached\n");
+        ERROR("Max directories reached with count %d\n", parent->directoryCount);
         for (;;) {}
     }
+
+    directory_t* directory = (directory_t*) kmalloc(sizeof(directory_t));
+    memset(directory, 0, sizeof(directory_t));
+
+    printf("parent is %s\n", parent->name);
+    printf("Parent is %d\n", parent->directoryCount);
+    printf("New directory at 0x%x\n", (uint32_t) directory);
 
     parent->directories[parent->directoryCount++] = directory;
     directory->parent = parent;
@@ -702,7 +671,7 @@ void parseFile(tar_header_t* header) {
         for (;;) {}
     }
 
-    file_t* file = allocateFile();
+    file_t* file = (file_t*) kmalloc(sizeof(file_t));
     memset(file, 0, sizeof(file_t));
 
     //printf("Parsing file: %s\n", header->filename);
@@ -783,6 +752,8 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
     rootDir.fileCount = 0;
     rootDir.owner = rootUser;
     rootDir.group = rootPGroup;
+
+    printf("rootDir: count: %d\n", rootDir.directoryCount);
 
     // Create '.'
     createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode, rootUser, rootPGroup);

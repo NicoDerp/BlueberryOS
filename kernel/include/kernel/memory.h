@@ -30,6 +30,8 @@ extern unsigned int _kernelstart;
 #define MEMORY_MAX_COMPLETE 4
 #define MEMORY_MAX_EXP      32
 #define MEMORY_MIN_EXP      4
+#define MEMORY_TOT_EXP      (MEMORY_MAX_EXP - MEMORY_MIN_EXP)
+#define MEMORY_MIN_FRAMES   8
 
 typedef void* pageframe_t;
 

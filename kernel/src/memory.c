@@ -17,8 +17,8 @@ pageframe_t cached_frame_map[FRAME_CACHE_SIZE];
 uint32_t framestart;
 size_t cachedIndex = 0;
 
-tag_t* freePages[MEMORY_MAX_EXP];
-int completePages[MEMORY_MAX_EXP];
+tag_t* freePages[MEMORY_TOT_EXP];
+int completePages[MEMORY_TOT_EXP];
 
 uint32_t framesUsed = 0;
 
@@ -32,7 +32,7 @@ void memory_initialize(uint32_t framestart_, uint32_t bytes) {
     cachedIndex = 0;
     kalloc_cache();
 
-    for (size_t i = 0; i < MEMORY_MAX_EXP; i++) {
+    for (size_t i = 0; i < MEMORY_TOT_EXP; i++) {
         freePages[i] = NULL;
         completePages[i] = 0;
     }
@@ -42,14 +42,16 @@ static inline int getIndex(unsigned int num) {
 
     if (num < (1 << MEMORY_MIN_EXP)) {
         ERROR("Got under minimum exponent\n");
-        return MEMORY_MIN_EXP-1;
+        //return MEMORY_MIN_EXP-1;
+        return 0;
     }
 
     unsigned int exp = 0;
     while (num >>= 1)
         exp++;
 
-    return exp-1;
+    //return exp-1;
+    return exp - MEMORY_MIN_EXP;
 }
 
 void* kmalloc(size_t size) {
@@ -57,20 +59,32 @@ void* kmalloc(size_t size) {
     tag_t* tag;
     uint32_t index = getIndex(size);
 
-    printf("Index at %d\n", index);
+    //printf("Index at %d\n", index);
 
-    tag = freePages[index];
-    while ((tag != NULL) && (size + sizeof(tag_t) > tag->realsize)) {
-        tag = tag->next;
+    uint32_t i;
+    for (i = index; i < MEMORY_TOT_EXP; i++) {
+        tag = freePages[i];
+        while ((tag != NULL) && (size + sizeof(tag_t) > tag->realsize)) {
+            tag = tag->next;
+        }
+
+        if (tag != NULL)
+            break;
     }
 
-    printf("tag 0x%x\n", tag);
+    if (tag == NULL)
+        printf("tag 0x%x\n", tag);
+    else
+        printf("tag 0x%x at %d (%d) \n", tag, i, tag->index);
 
     if (tag == NULL) {
         uint32_t realsize = size + sizeof(tag_t);
         uint32_t pages = realsize / FRAME_SIZE;
         if ((realsize & (FRAME_SIZE-1)) != 0)
             pages++;
+
+        if (pages < MEMORY_MIN_FRAMES)
+            pages = MEMORY_MIN_FRAMES;
 
         // TODO in usermode this is mmap
         tag = (tag_t*) kalloc_frames(pages);
@@ -84,6 +98,13 @@ void* kmalloc(size_t size) {
 
     } else {
 
+        if (tag->magic != MEMORY_TAG_MAGIC) {
+            ERROR("Tag (0x%x) (%d) magic has been overwritten!\n", tag, tag->index);
+            for (;;) {}
+        }
+
+        printf("Magic: 0x%x\n", tag->magic);
+        printf("ajed index: %d\n", tag->index);
         // Check if tag is the first in the list
         if (freePages[tag->index] == tag)
             freePages[tag->index] = tag->next;
@@ -101,6 +122,8 @@ void* kmalloc(size_t size) {
     tag->next = NULL;
     tag->size = size;
 
+    printf("Tag at 0x%x size %d\n", tag, size);
+
     // Check if there is more space left in tag, in that case we split the tag
     int remainder = tag->realsize - size - 2*sizeof(tag_t); // Both this tag and next tag
 
@@ -109,10 +132,12 @@ void* kmalloc(size_t size) {
 
         VERBOSE("kmalloc: Splitting tag with size %d with remainder %s\n", size, remainder);
 
-        uint32_t splitIndex = getIndex(remainder);
-
-        tag_t* splitTag = (tag_t*) ((uint32_t) tag + tag->size);
+        tag_t* splitTag = (tag_t*) ((uint32_t) tag + sizeof(tag_t) + tag->size);
         splitTag->magic = MEMORY_TAG_MAGIC;
+
+        splitTag->realsize = remainder;
+        tag->realsize -= remainder;
+
         splitTag->next = NULL;
         splitTag->prev = NULL;
 
@@ -125,13 +150,25 @@ void* kmalloc(size_t size) {
             splitTag->splitnext->splitprev = splitTag;
 
         // Insert split tag at beginning
+        uint32_t splitIndex = getIndex(remainder - sizeof(tag_t));
         if (freePages[splitIndex] == NULL) {
             freePages[splitIndex] = splitTag;
         } else {
             freePages[splitIndex]->prev = splitTag;
             freePages[splitIndex] = splitTag;
         }
+        splitTag->index = splitIndex;
+        printf("Split tag at 0x%x with index %d and size %d\n", splitTag, splitTag->index, remainder - sizeof(tag_t));
+        /*
+        printf("Split magic: 0x%x\n", splitTag->magic);
+        */
     }
+
+    printf("Tag is at 0x%x with index %d\n", tag, tag->index);
+    /*
+    printf("Returning 0x%x for size %d\n", (uint32_t) tag + sizeof(tag_t), size);
+    printf("allocMagic: 0x%x\n", tag->magic);
+    */
 
     return (void*) ((uint32_t) tag + sizeof(tag_t));
 }
@@ -149,29 +186,57 @@ void kfree(void* ptr) {
 
     // Merge with previous
     while ((tag->splitprev != NULL) && (tag->splitprev->index >= 0)) {
-        tag->splitprev->realsize += tag->realsize;
 
-        tag->splitprev->splitnext = tag->splitnext;
+        tag_t* left = tag->splitprev;
+
+        left->realsize += tag->realsize;
+
+        left->splitnext = tag->splitnext;
         if (tag->splitnext != NULL)
-            tag->splitnext->splitprev = tag->splitprev;
+            tag->splitnext->splitprev = left;
 
         // Check if tag is the first in the list
         if (freePages[tag->index] == tag)
             freePages[tag->index] = tag->next;
 
+        if (tag->prev != NULL)
+            tag->prev->next = tag->next;
+
+        if (tag->next != NULL)
+            tag->next->prev = tag->prev;
+
         tag->prev = NULL;
         tag->next = NULL;
         tag->index = -1;
 
-        tag = tag->prev;
+        tag = left;
     }
 
     // Merge with next
     while ((tag->splitnext != NULL) && (tag->splitnext->index >= 0)) {
-        tag->realsize += tag->splitnext->realsize;
 
-        tag->splitnext->index = -1;
-        tag->splitnext = NULL;
+        tag_t* right = tag->splitnext;
+
+        tag->realsize += right->realsize;
+
+        tag->splitnext = right->splitnext;
+        if (right->splitnext != NULL) {
+            right->splitnext->splitprev = tag;
+        }
+
+        // Check if tag is the first in the list
+        if (freePages[right->index] == right)
+            freePages[right->index] = right->next;
+
+        if  (right->prev != NULL)
+            right->prev->next = right->next;
+
+        if (right->next != NULL)
+            right->next->prev = right->prev;
+
+        right->prev = NULL;
+        right->next = NULL;
+        right->index = -1;
     }
 
     uint32_t index = getIndex(tag->realsize - sizeof(tag_t));
