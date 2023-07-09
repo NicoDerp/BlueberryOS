@@ -6,9 +6,7 @@
 #include <stdlib.h>
 
 
-
-void main() {
-
+void test(void) {
     int n = 5;
 
     int* ptr = mmap(NULL, n*sizeof(int), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
@@ -23,6 +21,12 @@ void main() {
         printf("Unmapping failed\n");
         exit(1);
     }
+}
+
+void main() {
+
+    test();
+    test();
 
 }
 

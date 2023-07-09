@@ -32,6 +32,11 @@ typedef struct {
 #define p_to_v(n) ((n) + 0xC0000000)
 #define v_to_p(n) ((n) - 0xC0000000)
 
+#define PAGE_PRESENT   (1 << 0)
+#define PAGE_READWRITE (1 << 1)
+#define PAGE_USER      (1 << 2)
+#define PAGE_MMAPPED   (1 << 9)
+
 typedef uint32_t* pagetable_t;
 
 typedef uint32_t* pagedirectory_t;
@@ -55,6 +60,7 @@ void map_pagetable_pd(pagedirectory_t pd, size_t physicalIndex, size_t virtualIn
 
 void map_page(uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel);
 void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool writable, bool kernel);
+void map_page_wflags_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, uint32_t flags);
 
 void map_page_wtable_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, bool pwritable, bool pkernel, bool twritable, bool tkernel);
 void set_pagetable_flags_pd(pagedirectory_t pd, size_t virtualIndex, bool writable, bool kernel);

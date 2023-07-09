@@ -8,7 +8,6 @@
 #include <asm-generic/errno-values.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
 #include <shadow.h>
 #include <unistd.h>
 
@@ -572,8 +571,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_mmap):
             {
-                void* address = (void*) stack_state.ebx;
-                size_t length = stack_state.ecx;
+                uint32_t address = stack_state.ebx;
+                uint32_t length = stack_state.ecx;
                 int prot = stack_state.edx;
                 int flags = stack_state.esi;
                 int fd = stack_state.edi;
@@ -584,22 +583,14 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                int status;
-                (void) address;
-
-                // Not supported
-                if (prot & PROT_EXEC || prot == PROT_NONE || fd != 0 || offset != 0 || flags & MAP_SHARED) {
-                    status = -1;
-                } else {
-
-                    // Find virtual space enough for 'chunks' chunks
-                    uint32_t chunks = ((FRAME_SIZE - (length & (FRAME_SIZE-1)) + length)) >> 12;
-
-                    printf("finding space for %d chunks\n", chunks);
-                }
+                int errnum = 0;
+                int status = mmapProcess(process, address, length, prot, flags, fd, offset, &errnum);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
+
+                if (errnum != 0)
+                    process->regs.ecx = errnum;
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();
@@ -609,6 +600,25 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
         case (SYS_munmap):
             {
+                uint32_t address = stack_state.ebx;
+                uint32_t length = stack_state.ecx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int errnum = 0;
+                int status = munmapProcess(process, address, length, &errnum);
+
+                // Set status (sucess or error)
+                process->regs.eax = status;
+
+                if (errnum != 0)
+                    process->regs.ecx = errnum;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
             }
 
             break;

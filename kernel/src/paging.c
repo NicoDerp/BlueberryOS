@@ -235,6 +235,43 @@ void map_page_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr
     }
 }
 
+void map_page_wflags_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virtualAddr, uint32_t flags) {
+
+    uint32_t physicalPTI = physicalAddr / FRAME_4MB;
+    uint32_t virtualPTI = virtualAddr / FRAME_4MB;
+
+    // Same as mod 1024 but better
+    uint32_t physicalPI = (physicalAddr / FRAME_4KB) & 0x03FF;
+    uint32_t virtualPI = (virtualAddr / FRAME_4KB) & 0x03FF;
+
+    pagetable_t pagetable;
+    bool present = pd[virtualPTI] & 1;
+
+    // Check if page-table is present
+    if (present) {
+        pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
+
+        VERBOSE("map_page_pd: Using existing pagetable at 0x%x\n", (unsigned int) pagetable);
+    } else {
+        // Allocate new pagetable if it isn't present
+        pagetable = (pagetable_t) kalloc_frame();
+
+        VERBOSE("map_page_pd: Allocated pagetable at 0x%x\n", (unsigned int) pagetable);
+
+        memset(pagetable, 0, FRAME_4KB);
+    }
+
+    VERBOSE("map_page_pd: Mapping 0x%x(p) to 0x%x(v). rw%d, k%d\n", physicalPTI*FRAME_4MB+physicalPI*FRAME_4KB, virtualPTI*FRAME_4MB+virtualPI*FRAME_4KB, writable, kernel);
+
+    // Sets address and attributes for page
+    pagetable[virtualPI] = (physicalPI * FRAME_4KB + physicalPTI * FRAME_4MB) | flags;
+
+    // TODO should I change flags of entire pagetable or keep?
+    if (!present) {
+        pd[virtualPTI] = v_to_p((unsigned int) pagetable) | flags;
+    }
+}
+
 void unmap_page(void* virtualaddr) {
 
     uint32_t pdindex = (uint32_t) virtualaddr >> 22;

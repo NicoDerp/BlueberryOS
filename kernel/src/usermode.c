@@ -7,6 +7,7 @@
 #include <kernel/errors.h>
 
 #include <asm-generic/errno-values.h>
+#include <sys/mman.h>
 #include <shadow.h>
 #include <dirent.h>
 #include <string.h>
@@ -1061,6 +1062,134 @@ int getSpwdStructR(char* name, struct spwd* spw, char* buffer, uint32_t bufsize,
     spw->sp_flag = 0;
 
     *result = spw;
+
+    return 0;
+}
+
+uint32_t getVirtualChunks(process_t* process, uint32_t address, uint32_t chunks, bool ret) {
+
+    uint32_t cont = 0;
+    for (size_t i = address/FRAME_4MB; i < 1024 && cont < chunks; i++) {
+        if (!(process->pd[i] & 1)) {
+            if (cont == 0)
+                address = FRAME_4MB * i;
+
+            cont += 1024;
+            continue;
+        } else {
+            if (ret)
+                return 0;
+
+            cont = 0;
+        }
+
+        pagetable_t pt = getPagetable(process->pd[i]);
+
+        size_t jstart;
+        if (i == 0)
+            jstart = (address / FRAME_4KB) & 0x03FF;
+        else
+            jstart = 0;
+
+        for (size_t j = jstart; j < 1024 && cont < chunks; j++) {
+            if (!(pt[j] & 1)) {
+                if (cont == 0)
+                    address = FRAME_4MB * i + FRAME_4KB * j;
+
+                cont++;
+            } else {
+                if (ret)
+                    return 0;
+
+                cont = 0;
+            }
+        }
+    }
+
+    return address;
+}
+
+int mmapProcess(process_t* process, uint32_t address, uint32_t length, int prot, int flags, int fd, uint32_t offset, int* errnum) {
+
+    // Not supported
+    if (prot & PROT_EXEC || prot == PROT_NONE || fd != 0 || offset != 0 || flags & MAP_SHARED) {
+        *errnum = EINVAL;
+        return -1;
+    }
+
+    // Find virtual space enough for 'chunks' chunks
+    uint32_t chunks = ((FRAME_SIZE - (length & (FRAME_SIZE-1)) + length)) >> 12;
+
+    VERBOSE("mmapProcess: finding space for %d chunks\n", chunks);
+
+    if (address == 0) {
+
+        // Find on our own
+        address = getVirtualChunks(process, MMAP_START_ADDRESS, chunks, false);
+    } else {
+
+        // First try the hint
+        address = getVirtualChunks(process, address, chunks, true);
+
+        // If that doesn't work try on our own
+        if (address == 0)
+            address = getVirtualChunks(process, MMAP_START_ADDRESS, chunks, false);
+    }
+
+    VERBOSE("mmapProcess: Got address 0x%x\n", address);
+
+    if (address == 0) {
+        /* No memory is available. */
+        *errnum = ENOMEM;
+        return -1;
+    }
+
+    for (size_t i = 0; i < chunks; i++) {
+        pageframe_t frame = kalloc_frame();
+        uint32_t virtual = address + i * FRAME_SIZE;
+        map_page_wflags_pd(process->pd, v_to_p((uint32_t) frame), virtual, PAGE_MMAPPED | PAGE_READWRITE | PAGE_PRESENT);
+    }
+
+    return address;
+}
+
+int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* errnum) {
+
+    // If address or length is 0, or if adress isn't page-aligned
+    if ((address == 0) || (length == 0) || (address & (FRAME_SIZE-1))) {
+        *errnum = EINVAL;
+        return -1;
+    }
+
+    uint32_t chunks = ((FRAME_SIZE - (length & (FRAME_SIZE-1)) + length)) >> 12;
+
+    uint32_t cleared = 0;
+    for (uint32_t i = address/FRAME_4MB; i < 1024 && cleared < chunks; i++) {
+
+        if (!(process->pd[i] & PAGE_PRESENT))
+            continue;
+
+        pagetable_t pt = getPagetable(process->pd[i]);
+
+        size_t jstart;
+        if (i == 0)
+            jstart = (address / FRAME_4KB) & 0x03FF;
+        else {
+            jstart = 0;
+        }
+
+        for (uint32_t j = jstart; j < 1024 && cleared < chunks; j++) {
+
+            if (!(pt[j] & PAGE_PRESENT) || !(pt[j] & PAGE_MMAPPED))
+                continue;
+
+            uint32_t page = getPageLocation(pt[j]);
+            kfree_frame((void*) page);
+
+            // Unmapping
+            pt[j] = 0;
+        }
+    }
 
     return 0;
 }

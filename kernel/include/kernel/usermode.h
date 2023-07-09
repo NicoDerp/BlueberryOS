@@ -44,6 +44,7 @@
 #define MAX_GROUP_NAME_LENGTH 64
 #define MAX_GROUP_MEMBERS     8
 
+#define MMAP_START_ADDRESS    0x400000
 
 struct user;
 struct kgroup;
@@ -199,6 +200,9 @@ group_t* getGroupByGID(uint32_t gid);
 int getPasswdStructR(uint32_t uid, struct passwd* pwd, char* buffer, uint32_t bufsize, struct passwd** result);
 int getGroupStructR(uint32_t gid, struct group* grp, char* buffer, size_t bufsize, struct group** result);
 int getSpwdStructR(char* name, struct spwd* spw, char* buffer, uint32_t bufsize, struct spwd** result);
+
+int mmapProcess(process_t* process, uint32_t address, uint32_t length, int prot, int flags, int fd, uint32_t offset, int* errnum);
+int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* errnum);
 
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);
