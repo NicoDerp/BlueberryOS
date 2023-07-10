@@ -9,7 +9,7 @@
 
 void main(void) {
 
-    int fd = open("hei", O_WRONLY | O_TRUNC);
+    int fd = open("hei", O_WRONLY | O_CREAT | O_TRUNC);
     if (fd == -1) {
         int backup = errno;
         printf("open error: %s\n", strerror(backup));

@@ -196,7 +196,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
         case (SYS_open):
             {
                 char* pathname = (char*) stack_state.ebx;
-                int flags = stack_state.ecx;
+                uint32_t flags = stack_state.ecx;
+                uint32_t permissions = stack_state.edx;
 
                 process_t* process = getCurrentProcess();
 
@@ -204,7 +205,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 saveRegisters(process, &stack_state, &frame, esp);
 
                 int errnum = 0;
-                int status = openProcessFile(process, pathname, flags, &errnum);
+                int status = openProcessFile(process, pathname, flags, permissions, &errnum);
                 process->regs.eax = status;
                 process->regs.ecx = errnum;
 
@@ -410,7 +411,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 directory_t* dir = getDirectoryFrom(process->cwdir, path, true);
                 if (dir) {
 
-                    if (!directoryAccessAllowed(process, dir, P_READ)) {
+                    if (!directoryAccessAllowed(process, dir, P_EXECUTE)) {
                         // Indicate error
                         process->regs.eax = -1;
                         process->regs.ecx = ENOENT;
@@ -554,7 +555,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                int status = statPath(process, path, buf, true);
+                int errnum = 0;
+                int status = statPath(process, path, buf, true, &errnum);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
@@ -575,7 +577,8 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                int status = statPath(process, path, buf, false);
+                int errnum = 0;
+                int status = statPath(process, path, buf, false, &errnum);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;

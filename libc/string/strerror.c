@@ -39,6 +39,7 @@ static char* lookup[] = {
     "Math argument out of domain of func", /* EDOM            33 */
     "Math result not representable",       /* ERANGE          34 */
     "Invalid system call number",          /* ENOSYS          35 */
+    "File name too long",                  /* ENAMETOOLONG    36 */
 };
 
 char* strerror(int errnum) {

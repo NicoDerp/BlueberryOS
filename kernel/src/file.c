@@ -6,6 +6,7 @@
 #include <kernel/usermode.h>
 #include <kernel/logging.h>
 
+#include <asm-generic/errno-values.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -529,22 +530,24 @@ void parseDirectory(tar_header_t* header) {
     directory->group = rootPGroup;
 
     // Create '.'
-    createSymbolicDirectory(directory, directory, ".", directory->mode, rootUser, rootPGroup);
+    createSymbolicDirectory(directory, directory, ".", directory->mode, rootUser, rootPGroup, NULL);
 
     // Create '..'
-    createSymbolicDirectory(directory, parent, "..", parent->mode, rootUser, rootPGroup);
+    createSymbolicDirectory(directory, parent, "..", parent->mode, rootUser, rootPGroup, NULL);
 
     VERBOSE("parseDirectory: end\n");
 }
 
-directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, user_t* owner, group_t* group) {
+directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, user_t* owner, group_t* group, int* errnum) {
 
     directory_t* directory = (directory_t*) kmalloc(sizeof(directory_t));
     memset(directory, 0, sizeof(directory_t));
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
         ERROR("Max directories reached with count %d\n", parent->directoryCount);
-        for (;;) {}
+        if (errnum)
+            *errnum = ENOMEM;
+        return (directory_t*) 0;
     }
 
     parent->directories[parent->directoryCount++] = directory;
@@ -560,16 +563,19 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
 
     if (len > MAX_NAME_LENGTH) {
         ERROR("Filename is too large\n");
-        for (;;) {}
+        if (errnum)
+            *errnum = ENAMETOOLONG;
+        return (directory_t*) 0;
     }
 
     if (parentLen + len + 1 > MAX_FULL_PATH_LENGTH) {
         ERROR("Fullpath is too large!\n");
-        for (;;) {}
+        if (errnum)
+            *errnum = ENAMETOOLONG;
+        return (directory_t*) 0;
     }
 
-    memcpy(directory->name, name, len);
-    directory->name[len] = '\0';
+    memcpy(directory->name, name, len+1);
 
     memcpy(directory->fullpath, parent->fullpath, parentLen);
 
@@ -587,19 +593,21 @@ directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, use
     directory->group = group;
 
     // Create '.'
-    createSymbolicDirectory(directory, directory, ".", directory->mode, owner, group);
+    createSymbolicDirectory(directory, directory, ".", directory->mode, owner, group, NULL);
 
     // Create '..'
-    createSymbolicDirectory(directory, parent, "..", parent->mode, parent->owner, parent->group);
+    createSymbolicDirectory(directory, parent, "..", parent->mode, parent->owner, parent->group, NULL);
 
     return directory;
 }
 
-directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, user_t* owner, group_t* group) {
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, user_t* owner, group_t* group, int* errnum) {
 
     if (parent->directoryCount >= MAX_DIRECTORIES) {
         ERROR("Max directories reached with count %d\n", parent->directoryCount);
-        for (;;) {}
+        if (errnum)
+            *errnum = ENOMEM;
+        return (directory_t*) 0;
     }
 
     directory_t* directory = (directory_t*) kmalloc(sizeof(directory_t));
@@ -610,6 +618,7 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
 
 
     size_t len = strlen(name);
+    size_t parentLen = strlen(parent->fullpath);
 
     // Ignore slash at the end
     if (name[len-1] == '/') {
@@ -618,11 +627,30 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
 
     if (len > MAX_NAME_LENGTH) {
         ERROR("Filename is too large\n");
-        for (;;) {}
+        if (errnum)
+            *errnum = ENAMETOOLONG;
+        return (directory_t*) 0;
     }
 
-    memcpy(directory->name, name, len);
-    directory->name[len] = '\0';
+    if (parentLen + len + 1 > MAX_FULL_PATH_LENGTH) {
+        ERROR("Fullpath is too large!\n");
+        if (errnum)
+            *errnum = ENAMETOOLONG;
+        return (directory_t*) 0;
+    }
+
+    memcpy(directory->name, name, len+1);
+
+    memcpy(directory->fullpath, parent->fullpath, parentLen);
+
+    if (parent->fullpath[parentLen-1] != '/') {
+        directory->fullpath[parentLen] = '/';
+        parentLen++;
+    }
+
+    memcpy(directory->fullpath + parentLen, name, len);
+    directory->fullpath[parentLen + len] = '\0';
+
 
     directory->mode = mode;
     directory->type = SYMBOLIC_DIR;
@@ -631,6 +659,72 @@ directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, cha
     directory->group = group;
 
     return directory;
+}
+
+file_t* createFile(directory_t* parent, char* name, uint32_t mode, user_t* user, group_t* group, int* errnum) {
+
+    if (parent->fileCount >= MAX_FILES) {
+        ERROR("Max files reached\n");
+        return (file_t*) 0;
+    }
+
+    file_t* file = (file_t*) kmalloc(sizeof(file_t));
+    memset(file, 0, sizeof(file_t));
+
+
+
+    size_t len = strlen(name);
+    size_t parentLen = strlen(parent->fullpath);
+
+    // Ignore slash at the end
+    if (name[len-1] == '/') {
+        len--;
+    }
+
+    if (len > MAX_NAME_LENGTH) {
+        ERROR("Filename is too large\n");
+        if (errnum)
+            *errnum = ENAMETOOLONG;
+        return (file_t*) 0;
+    }
+
+    if (parentLen + len + 1 > MAX_FULL_PATH_LENGTH) {
+        ERROR("Fullpath is too large!\n");
+        if (errnum)
+            *errnum = ENAMETOOLONG;
+        return (file_t*) 0;
+    }
+
+    memcpy(file->name, name, len+1);
+
+    memcpy(file->fullpath, parent->fullpath, parentLen);
+
+    if (parent->fullpath[parentLen-1] != '/') {
+        file->fullpath[parentLen] = '/';
+        parentLen++;
+    }
+
+    memcpy(file->fullpath + parentLen, name, len);
+    file->fullpath[parentLen + len] = '\0';
+
+
+
+    parent->files[parent->fileCount++] = file;
+    file->parent = parent;
+
+    file->mode = mode;
+    file->size = 0;
+    file->type = REGULAR_FILE;
+    file->owner = user;
+    file->group = group;
+
+    // ceil(file->size / FRAME_4KB)
+    //printf("Size is %d, looping %d times\n", filesize);
+
+    file->frames = 0;
+    file->content = (char*) 0;
+
+    return file;
 }
 
 void parseFile(tar_header_t* header) {
@@ -745,10 +839,10 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end) {
     rootDir.group = rootPGroup;
 
     // Create '.'
-    createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode, rootUser, rootPGroup);
+    createSymbolicDirectory(&rootDir, &rootDir, ".", rootDir.mode, rootUser, rootPGroup, NULL);
 
     // Create '..'
-    createSymbolicDirectory(&rootDir, &rootDir, "..", rootDir.mode, rootUser, rootPGroup);
+    createSymbolicDirectory(&rootDir, &rootDir, "..", rootDir.mode, rootUser, rootPGroup, NULL);
 
 
     while ((tar_start + offset) <= tar_end) {

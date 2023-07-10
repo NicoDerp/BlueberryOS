@@ -865,7 +865,7 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
     if (createHome) {
         directory_t* homeDir = getDirectory("/home");
         if (!homeDir) {
-            homeDir = createDirectory(&rootDir, "home", 0755, rootUser, rootUser->groups[0]);
+            homeDir = createDirectory(&rootDir, "home", 0755, rootUser, rootUser->groups[0], NULL);
 
             if (!homeDir) {
                 FATAL("Failed to create /home directory\n");
@@ -873,7 +873,7 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
             }
         }
 
-        user->home = createDirectory(homeDir, name, 0755, user, user->groups[0]);
+        user->home = createDirectory(homeDir, name, 0755, user, user->groups[0], NULL);
         if (!user->home) {
             FATAL("Failed to create /home/%s directory\n", name);
             kabort();
@@ -1328,23 +1328,17 @@ file_t* getFileWEnv(process_t* process, char* path) {
     return (file_t*) 0;
 }
 
-int openProcessFile(process_t* process, char* pathname, int flags, int* errnum) {
+int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t permissions, int* errnum) {
 
-    if (!(flags & O_RDONLY) && !(flags & O_WRONLY)) {
-        ERROR("Flags are incorrect\n");
-        *errnum = EINVAL;
-        return -1;
-    }
+    if ((!(flags & O_RDONLY) && !(flags & O_WRONLY)) || ((flags & O_RDONLY) && (flags & O_TRUNC))) {
 
-    if ((flags & O_RDONLY) && (flags & O_TRUNC)) {
         ERROR("Flags are incorrect\n");
         *errnum = EINVAL;
         return -1;
     }
 
     if ((flags & O_WRONLY || flags & O_TRUNC) && (flags & O_DIRECTORY)) {
-        ERROR("Flags are incorrect\n");
-        *errnum = EINVAL;
+        *errnum = EISDIR;
         return -1;
     }
 
@@ -1366,16 +1360,40 @@ int openProcessFile(process_t* process, char* pathname, int flags, int* errnum) 
 
     pfd_t* pfd = &process->pfds[index];
 
-    // TODO EISDIR: Is a directory
-
     // Doesn't use PATH
     if (flags & O_DIRECTORY) {
         directory_t* dir = getDirectoryFrom(process->cwdir, pathname, true);
 
-        // TODO O_CREAT
         if (!dir) {
-            *errnum = ENOENT;
-            return -1;
+            if (!(flags & O_CREAT)) {
+                *errnum = ENOENT;
+                return -1;
+            }
+
+            // TODO support creating directories also and not just end file
+            size_t slash;
+            directory_t* parent = findParent((directory_t*) 0, pathname, &slash, false);
+
+            if (!parent) {
+                // TODO switch
+                *errnum = ENOENT;
+                return -1;
+            }
+
+            if (!directoryAccessAllowed(process, parent, P_WRITE)) {
+                *errnum = EISDIR;
+                return -1;
+            }
+
+            group_t* group;
+            if (process->owner->groups[0])
+                group = process->owner->groups[0];
+            else
+                group = parent->group;
+
+            dir = createDirectory(parent, pathname+slash, permissions, process->owner, group, errnum);
+            if (!dir)
+                return -1;
         }
 
         if (!directoryAccessAllowed(process, dir, P_READ)) {
@@ -1387,10 +1405,37 @@ int openProcessFile(process_t* process, char* pathname, int flags, int* errnum) 
     } else {
         file_t* file = getFileFrom(process->cwdir, pathname, true);
 
-        // TODO O_CREAT
         if (!file) {
-            *errnum = ENOENT;
-            return -1;
+
+            if (!(flags & O_CREAT)) {
+                *errnum = ENOENT;
+                return -1;
+            }
+
+            // TODO support creating directories also and not just end file
+            size_t slash;
+            directory_t* parent = findParent((directory_t*) 0, pathname, &slash, false);
+
+            if (!parent) {
+                // TODO switch
+                *errnum = ENOENT;
+                return -1;
+            }
+
+            if (!directoryAccessAllowed(process, parent, P_WRITE)) {
+                *errnum = EISDIR;
+                return -1;
+            }
+
+            group_t* group;
+            if (process->owner->groups[0])
+                group = process->owner->groups[0];
+            else
+                group = parent->group;
+
+            file = createFile(parent, pathname+slash, permissions, process->owner, group, errnum);
+            if (!file)
+                return -1;
         }
 
         if (!fileAccessAllowed(process, file, P_READ)) {
@@ -1577,13 +1622,15 @@ int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, ui
     return bytesRead;
 }
 
-int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic) {
+int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic, int* errnum) {
 
     file_t* file = getFileFrom(process->cwdir, path, redirectSymbolic);
     if (!file) {
         directory_t* dir = getDirectoryFrom(process->cwdir, path, redirectSymbolic);
-        if (!dir)
+        if (!dir) {
+            *errnum = ENOENT;
             return -1;
+        }
 
         if (!dir->owner) {
             FATAL("Directory %s at %s doesn't have owner!\n", dir->name, process->cwdir->name);
@@ -1593,6 +1640,11 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
         if (!dir->group) {
             FATAL("Directory %s at %s doesn't have group!\n", dir->name, process->cwdir->name);
             kabort();
+        }
+
+        if (!directoryAccessAllowed(process, dir, P_READ)) {
+            *errnum = EACCES;
+            return -1;
         }
 
         memset(buf, 0, sizeof(struct stat));
@@ -1616,6 +1668,11 @@ int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymb
     if (!file->group) {
         FATAL("File doesn't have group!\n");
         kabort();
+    }
+
+    if (!fileAccessAllowed(process, file, P_READ)) {
+        *errnum = EACCES;
+        return -1;
     }
 
     memset(buf, 0, sizeof(struct stat));

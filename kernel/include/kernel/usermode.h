@@ -212,12 +212,12 @@ file_t* getFileWEnv(process_t* process, char* path);
 int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd);
 int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd, int* errnum);
 
-int openProcessFile(process_t* process, char* pathname, int flags, int* errnum);
+int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t permissions, int* errnum);
 int closeProcessFd(process_t* process, unsigned int fd);
 pfd_t* getProcessPfd(process_t* process, unsigned int fd);
 
 int getDirectoryEntries(process_t* process, int fd, char* buf, size_t nbytes, uint32_t* basep);
-int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic);
+int statPath(process_t* process, char* path, struct stat* buf, bool redirectSymbolic, int* errnum);
 
 void handleWaitpid(process_t* process);
 void handleWaitpidBlock(process_t* process);

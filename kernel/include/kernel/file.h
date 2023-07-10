@@ -132,8 +132,12 @@ file_t* getFile(char* filepath);
 directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymbolic);
 file_t* getFileFrom(directory_t* dir, char* filepath, bool redirectSymbolic);
 
-directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, struct user* owner, struct kgroup* group);
-directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, struct user* owner, struct kgroup* group);
+directory_t* findParent(directory_t* parent, const char* filename, size_t* slash, bool init);
+
+directory_t* createDirectory(directory_t* parent, char* name, uint32_t mode, struct user* owner, struct kgroup* group, int* errnum);
+directory_t* createSymbolicDirectory(directory_t* parent, directory_t* link, char* name, uint32_t mode, struct user* owner, struct kgroup* group, int* errnum);
+
+file_t* createFile(directory_t* parent, char* name, uint32_t mode, struct user* user, struct kgroup* group, int* errnum);
 
 void displayDirectory(directory_t* dir, size_t space);
 
