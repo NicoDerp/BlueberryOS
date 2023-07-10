@@ -1372,7 +1372,7 @@ int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t
 
             // TODO support creating directories also and not just end file
             size_t slash;
-            directory_t* parent = findParent((directory_t*) 0, pathname, &slash, false);
+            directory_t* parent = findParent(process->cwdir, pathname, &slash, false);
 
             if (!parent) {
                 // TODO switch
@@ -1414,7 +1414,7 @@ int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t
 
             // TODO support creating directories also and not just end file
             size_t slash;
-            directory_t* parent = findParent((directory_t*) 0, pathname, &slash, false);
+            directory_t* parent = findParent(process->cwdir, pathname, &slash, false);
 
             if (!parent) {
                 // TODO switch
@@ -1528,8 +1528,12 @@ int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd,
         file->frames = (file->size+FRAME_4KB-1)/FRAME_4KB;
 
         pageframe_t content = kalloc_frames(file->frames);
-        memcpy(content, file->content, file->size);
-        kfree(file->content);
+
+        if (file->content != NULL) {
+            memcpy(content, file->content, file->size);
+            kfree(file->content);
+        }
+
         file->content = content;
     }
 
