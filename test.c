@@ -1,17 +1,12 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 
-
-extern void myfunc(void);
-
-int errint;
 
 int main() {
 
-    errint = 0;
-    printf("errno %d\n", errint);
-    myfunc();
-    printf("errno %d\n", errint);
+    int a = atoi("a12a35a");
+    printf("uhwr: %d\n", a);
 
     return 0;
 }

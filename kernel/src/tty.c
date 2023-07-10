@@ -7,6 +7,8 @@
 #include <kernel/io.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+
 
 static size_t VGA_WIDTH = 80;
 static size_t VGA_HEIGHT = 25;
@@ -21,7 +23,12 @@ uint8_t terminal_bg;
 
 char insideEscape = false;
 uint32_t escapeIndex = 0;
-bool setBackground = false;
+
+#define BUF_SIZE  8
+#define BUF_COUNT 4
+
+char argBuf[BUF_COUNT][BUF_SIZE];
+uint32_t argIndex = 0;
 
 inline uint16_t vga_entry(unsigned char c, uint8_t color) {
     return (uint16_t) color << 8 | (uint16_t) c;
@@ -29,6 +36,26 @@ inline uint16_t vga_entry(unsigned char c, uint8_t color) {
 
 inline uint8_t vga_color(uint8_t fg, uint8_t bg) {
     return bg << 4 | fg;
+}
+
+static inline void terminal_clear(void) {
+
+    // Loop through every cell and clear it
+    for (size_t y = 0; y < VGA_HEIGHT; y++) {
+        for (size_t x = 0; x < VGA_WIDTH; x++) {
+            const size_t index = y * VGA_WIDTH + x;
+            terminal_buffer[index] = vga_entry(' ', vga_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG));
+        }
+    }
+}
+
+static inline void terminal_clear_row(void) {
+
+    size_t index = terminal_row * VGA_WIDTH;
+    for (size_t i = 0; i < VGA_WIDTH; i++) {
+        terminal_buffer[index + i] = vga_entry(' ', vga_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG));
+    }
+    terminal_column = 0;
 }
 
 void enable_cursor(uint8_t cursor_start, uint8_t cursor_end) {
@@ -55,14 +82,7 @@ void terminal_initialize(size_t width, size_t height, void* buffer) {
     terminal_fg = VGA_DEFAULT_FG;
     terminal_bg = VGA_DEFAULT_BG;
 
-    // Loop through every cell and clear it
-    for (size_t y = 0; y < VGA_HEIGHT; y++) {
-        for (size_t x = 0; x < VGA_WIDTH; x++) {
-            const size_t index = y * VGA_WIDTH + x;
-            terminal_buffer[index] = vga_entry(' ', vga_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG));
-        }
-    }
-
+    terminal_clear();
     enable_cursor(0, 15);
 }
 
@@ -91,6 +111,60 @@ void terminal_scroll_down(void) {
     for (size_t x = 0; x < VGA_WIDTH; x++) {
         const size_t index = (VGA_HEIGHT-1) * VGA_WIDTH + x;
         terminal_buffer[index] = vga_entry(' ', vga_color(terminal_fg, terminal_bg));
+    }
+}
+
+void parseArgs(char type) {
+
+    if (type == 'm') {
+
+        int fg = atoi(argBuf[0]);
+
+        // <n>m
+        if (escapeIndex == 1) {
+            if (fg != 0)
+                return;
+
+            terminal_fg = VGA_DEFAULT_FG;
+            terminal_bg = VGA_DEFAULT_BG;
+
+            return;
+        }
+
+        int bg = atoi(argBuf[1]);
+
+        if (terminal_fg == 0) {
+            terminal_fg = VGA_DEFAULT_FG;
+        } else {
+            terminal_fg = fg - 30;
+        }
+
+        if (terminal_bg == 0) {
+            terminal_bg = VGA_DEFAULT_BG;
+        } else {
+            terminal_bg = bg - 46;
+        }
+
+    }
+    else if (type == 'J') {
+
+        int num = atoi(argBuf[0]);
+
+        /* \e[2J -> Erase entire screen */
+        if (num == 2) {
+            terminal_clear();
+            terminal_row = 0;
+            terminal_column = 0;
+        }
+    }
+    else if (type == 'K') {
+
+        int num = atoi(argBuf[0]);
+
+        /* \e[2K -> Erase the entire line */
+        if (num == 2) {
+            terminal_clear_row();
+        }
     }
 }
 
@@ -138,73 +212,54 @@ void terminal_writechar(const char c, bool updateCursor) {
     // Escape
     else if (c == 27) {
         escapeIndex = 0;
+        argIndex = 0;
         insideEscape = true;
-        setBackground = false;
         return;
     }
 
     if (insideEscape) {
 
         if (c == '[') {
+
             if (escapeIndex != 0) {
                 insideEscape = false;
             } else {
                 escapeIndex++;
             }
-            return;
         }
 
-        // Foreground
-        else if (escapeIndex == 1) {
-            int fg;
+        else if (escapeIndex >= 1 && '0' <= c && c <= '9') {
 
-            if ('0' <= c && c <= '9') {
-                fg = c - '0';
-            } else if ('a' <= c && c <= 'f') {
-                fg = c - 'a' + 10;
+            if (escapeIndex-1 >= BUF_COUNT) {
+
+            } if (argIndex >= BUF_SIZE) {
+
             } else {
-                insideEscape = false;
-                return;
+                argBuf[escapeIndex-1][argIndex++] = c;
             }
-
-            terminal_fg = fg;
-            escapeIndex++;
-            return;
         }
 
         else if (c == ';') {
-            escapeIndex++;
-            return;
-        }
 
-        // Background
-        else if (escapeIndex == 3) {
-            int bg;
+            if (escapeIndex-1 >= BUF_COUNT) {
 
-            if ('0' <= c && c <= '9') {
-                bg = c - '0';
-            } else if ('a' <= c && c <= 'f') {
-                bg = c - 'a' + 10;
+            } else if (argIndex >= BUF_SIZE) {
+
             } else {
-                insideEscape = false;
-                return;
+                argBuf[escapeIndex-1][argIndex] = '\0';
             }
 
-            terminal_bg = bg;
             escapeIndex++;
-            return;
+            argIndex = 0;
         }
 
-        // m
-        else if (c == 'm') {
-            if (terminal_fg == 0) {
-                terminal_fg = VGA_DEFAULT_FG;
-                terminal_bg = VGA_DEFAULT_BG;
-            }
+        else {
+            argBuf[escapeIndex-1][argIndex] = '\0';
+            parseArgs(c);
             insideEscape = false;
-            return;
         }
 
+        return;
     }
 
     const size_t index = terminal_row * VGA_WIDTH + terminal_column;

@@ -19,13 +19,13 @@ void enableLogging(void);
 
 #define ERROR(format, ...)\
     if (loggingEnabled) {\
-        printf("\e[4;0m[ERROR]\e[0m "format, ## __VA_ARGS__);\
+        printf("\e[34;46m[ERROR]\e[0m "format, ## __VA_ARGS__);\
     }\
 
 
 #define FATAL(format, ...)\
     if (loggingEnabled) {\
-        printf("\e[4;0m[FATAL]\e[0m "format, ## __VA_ARGS__);\
+        printf("\e[34;46m[FATAL]\e[0m "format, ## __VA_ARGS__);\
     }\
 
 
@@ -33,7 +33,7 @@ void enableLogging(void);
 
 #define VERBOSE(format, ...)\
     if (loggingEnabled) {\
-        printf("\e[f;0m[INFO]\e[0m "format, ## __VA_ARGS__);\
+        printf("\e[45;46m[INFO]\e[0m "format, ## __VA_ARGS__);\
     }\
 
 #else

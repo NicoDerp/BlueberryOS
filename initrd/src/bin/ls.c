@@ -79,9 +79,9 @@ void ls(char* path, bool showHidden, bool list) {
         }
 
         if (ent->d_type == DT_DIR)
-            printf("\e[9;0m%s\e[0m", ent->d_name);
+            printf("\e[39;46m%s\e[0m", ent->d_name);
         else if (statStruct.st_mode & S_IXUSR || statStruct.st_mode & S_IXGRP || statStruct.st_mode & S_IXOTH)
-            printf("\e[a;0m%s\e[0m", ent->d_name);
+            printf("\e[39;46m%s\e[0m", ent->d_name);
         else
             printf("%s", ent->d_name);
 

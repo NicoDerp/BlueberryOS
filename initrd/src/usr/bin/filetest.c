@@ -7,9 +7,12 @@
 #include <fcntl.h>
 
 
-void main(void) {
+void main(int argc, char* argv[]) {
 
-    int fd = open("hei", O_WRONLY | O_CREAT | O_TRUNC, 0664);
+    if (argc != 2)
+        return;
+
+    int fd = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC, 0664);
     if (fd == -1) {
         int backup = errno;
         printf("open error: %s\n", strerror(backup));

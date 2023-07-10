@@ -38,7 +38,7 @@ typedef void (*module_func_t)(void);
 
 
 
-char* titleText = "\e[b;0m"
+char* titleText = "\e[41;46m"
 "  ____  _            _                           ____   _____ \n"
 " |  _ \\| |          | |                         / __ \\ / ____|\n"
 " | |_) | |_   _  ___| |__   ___ _ __ _ __ _   _| |  | | (___  \n"
@@ -145,23 +145,23 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Settings up System TSS   ... ");
     tss_initialize();
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
     printf("Setting up GDT           ... ");
     gdt_initialize();
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
     printf("Flushing TSS             ... ");
     flush_tss();
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
     printf("Setting up IDT           ... ");
     idt_initialize();
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
     printf("Setting up Paging        ... ");
     paging_initialize();
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
     struct multiboot_tag_module modules[32];
     size_t moduleCount = 0;
@@ -170,7 +170,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     set_kernel_stack(esp);
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
     if (eax != 0x36d76289) {
         ERROR("Failed to verify if bootloader has passed correct information\n");
@@ -272,7 +272,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
 
     if (moduleCount == 0) {
-        printf("\n\e[4;0m[FATAL]\e[0m No initrd found!\n");
+        FATAL("No initrd found!\n");
         kabort();
     }
 
@@ -296,20 +296,20 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     int status = tinf_gzip_uncompress(dest, &destLen, (void*) modules[0].mod_start, sourceLen);
 
     if (status == TINF_BUF_ERROR) {
-        printf("\e[4;0m[ERROR]\e[0m\n");
+        printf("\e[34;46m[ERROR]\e[0m\n");
         FATAL("Failed to decompress initrd: buffer error\n");
         kabort();
 
     } else if (status == TINF_DATA_ERROR) {
 
         VERBOSE("init: initrd wasn't tar.gz\n");
-        printf("\e[2;0m[OK]\e[0m\n");
+        printf("\e[32;46m[OK]\e[0m\n");
         // Not gzip
         loadInitrd(modules[0].mod_start, modules[0].mod_end);
     } else if (status == TINF_OK) {
 
         VERBOSE("init: initrd decompression sucessfull\n");
-        printf("\e[2;0m[OK]\e[0m\n");
+        printf("\e[32;46m[OK]\e[0m\n");
         loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
     }
 
@@ -320,7 +320,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     group_t* sudoers = createGroup("sudoers");
     addUserToGroup(currentUser, sudoers);
 
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
 
     printf("Setting up programs      ... ");
@@ -334,7 +334,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     sudo->group = sudoers;
 
-    printf("\e[2;0m[OK]\e[0m\n");
+    printf("\e[32;46m[OK]\e[0m\n");
 
 
     /*

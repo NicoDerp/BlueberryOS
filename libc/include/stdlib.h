@@ -13,6 +13,7 @@ __attribute__((__noreturn__)) void abort(void);
 
 char* itoa(int, char*, int);
 char* uitoa(unsigned int, char*, int);
+int atoi(const char* str);
 
 __attribute__((__noreturn__)) void exit(int);
 

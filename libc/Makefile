@@ -41,6 +41,7 @@ FREEOBJS =\
 	stdlib/abort.o \
 	stdlib/itoa.o \
 	stdlib/uitoa.o \
+	stdlib/atoi.o \
 	stdlib/exit.o \
 	stdlib/getenv_r.o \
 	stdlib/setenv.o \

@@ -20,7 +20,8 @@ CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude
 ASM_CFLAGS =
 LFLAGS := $(LFLAGS)
 #-Wl,--gc-sections
-LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
+LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lncurses -lc -lgcc
+#LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -lgcc
 
 ASM = nasm
@@ -40,6 +41,7 @@ SRC_C = src/sbin/loop.c \
 		src/usr/bin/test2.c \
 		src/usr/bin/mmaptest.c \
 		src/usr/bin/filetest.c \
+		src/usr/bin/graphics.c \
 
 SRC_ASM = src/usr/bin/userfunc.asm \
 

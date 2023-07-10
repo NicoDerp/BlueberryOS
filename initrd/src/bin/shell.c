@@ -168,7 +168,7 @@ void main() {
 
     while (true) {
 
-        printf("\e[a;0m%s\e[0m:\e[9;0m%s\e[0m$ ", pwd.pw_name, cwd);
+        printf("\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ ", pwd.pw_name, cwd);
 
         char c;
         size_t index = 0;
@@ -210,12 +210,14 @@ void main() {
                 if (historyScroll != historyCount) {
                     historyScroll++;
 
+                    /*
                     for (size_t i = 0; i < index; i++) {
                         printf("\b \b");
                     }
+                    */
 
                     strcpy(cmd, history[historyCount - historyScroll]);
-                    printf("%s", cmd);
+                    printf("\e[2K\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ %s", pwd.pw_name, cwd, cmd);
 
                     size_t len = strlen(cmd);
                     index = len;
@@ -237,14 +239,16 @@ void main() {
                 } else {
                     historyScroll--;
 
+                    /*
                     for (size_t i = 0; i < index; i++) {
                         printf("\b \b");
                     }
+                    */
 
                     size_t len = strlen(history[historyCount - historyScroll]);
                     memcpy(cmd, history[historyCount - historyScroll], len);
                     cmd[len] = '\0';
-                    printf("%s", cmd);
+                    printf("\e[2K\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ %s", pwd.pw_name, cwd, cmd);
 
                     index = len;
                     cursor = len;
@@ -312,7 +316,7 @@ void main() {
             cmdExit(argCount, parsedArgs);
         }
         else if (strcmp(parsedArgs[0], "clear") == 0) {
-
+            printf("\e[2J");
         }
         else if (strcmp(parsedArgs[0], "cd") == 0) {
             cmdCd(argCount, parsedArgs);

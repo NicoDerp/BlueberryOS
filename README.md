@@ -20,6 +20,10 @@ This is very in-development and just a hobby-project.
 
 ## Goals
 
+I want BlueberryOS to be simple, small and efficient.
+
+## Milestones
+
 - [x] Libc with syscalls
 - [x] Usermode
 - [x] ELF-parsing
@@ -47,9 +51,13 @@ You will need:
  - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
  - The source code for BlueberryOS (download by using `git clone https://github.com/NicoDerp/BlueberryOS.git`)
 
-Download source
+Inside BlueberryOS, head into the `kernel` folder and run:
 
-Then head into all sub-directories and run:
+```shell
+$ make install
+```
+
+Then head into `libc` (important that this is first!), `initrd` and lastly `ncurses` (in that order) and run:
 
 ```shell
 $ make
@@ -82,11 +90,13 @@ Download from [https://wiki.osdev.org/GCC_Cross-Compiler](https://wiki.osdev.org
 ### Syscalls
 
 Instead of the conventional `int $80` for linux-based operating systems, this os uses the interrupt `$30` or decimal `48`.
-Return values of syscalls are returned in register `eax`, and the errno is returned in register `ecx`. The rest of the registers are saved.
+Return values of syscalls are returned in register `eax`, and if there is an error, the errno value is returned in register `ecx`.
+The rest of the registers are saved.
 
-### Libc
+### Library
 
-Is pretty POSIX compliant, with a lot of functions implemented.
+The C-library and kernel is pretty POSIX compliant, with a lot of similarities with Linux.
+You will find a lot of common functions are implemented, but not all.
 
 ## License
 
