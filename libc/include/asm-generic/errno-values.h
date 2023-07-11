@@ -1,6 +1,6 @@
 
-#ifndef _ASM_GENERIC_ERRNO_H
-#define _ASM_GENERIC_ERRNO_H 1
+#ifndef _ASM_GENERIC_ERRNO_VALUES_H
+#define _ASM_GENERIC_ERRNO_VALUES_H 1
 
 
 #define EPERM           1        /* Operation not permitted */

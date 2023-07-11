@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -44,12 +45,21 @@ void main(int argc, char** argv) {
         exit(1);
     }
 
-    char buf[128];
-    int bytes = read(fd, buf, sizeof(buf));
+    struct stat st;
+    if (stat(argv[1], &st) == -1) {
+        int backup = errno;
+        printf("%s: %s: stat error: %s\n", argv[0], argv[1], strerror(backup));
+        exit(1);
+    }
+
+    // TODO mmap
+    char* buf = (char*) malloc(st.st_size);
+    int bytes = read(fd, buf, st.st_size);
     if (bytes != 0) {
         buf[bytes] = '\0';
         printf("%s", buf);
     }
+    free(buf);
 
     if (close(fd) == -1) {
         printf("close failed\n");

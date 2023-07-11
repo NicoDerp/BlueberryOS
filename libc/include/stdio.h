@@ -27,8 +27,9 @@ int puts(const char*);
 int getc(unsigned int);
 int getchar(void);
 
-FILE* fopen(const char* path, const char* mode);
+FILE* fopen(const char*, const char*);
 int fclose(FILE* file);
+//char* fgets(char* str, int n, FILE* stream);
 
 #ifdef __cplusplus
 }

@@ -6,10 +6,7 @@
 
 int printw(char* format, ...) {
 
-    va_list args;
-    va_start(args, format);
-    int ret = printf(format, args);
-    va_end(args);
-    return ret;
+    // Goofy asf
+    return wprintw(stdscr, format, *((unsigned int*) ((int) &format + sizeof(unsigned int))));
 }
 

@@ -41,7 +41,7 @@ SRC_C = src/sbin/loop.c \
 		src/usr/bin/test2.c \
 		src/usr/bin/mmaptest.c \
 		src/usr/bin/filetest.c \
-		src/usr/bin/graphics.c \
+		src/usr/bin/vim.c \
 
 SRC_ASM = src/usr/bin/userfunc.asm \
 
@@ -88,6 +88,8 @@ initrd: $(BINS)
 	chmod 755 initrd/usr/bin/*
 	chmod 755 initrd/bin/*
 	chmod 4750 initrd/bin/sudo
+	mkdir -p initrd/home/nico
+	cp file initrd/home/nico/file
 
 initrd.tar.gz: initrd
 	tar U --gzip -cvf initrd.tar.gz initrd

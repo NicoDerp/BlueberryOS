@@ -217,48 +217,37 @@ void parseArgs(char type) {
     }
 }
 
-int terminal_execute_cmd(int cmd, int* args, int** ret) {
-
-    int argLen = 0;
-    if (args != NULL) {
-        for (; args[argLen]; argLen++) {}
-    }
+int terminal_execute_cmd(int cmd, int* args, unsigned int** ret) {
 
     switch (cmd) {
 
         /* Color commands */
         case (TTY_CHANGE_COLOR):
             {
-                /* \e[0m */
-                if (argLen == 1 && args[0] == 0) {
+                if (args[0] == 0)
                     terminal_fg = VGA_DEFAULT_FG;
+                else
+                    terminal_fg = args[0] - 30;
+
+                if (args[1] == 0)
                     terminal_bg = VGA_DEFAULT_BG;
+                else
+                    terminal_bg = args[1] - 46;
+            }
+            break;
 
-                }
-                else if (argLen == 2) {
-
-                    if (args[0] == 0)
-                        terminal_fg = VGA_DEFAULT_FG;
-                    else
-                        terminal_fg = args[0] - 30;
-
-                    if (args[1] == 0)
-                        terminal_bg = VGA_DEFAULT_BG;
-                    else
-                        terminal_bg = args[1] - 46;
-                }
-                else {
-                    return -1;
-                }
+        /* Resets all modes like colors and styles */
+        case (TTY_RESET_MODES):
+            {
+                /* \e[0m */
+                terminal_fg = VGA_DEFAULT_FG;
+                terminal_bg = VGA_DEFAULT_BG;
             }
             break;
 
         /* Erase screen */
         case (TTY_ERASE_SCREEN):
             {
-                if (argLen != 0)
-                    return -1;
-
                 terminal_clear();
                 terminal_row = 0;
                 terminal_column = 0;
@@ -268,9 +257,6 @@ int terminal_execute_cmd(int cmd, int* args, int** ret) {
         /* Erase line */
         case (TTY_ERASE_LINE):
             {
-                if (argLen != 0)
-                    return -1;
-
                 terminal_clear_row();
             }
             break;
@@ -278,9 +264,6 @@ int terminal_execute_cmd(int cmd, int* args, int** ret) {
         /* Save screen */
         case (TTY_SAVE_SCREEN):
             {
-                if (argLen != 0)
-                    return -1;
-
                 terminal_save_screen();
             }
             break;
@@ -288,9 +271,6 @@ int terminal_execute_cmd(int cmd, int* args, int** ret) {
         /* Restore screen */
         case (TTY_RESTORE_SCREEN):
             {
-                if (argLen != 0)
-                    return -1;
-
                 terminal_restore_screen();
             }
             break;
@@ -298,9 +278,6 @@ int terminal_execute_cmd(int cmd, int* args, int** ret) {
         /* Get cursor position */
         case (TTY_GET_CURSOR):
             {
-                if (argLen != 0)
-                    return -1;
-
                 if (ret == NULL)
                     return -1;
 
@@ -310,22 +287,17 @@ int terminal_execute_cmd(int cmd, int* args, int** ret) {
             break;
 
         /* Set cursor position */
-        case (TTY_SET_CURSOR):
+        case (TTY_MOVE_CURSOR):
             {
-                if (argLen != 2)
-                    return -1;
-
                 terminal_row = args[0];
                 terminal_column = args[1];
+                terminal_move_cursor(terminal_column, terminal_row);
             }
             break;
 
         /* Get max window size */
         case (TTY_GET_MAX_WIN_SIZE):
             {
-                if (argLen != 0)
-                    return -1;
-
                 if (ret == NULL)
                     return -1;
 
@@ -445,11 +417,11 @@ void terminal_writechar(const char c, bool updateCursor) {
     terminal_buffer[index] = vga_entry(c, vga_color(terminal_fg, terminal_bg));
 
     terminal_column++;
-    if (terminal_column >= VGA_WIDTH) {
+    if (terminal_column > VGA_WIDTH) {
         terminal_column = 0;
         terminal_row++;
 
-        if (terminal_row >= VGA_HEIGHT) {
+        if (terminal_row > VGA_HEIGHT) {
             terminal_scroll_down();
         }
     }

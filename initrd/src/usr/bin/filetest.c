@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
-#include <string.h>
 #include <fcntl.h>
+#include <string.h>
 
 
 void main(int argc, char* argv[]) {

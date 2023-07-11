@@ -5,8 +5,8 @@
 
 
 int getch(void) {
-    int buf;
+    char buf;
     read(STDIN_FILENO, &buf, 1);
-    return buf;
+    return (int) buf;
 }
 

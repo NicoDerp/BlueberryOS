@@ -30,10 +30,17 @@ AR = i686-elf-ar
 
 FREEOBJS =\
 	ncurses/initscr.o \
+	ncurses/newwin.o \
 	ncurses/printw.o \
+	ncurses/wprintw.o \
+	ncurses/mvwprintw.o \
 	ncurses/refresh.o \
+	ncurses/wrefresh.o \
 	ncurses/getch.o \
 	ncurses/endwin.o \
+	ncurses/move.o \
+	ncurses/clear.o \
+	ncurses/wclear.o \
 
 OBJS = $(FREEOBJS)
 
