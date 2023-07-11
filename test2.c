@@ -1,30 +1,41 @@
 
 #include <stdio.h>
 #include <ncurses.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/wait.h>
 
 
 void main(void) {
 
-    int ch;
-    WINDOW* my_window;
-    WINDOW *my_scroller;
-
     initscr();
     raw();
+
+    char* str = "Halla";
+    write(STDIN_FILENO, str, strlen(str)+1);
+
+    int ch;
+    //printf("\e[6n");
+    //printf("\e[6n");
+
+    while ((ch = getchar()) != 'q') {
+        printf("Got %d: '%c'\n", ch, ch);
+    }
+    endwin();
+    return;
+
+
     keypad(stdscr, TRUE);
     //noecho();
-    
-    if ((my_window = newwin(10, 20, 3, 4)) != 0) {
-        box(my_window, 0, 0);
-        wrefresh(my_window);
-        if ((my_scroller = derwin(my_window, 8, 18, 1, 1)) != 0) {
-            scrollok(my_scroller, TRUE);
-            while ((ch=wgetch(my_scroller)) != 'q') {
-                wprintw(my_scroller, "%#x - %s\n", ch, keyname(ch));
-            }
-        }
+
+    //box(stdscr, 0, 0);
+    wrefresh(stdscr);
+    scrollok(stdscr, TRUE);
+    while ((ch=wgetch(stdscr)) != 'q') {
+        wprintw(stdscr, "%#x - %s\n", ch, keyname(ch));
     }
 
-    endwin();
+
 }
 

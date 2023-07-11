@@ -6,7 +6,10 @@
 int endwin(void) {
 
     free(stdscr);
-    printf("\e[2J");
+
+    // Restores screen
+    printw("\e[?47l");
+
     return OK;
 }
 

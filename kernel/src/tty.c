@@ -4,10 +4,12 @@
 #include <stdint.h>
 
 #include <kernel/tty.h>
+#include <kernel/memory.h>
 #include <kernel/io.h>
 
+#include <bits/tty.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
 
 static size_t VGA_WIDTH = 80;
@@ -23,12 +25,19 @@ uint8_t terminal_bg;
 
 char insideEscape = false;
 uint32_t escapeIndex = 0;
+bool privateMode = false;
 
 #define BUF_SIZE  8
 #define BUF_COUNT 4
 
 char argBuf[BUF_COUNT][BUF_SIZE];
 uint32_t argIndex = 0;
+
+size_t saved_terminal_row;
+size_t saved_terminal_column;
+uint8_t saved_terminal_fg;
+uint8_t saved_terminal_bg;
+uint16_t* savedScreen = NULL;
 
 inline uint16_t vga_entry(unsigned char c, uint8_t color) {
     return (uint16_t) color << 8 | (uint16_t) c;
@@ -56,6 +65,32 @@ static inline void terminal_clear_row(void) {
         terminal_buffer[index + i] = vga_entry(' ', vga_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG));
     }
     terminal_column = 0;
+}
+
+static inline void terminal_save_screen(void) {
+
+    if (savedScreen == NULL)
+        savedScreen = (uint16_t*) kmalloc(sizeof(uint16_t) * VGA_WIDTH * VGA_HEIGHT);
+
+    memcpy(savedScreen, terminal_buffer, sizeof(uint16_t) * VGA_WIDTH * VGA_HEIGHT);
+
+    saved_terminal_row = terminal_row;
+    saved_terminal_column = terminal_column;
+    saved_terminal_fg = terminal_fg;
+    saved_terminal_bg = terminal_bg;
+}
+
+static inline void terminal_restore_screen(void) {
+
+    if (savedScreen == NULL)
+        return;
+
+    memcpy(terminal_buffer, savedScreen, sizeof(uint16_t) * VGA_WIDTH * VGA_HEIGHT);
+
+    terminal_row = saved_terminal_row;
+    terminal_column = saved_terminal_column;
+    terminal_fg = saved_terminal_fg;
+    terminal_bg = saved_terminal_bg;
 }
 
 void enable_cursor(uint8_t cursor_start, uint8_t cursor_end) {
@@ -166,6 +201,145 @@ void parseArgs(char type) {
             terminal_clear_row();
         }
     }
+    else if (privateMode) {
+
+        int num = atoi(argBuf[0]);
+
+        /* \e[?47h -> Save screen */
+        if (num == 47 && type == 'h') {
+            terminal_save_screen();
+        }
+
+        /* \e[?47l -> Restore screen */
+        else if (num == 47 && type == 'l') {
+            terminal_restore_screen();
+        }
+    }
+}
+
+int terminal_execute_cmd(int cmd, int* args, int** ret) {
+
+    int argLen = 0;
+    if (args != NULL) {
+        for (; args[argLen]; argLen++) {}
+    }
+
+    switch (cmd) {
+
+        /* Color commands */
+        case (TTY_CHANGE_COLOR):
+            {
+                /* \e[0m */
+                if (argLen == 1 && args[0] == 0) {
+                    terminal_fg = VGA_DEFAULT_FG;
+                    terminal_bg = VGA_DEFAULT_BG;
+
+                }
+                else if (argLen == 2) {
+
+                    if (args[0] == 0)
+                        terminal_fg = VGA_DEFAULT_FG;
+                    else
+                        terminal_fg = args[0] - 30;
+
+                    if (args[1] == 0)
+                        terminal_bg = VGA_DEFAULT_BG;
+                    else
+                        terminal_bg = args[1] - 46;
+                }
+                else {
+                    return -1;
+                }
+            }
+            break;
+
+        /* Erase screen */
+        case (TTY_ERASE_SCREEN):
+            {
+                if (argLen != 0)
+                    return -1;
+
+                terminal_clear();
+                terminal_row = 0;
+                terminal_column = 0;
+            }
+            break;
+
+        /* Erase line */
+        case (TTY_ERASE_LINE):
+            {
+                if (argLen != 0)
+                    return -1;
+
+                terminal_clear_row();
+            }
+            break;
+
+        /* Save screen */
+        case (TTY_SAVE_SCREEN):
+            {
+                if (argLen != 0)
+                    return -1;
+
+                terminal_save_screen();
+            }
+            break;
+
+        /* Restore screen */
+        case (TTY_RESTORE_SCREEN):
+            {
+                if (argLen != 0)
+                    return -1;
+
+                terminal_restore_screen();
+            }
+            break;
+
+        /* Get cursor position */
+        case (TTY_GET_CURSOR):
+            {
+                if (argLen != 0)
+                    return -1;
+
+                if (ret == NULL)
+                    return -1;
+
+                *ret[0] = terminal_row;
+                *ret[1] = terminal_column;
+            }
+            break;
+
+        /* Set cursor position */
+        case (TTY_SET_CURSOR):
+            {
+                if (argLen != 2)
+                    return -1;
+
+                terminal_row = args[0];
+                terminal_column = args[1];
+            }
+            break;
+
+        /* Get max window size */
+        case (TTY_GET_MAX_WIN_SIZE):
+            {
+                if (argLen != 0)
+                    return -1;
+
+                if (ret == NULL)
+                    return -1;
+
+                *ret[0] = VGA_WIDTH;
+                *ret[1] = VGA_HEIGHT;
+            }
+            break;
+
+        default:
+            return -1;
+            break;
+    }
+
+    return 0;
 }
 
 void terminal_writechar(const char c, bool updateCursor) {
@@ -214,6 +388,7 @@ void terminal_writechar(const char c, bool updateCursor) {
         escapeIndex = 0;
         argIndex = 0;
         insideEscape = true;
+        privateMode = false;
         return;
     }
 
@@ -226,6 +401,10 @@ void terminal_writechar(const char c, bool updateCursor) {
             } else {
                 escapeIndex++;
             }
+        }
+
+        else if (escapeIndex == 1 && c == '?') {
+            privateMode = true;
         }
 
         else if (escapeIndex >= 1 && '0' <= c && c <= '9') {

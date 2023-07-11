@@ -6,5 +6,4 @@
 *.tar
 # [^\.]*
 sysroot
-initrd/initrd
 

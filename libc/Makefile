@@ -72,6 +72,7 @@ FREEOBJS =\
 	unistd/close.o \
 	unistd/getuid.o \
 	unistd/setuid.o \
+	unistd/ttycmd.o \
 	fcntl/open.o \
 	sys/wait/wait.o \
 	sys/stat/stat.o \

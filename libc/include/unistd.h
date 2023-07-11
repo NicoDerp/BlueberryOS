@@ -32,6 +32,8 @@ int close(int fd);
 uid_t getuid(void);
 int setuid(uid_t);
 
+int ttycmd(int, int*, unsigned int**);
+
 #ifdef __cplusplus
 }
 #endif

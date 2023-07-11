@@ -12,10 +12,17 @@
 
 typedef struct {
 
-    uint32_t curx;
-    uint32_t cury;
+    unsigned int curx;
+    unsigned int cury;
+
+    unsigned int maxx;
+    unsigned int maxy;
 
 } WINDOW;
+
+#define getmaxx(win)            ((win) ? ((win)->maxx) : ERR)
+#define getmaxy(win)            ((win) ? ((win)->maxy) : ERR)
+#define getmaxyx(win,y,x)       (y = getmaxy(win), x = getmaxx(win))
 
 extern WINDOW* stdscr;
 

@@ -27,6 +27,7 @@
 #define SYS_getuid        20
 #define SYS_getspnamr     21
 #define SYS_setuid        22
+#define SYS_ttycmd        23
 
 
 #endif

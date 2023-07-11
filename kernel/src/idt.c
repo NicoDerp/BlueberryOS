@@ -57,7 +57,8 @@ typedef struct {
     unsigned int num2; // arg2
 } __attribute__((packed)) test_struct_t;
 
-inline void saveRegisters(process_t* process, stack_state_t* stack_state, interrupt_frame_t* frame, unsigned int esp) {
+
+inline static void saveRegisters(process_t* process, stack_state_t* stack_state, interrupt_frame_t* frame, unsigned int esp) {
 
     process->regs.eax = stack_state->eax;
     process->regs.ebx = stack_state->ebx;
@@ -767,6 +768,26 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Set status (sucess or error)
                 process->regs.eax = status;
                 process->regs.ecx = errnum;
+
+                // Since we changed registers we need to reload those
+                runCurrentProcess();
+            }
+
+            break;
+
+        case (SYS_ttycmd):
+            {
+                int cmd = stack_state.ebx;
+                int* args = (int*) stack_state.ecx;
+                unsigned int** ret = (unsigned int**) stack_state.edx;
+
+                process_t* process = getCurrentProcess();
+
+                // Save registers since we change them
+                saveRegisters(process, &stack_state, &frame, esp);
+
+                int status = terminal_execute_cmd(cmd, args, ret);
+                process->regs.eax = status;
 
                 // Since we changed registers we need to reload those
                 runCurrentProcess();

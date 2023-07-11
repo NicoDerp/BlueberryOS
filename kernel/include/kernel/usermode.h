@@ -46,6 +46,7 @@
 
 #define MMAP_START_ADDRESS    0x400000
 
+
 struct user;
 struct kgroup;
 

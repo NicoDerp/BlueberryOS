@@ -93,6 +93,14 @@ Instead of the conventional `int $80` for linux-based operating systems, this os
 Return values of syscalls are returned in register `eax`, and if there is an error, the errno value is returned in register `ecx`.
 The rest of the registers are saved.
 
+OS-specific system-calls are found in the `unistd.h` header in BlueberryOS' standard-library;
+
+Custom syscalls:
+
+| ID   | Name          | C call                                     | The function                                                                                                                                                                              |
+| --- | --- | --- | --- |
+| `23` | `SYS_ttycmd`  | `int ttycmd(int cmd, int* args, unsigned** ret)` | It executes the terminal command `cmd` with arguments `args` and if the command returns anything, it is returned in `ret`. The syscall returns 0 if successful, -1 if there was an error. You can pass NULL to both `args` and `ret` if the command has no arguments or return values. |
+
 ### Library
 
 The C-library and kernel is pretty POSIX compliant, with a lot of similarities with Linux.
