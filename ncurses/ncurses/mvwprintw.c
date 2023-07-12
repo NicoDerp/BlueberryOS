@@ -8,17 +8,10 @@ int mvwprintw(WINDOW* win, int y, int x, const char* format, ...) {
     va_list args;
     va_start(args, format);
 
-    move(win->starty + y, win->startx + x);
-
-    int chars = vprintf(format, args);
-
-    win->curx += chars;
-    win->cury += win->curx / win->width;
-    win->curx %= win->width;
-    win->cury %= win->height;
+    int ret = vmvwprintw(win, y, x, format, args);
 
     va_end(args);
 
-    return OK;
+    return ret;
 }
 

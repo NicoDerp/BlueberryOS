@@ -920,6 +920,45 @@ file_t* getFile(char* filepath) {
     return getFileFromParent(parent, filepath + slash, true);
 }
 
+void changeDirectoryOwner(directory_t* dir, user_t* owner, group_t* group, bool recursive) {
+
+    if (!group) {
+        FATAL("Group is NULL!\n");
+        return;
+    }
+
+    dir->owner = owner;
+    dir->group = group;
+
+    directory_t* d = getDirectoryFromParent(dir, ".", false);
+    if (!d) {
+        FATAL("Directory has no '.' directory!\n");
+        return;
+    }
+
+    d->owner = owner;
+    d->group = group;
+
+    if (!recursive)
+        return;
+
+    for (size_t i = 0; i < dir->directoryCount; i++) {
+
+        d = dir->directories[i];
+        if (strcmp(d->name, ".") == 0 || strcmp(d->name, "..") == 0)
+            continue;
+
+        changeDirectoryOwner(d, owner, group, true);
+    }
+
+    for (size_t i = 0; i < dir->fileCount; i++) {
+
+        file_t* f = dir->files[i];
+        f->owner = owner;
+        f->group = group;
+    }
+}
+
 directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymbolic) {
 
     size_t slash;

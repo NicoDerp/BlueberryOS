@@ -48,7 +48,7 @@ void updateTopBar(void) {
 
     wclear(topBar);
     //mvwprintw(topBar, 0, 0, "%s", stateToString(state));
-    mvwprintw(topBar, 0, 0, "%s    %s", stateToString(state), currentFile);
+    mvwprintw(topBar, 0, 0, "%s  %s", stateToString(state), currentFile);
     //mvwprintw(topBar, 0, 10, "%s", currentFile);
     wrefresh(topBar);
 }
@@ -64,6 +64,7 @@ void parseCommand(char* buf) {
         mvwprintw(cmdBar, 0, 0, "Not an editor command: %s", buf);
     }
 
+    wrefresh(cmdBar);
 }
 
 void displayScreen(char* buf, unsigned int count) {
@@ -170,9 +171,13 @@ void main(int argc, char* argv[]) {
 
     state = NORMAL;
 
+    cursor.x = 0;
+    cursor.y = 0;
+
     updateTopBar();
     wclear(cmdBar);
     wrefresh(cmdBar);
+    moveCursor();
     while (true) {
 
         ch = getch();
@@ -180,9 +185,12 @@ void main(int argc, char* argv[]) {
             if (ch == '\e') {
                 state = NORMAL;
                 updateTopBar();
+                moveCursor();
             }
             else {
+                moveCursor();
                 printw("%c", ch);
+                wrefresh(stdscr);
             }
         }
         else if (state == NORMAL) {
@@ -192,11 +200,13 @@ void main(int argc, char* argv[]) {
                 cmdIndex = 0;
                 updateTopBar();
                 wclear(cmdBar);
-                wprintw(cmdBar, ":");
+                mvwprintw(cmdBar, rows-1, 0, ":");
+                wrefresh(cmdBar);
             }
             else if (ch == 'i') {
                 state = INSERT;
                 updateTopBar();
+                moveCursor();
             }
         }
         else if (state == COMMAND) {
@@ -210,6 +220,7 @@ void main(int argc, char* argv[]) {
                 state = NORMAL;
                 updateTopBar();
                 wclear(cmdBar);
+                moveCursor();
             }
             else if (ch == '\n') {
                 state = NORMAL;
@@ -221,6 +232,7 @@ void main(int argc, char* argv[]) {
             else {
                 cmdBuffer[cmdIndex++] = ch;
                 wprintw(cmdBar, "%c", ch);
+                wrefresh(cmdBar);
             }
         }
     }

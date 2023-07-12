@@ -129,6 +129,9 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end);
 directory_t* getDirectory(char* path);
 file_t* getFile(char* filepath);
 
+void changeDirectoryOwner(directory_t* dir, struct user* owner, struct kgroup* group, bool recursive);
+directory_t* getDirectoryFromParent(directory_t* parent, char* name, bool redirectSymbolic);
+
 directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymbolic);
 file_t* getFileFrom(directory_t* dir, char* filepath, bool redirectSymbolic);
 

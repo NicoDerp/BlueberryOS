@@ -873,10 +873,18 @@ user_t* createUser(char* name, char* password, bool createHome, bool root) {
             }
         }
 
-        user->home = createDirectory(homeDir, name, 0755, user, user->groups[0], NULL);
-        if (!user->home) {
-            FATAL("Failed to create /home/%s directory\n", name);
-            kabort();
+        user->home = getDirectoryFromParent(homeDir, name, true);
+        if (user->home) {
+
+            // Change permissions from root to user
+            changeDirectoryOwner(homeDir, user, user->groups[0], true);
+        }
+        else {
+            user->home = createDirectory(homeDir, name, 0755, user, user->groups[0], NULL);
+            if (!user->home) {
+                FATAL("Failed to create /home/%s directory\n", name);
+                kabort();
+            }
         }
         user->iwdir = user->home;
 
@@ -1381,7 +1389,7 @@ int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t
             }
 
             if (!directoryAccessAllowed(process, parent, P_WRITE)) {
-                *errnum = EISDIR;
+                *errnum = EACCES;
                 return -1;
             }
 
@@ -1423,7 +1431,7 @@ int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t
             }
 
             if (!directoryAccessAllowed(process, parent, P_WRITE)) {
-                *errnum = EISDIR;
+                *errnum = EACCES;
                 return -1;
             }
 
