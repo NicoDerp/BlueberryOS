@@ -154,8 +154,6 @@ void main(int argc, char* argv[]) {
         if (close(fd) == -1) {
             int backup = errno;
             printf("vim: %s: close error: %s\n", currentFile, strerror(backup));
-            endwin();
-            exit(1);
         }
 
         endwin();
@@ -163,6 +161,7 @@ void main(int argc, char* argv[]) {
     }
 
     displayScreen(buf, count);
+
 
 
     char cmdBuffer[MAX_CMD_BUFFER+1];

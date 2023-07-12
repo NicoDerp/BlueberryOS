@@ -15,6 +15,14 @@ static inline void print(WINDOW* win, const char* str, size_t len) {
     }
 }
 
+static inline void prints(WINDOW* win, const char* str) {
+
+    for (size_t i = 0; str[i]; i++) {
+        if (!wputcharw(win, str[i]))
+            return;
+    }
+}
+
 int vmvwprintw(WINDOW* win, int y, int x, const char* format, va_list args) {
 
     win->cury = y;
@@ -45,7 +53,7 @@ int vmvwprintw(WINDOW* win, int y, int x, const char* format, va_list args) {
                 printstring(":");
                 */
 
-                wprintw(win, "%s", buf);
+                prints(win, buf);
                 format++;
             }
             else if (*format == 'u') {
@@ -53,7 +61,7 @@ int vmvwprintw(WINDOW* win, int y, int x, const char* format, va_list args) {
                 char buf[64];
                 uitoa(i, buf, 10);
 
-                wprintw(win, "%s", buf);
+                prints(win, buf);
                 format++;
             }
             else if (*format == 'x') {
@@ -61,7 +69,7 @@ int vmvwprintw(WINDOW* win, int y, int x, const char* format, va_list args) {
                 char buf[64];
                 uitoa(i, buf, 16);
 
-                wprintw(win, "%s", buf);
+                prints(win, buf);
                 format++;
             }
             else if (*format == 'o') {
@@ -69,13 +77,13 @@ int vmvwprintw(WINDOW* win, int y, int x, const char* format, va_list args) {
                 char buf[64];
                 uitoa(i, buf, 8);
 
-                wprintw(win, "%s", buf);
+                prints(win, buf);
                 format++;
             }
             else if (*format == 's') {
                 const char* s = va_arg(args, const char*);
 
-                wprintw(win, "%s", s);
+                prints(win, s);
                 format++;
             }
         }
