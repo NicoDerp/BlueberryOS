@@ -10,7 +10,9 @@
 #define OK   0
 #define ERR -1
 
-typedef struct {
+struct _win;
+
+typedef struct _win {
 
     unsigned int curx;
     unsigned int cury;
@@ -20,6 +22,9 @@ typedef struct {
 
     unsigned int startx;
     unsigned int starty;
+
+    struct _win* next;
+    struct _win* prev;
 
     char* buf;
 
@@ -38,6 +43,7 @@ extern "C" {
 WINDOW* initscr(void);
 WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, unsigned int startx);
 int endwin(void);
+int delwin(WINDOW* win);
 
 int printw(char*, ...);
 int wprintw(WINDOW* win, const char* format, ...);

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 
 
 #define MAX_CMD_BUFFER 32
@@ -113,8 +114,21 @@ void main(int argc, char* argv[]) {
         exit(1);
     }
 
-    if (count != 0)
-        printw("%s", buf);
+    if (count != 0) {
+        bool done = false;
+        for (size_t i, j = 0; i < getmaxy(stdscr)-2 && !done; i++) {
+            for (; buf[j] != '\n'; j++) {
+                if (buf[j] == '\0') {
+                    done = true;
+                    break;
+                }
+
+                putchar(buf[j]);
+            }
+            putchar('\n');
+            j++;
+        }
+    }
     refresh();
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
