@@ -1,5 +1,7 @@
 
 #include <ncurses.h>
+#include <unistd.h>
+#include <bits/tty.h>
 #include <stdlib.h>
 
 
@@ -17,7 +19,8 @@ int endwin(void) {
     }
 
     // Restores screen
-    printw("\e[?47l");
+    ttycmd(TTY_RESTORE_SCREEN, NULL, NULL);
+    //printw("\e[?47l");
 
     return OK;
 }

@@ -47,9 +47,7 @@ char* stateToString(state_t st) {
 void updateTopBar(void) {
 
     wclear(topBar);
-    //mvwprintw(topBar, 0, 0, "%s", stateToString(state));
     mvwprintw(topBar, 0, 0, "%s  %s", stateToString(state), currentFile);
-    //mvwprintw(topBar, 0, 10, "%s", currentFile);
     wrefresh(topBar);
 }
 
@@ -241,12 +239,10 @@ void main(int argc, char* argv[]) {
 
 
 
-    /*
     if (close(fd) == -1) {
         int backup = errno;
         printf("close error: %s\n", strerror(backup));
         exit(1);
     }
-    */
 }
 
