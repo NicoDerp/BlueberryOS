@@ -6,7 +6,13 @@
 
 int printw(char* format, ...) {
 
-    // Goofy asf
-    return wprintw(stdscr, format, *((unsigned int*) ((int) &format + sizeof(unsigned int))));
+    va_list args;
+    va_start(args, format);
+
+    int ret = vmvwprintw(stdscr, stdscr->cury, stdscr->curx, format, args);
+
+    va_end(args);
+
+    return ret;
 }
 

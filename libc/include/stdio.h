@@ -4,6 +4,7 @@
 
 #include <sys/cdefs.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #define stdin  0
 #define stdout 1
@@ -20,6 +21,7 @@ extern "C" {
 #endif
 
 //int printf(const char* __restrict, ...) __attribute__(( format( printf, 1, 2 ) ));
+int vprintf(const char* __restrict, va_list);
 int printf(const char* __restrict, ...);
 int putchar(int);
 int puts(const char*);

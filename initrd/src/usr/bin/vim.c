@@ -27,6 +27,14 @@ WINDOW* cmdBar;
 state_t state;
 char* currentFile;
 
+unsigned int cols;
+unsigned int rows;
+
+
+struct {
+    unsigned int x;
+    unsigned int y;
+} cursor;
 
 
 char* stateToString(state_t st) {
@@ -39,9 +47,9 @@ char* stateToString(state_t st) {
 void updateTopBar(void) {
 
     wclear(topBar);
-    mvwprintw(topBar, 0, 0, "%s", stateToString(state));
-    //mvwprintw(topBar, 0, 0, "%s", stateToString(state), currentFile);
-    mvwprintw(topBar, 0, 10, "%s", currentFile);
+    //mvwprintw(topBar, 0, 0, "%s", stateToString(state));
+    mvwprintw(topBar, 0, 0, "%s    %s", stateToString(state), currentFile);
+    //mvwprintw(topBar, 0, 10, "%s", currentFile);
     wrefresh(topBar);
 }
 
@@ -52,9 +60,42 @@ void parseCommand(char* buf) {
         exit(0);
     }
     else {
+        wclear(cmdBar);
+        mvwprintw(cmdBar, 0, 0, "Not an editor command: %s", buf);
+    }
+
+}
+
+void displayScreen(char* buf, unsigned int count) {
+
+    size_t i = 0;
+    if (count != 0) {
+        for (size_t j = 0, i = 0; i < getmaxy(stdscr)-2 && j < count; i++) {
+            for (; buf[j] != '\n' && j < count; j++) {
+                //putchar(buf[j]);
+                printw("%c", buf[j]);
+            }
+            //putchar('\n');
+
+            if (i != rows-1)
+                printw("\n");
+            j++;
+        }
 
     }
 
+    // Draw '~' for empty lines
+    for (; i < getmaxy(stdscr)-2; i++) {
+        printw("~");
+        if (i != rows-1)
+            printw("\n");
+    }
+
+    refresh();
+}
+
+void moveCursor(void) {
+    move(cursor.x, cursor.y);
 }
 
 void main(int argc, char* argv[]) {
@@ -72,7 +113,7 @@ void main(int argc, char* argv[]) {
 
 
     initscr();
-    //noecho();
+    noecho();
 
     /*
     mvaddstr(getmaxy(stdscr)-1, 0, argv[1]);
@@ -82,8 +123,13 @@ void main(int argc, char* argv[]) {
     attroff(A_REVERSE);
     */
 
-    topBar = newwin(1, getmaxx(stdscr), getmaxy(stdscr)-2, 0);
-    cmdBar = newwin(1, getmaxx(stdscr), getmaxy(stdscr)-1, 0);
+    cols = getmaxx(stdscr);
+    rows = getmaxy(stdscr);
+
+    topBar = newwin(1, cols, rows-2, 0);
+    cmdBar = newwin(1, cols, rows-1, 0);
+
+    rows -= 2;
     refresh();
     //box(bar, '2', '2');
     //box(bar, 0, 0);
@@ -91,7 +137,8 @@ void main(int argc, char* argv[]) {
     struct stat st;
     if (stat(currentFile, &st) == -1) {
         int backup = errno;
-        printf("vim: %s: stat error: %s\n", currentFile, strerror(backup));
+        wclear(cmdBar);
+        wprintw(cmdBar, "vim: %s: stat error: %s\n", currentFile, strerror(backup));
         endwin();
         exit(1);
     }
@@ -114,22 +161,8 @@ void main(int argc, char* argv[]) {
         exit(1);
     }
 
-    if (count != 0) {
-        bool done = false;
-        for (size_t i, j = 0; i < getmaxy(stdscr)-2 && !done; i++) {
-            for (; buf[j] != '\n'; j++) {
-                if (buf[j] == '\0') {
-                    done = true;
-                    break;
-                }
+    displayScreen(buf, count);
 
-                putchar(buf[j]);
-            }
-            putchar('\n');
-            j++;
-        }
-    }
-    refresh();
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdIndex = 0;
@@ -183,6 +216,7 @@ void main(int argc, char* argv[]) {
                 updateTopBar();
                 cmdBuffer[cmdIndex] = '\0';
                 parseCommand(cmdBuffer);
+                moveCursor();
             }
             else {
                 cmdBuffer[cmdIndex++] = ch;

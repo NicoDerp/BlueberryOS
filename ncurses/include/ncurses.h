@@ -5,6 +5,8 @@
 #include <sys/cdefs.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 
 #define OK   0
@@ -34,6 +36,8 @@ typedef struct _win {
 #define getmaxy(win)            ((win) ? ((win)->height) : ERR)
 #define getmaxyx(win,y,x)       (y = getmaxy(win), x = getmaxx(win))
 
+#define noecho()
+
 extern WINDOW* stdscr;
 
 #ifdef __cplusplus
@@ -48,6 +52,9 @@ int delwin(WINDOW* win);
 int printw(char*, ...);
 int wprintw(WINDOW* win, const char* format, ...);
 int mvwprintw(WINDOW* win, int y, int x, const char* format, ...);
+int vmvwprintw(WINDOW* win, int y, int x, const char*, va_list args);
+
+bool wputcharw(WINDOW* win, char c);
 
 void refresh(void);
 int wrefresh(WINDOW* win);

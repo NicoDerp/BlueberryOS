@@ -32,8 +32,10 @@ FREEOBJS =\
 	ncurses/initscr.o \
 	ncurses/newwin.o \
 	ncurses/printw.o \
+	ncurses/vmvwprintw.o \
 	ncurses/wprintw.o \
 	ncurses/mvwprintw.o \
+	ncurses/wputcharw.o \
 	ncurses/refresh.o \
 	ncurses/wrefresh.o \
 	ncurses/getch.o \

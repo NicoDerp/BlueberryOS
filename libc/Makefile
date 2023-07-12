@@ -32,6 +32,7 @@ AR = i686-elf-ar
 
 FREEOBJS =\
 	stdio/printf.o \
+	stdio/vprintf.o \
 	stdio/putchar.o \
 	stdio/puts.o \
 	stdio/getc.o \

@@ -5,16 +5,13 @@
 
 int wprintw(WINDOW* win, const char* format, ...) {
 
-    move(win->starty + win->cury, win->startx + win->curx);
+    va_list args;
+    va_start(args, format);
 
-    // Goofy asf
-    int chars = printf(format, *((unsigned int*) ((int) &format + sizeof(unsigned int))));
+    int ret = vmvwprintw(win, win->cury, win->curx, format, args);
 
-    win->curx += chars;
-    win->cury += win->curx / win->width;
-    win->curx %= win->width;
-    win->cury %= win->height;
+    va_end(args);
 
-    return OK;
+    return ret;
 }
 
