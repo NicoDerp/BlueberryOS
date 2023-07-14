@@ -468,7 +468,7 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
         } else {
             if (ni >= MAX_NAME_LENGTH) {
                 ERROR("Max name length reached\n");
-                for (;;) {}
+                return (directory_t*) 0;
             }
 
             name[ni++] = filename[i];

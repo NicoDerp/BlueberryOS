@@ -78,12 +78,22 @@ void free(void* ptr) {
 
         VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
+        if (left->magic != MEMORY_TAG_MAGIC) {
+            ERROR("free: Left tag at 0x%x has been corrupted, which means a program has overwritten their memory!\n", left);
+            return;
+        }
 
         left->realsize += tag->realsize;
 
         left->splitnext = tag->splitnext;
-        if (tag->splitnext != NULL)
+        if (tag->splitnext != NULL) {
+            if (tag->splitnext->magic != MEMORY_TAG_MAGIC) {
+                ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", tag->splitnext);
+                return;
+            }
+
             tag->splitnext->splitprev = left;
+        }
 
         // Check if tag is the first in the list
         if (freePages[tag->index] == tag)
@@ -107,11 +117,21 @@ void free(void* ptr) {
 
         VERBOSE("free: Absorbing right\n");
         tag_t* right = tag->splitnext;
+        if (right->magic != MEMORY_TAG_MAGIC) {
+            ERROR("free: Right tag at 0x%x has been corrupted, which means program has overwritten their memory!\n", right);
+            return;
+        }
 
         tag->realsize += right->realsize;
 
         tag->splitnext = right->splitnext;
+
         if (right->splitnext != NULL) {
+            if (right->splitnext->magic != MEMORY_TAG_MAGIC) {
+                ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", right->splitnext);
+                return;
+            }
+
             right->splitnext->splitprev = tag;
         }
 

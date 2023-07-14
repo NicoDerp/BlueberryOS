@@ -46,7 +46,9 @@
 
 #define MMAP_START_ADDRESS    0x400000
 
-#define MIN_STDIN_BUFFER_SIZE 64
+#define MIN_STDIN_BUFFER_SIZE 32
+#define MAX_STDIN_BUFFER_SIZE 128
+#define STDIN_SETBACK         32
 
 
 struct user;

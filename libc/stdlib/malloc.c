@@ -136,10 +136,10 @@ void* malloc(size_t size) {
     tag->index = -1;
 
     // Check if there is more space left in tag, in that case we split the tag
-    int remainder = tag->realsize - size - 2*sizeof(tag_t); // Both this tag and next tag
+    int remainder = tag->realsize - size - sizeof(tag_t); // Both this tag and next tag
 
     // Needs to be more than minimum to split
-    if (remainder > (1 << MEMORY_MIN_EXP)) {
+    if (remainder - sizeof(tag_t) > (1 << MEMORY_MIN_EXP)) {
 
         VERBOSE("kmalloc: Splitting tag with size %d with remainder %d\n", size, remainder);
 

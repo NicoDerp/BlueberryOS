@@ -228,24 +228,35 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     // Save registers
                     saveRegisters(process, &stack_state, &frame, esp);
 
-                    int count = stack_state.edx ? stack_state.edx <= process->stdinIndex : process->stdinIndex;
-                    //printf("Reading %d bytes\n", count);
+                    uint32_t requested = stack_state.edx;
+                    uint32_t count = requested > process->stdinIndex ? process->stdinIndex : requested;
+                    //printf("Count: %d\n", count);
                     if (count > 0) {
                         char* buf = (char*) stack_state.ecx;
                         memcpy(buf, process->stdinBuffer, count);
-                        process->stdinIndex += count;
-                        stack_state.edx -= count;
+
+                        process->stdinIndex -= count;
+                        requested -= count;
+
+                        // We need to shift count times
+                        for (uint32_t i = 0; i < count; i++) {
+
+                            // Each shift we move one character down one-by-one
+                            for (uint32_t j = 0; j < process->stdinIndex; j++) {
+                                process->stdinBuffer[process->stdinIndex + j - 1] = process->stdinBuffer[process->stdinIndex + j];
+                            }
+                        }
                     }
 
                     // If there is nothing or too little in the stdin buffer
-                    if (stack_state.edx > process->stdinIndex) {
+                    if (count != requested) {
 
                         process->state = BLOCKED_KEYBOARD;
 
                         process->blocked_regs.eax = stack_state.eax;
                         process->blocked_regs.ecx = stack_state.ebx;
                         process->blocked_regs.ecx = stack_state.ecx;
-                        process->blocked_regs.edx = stack_state.edx;
+                        process->blocked_regs.edx = requested;
                         process->blocked_regs.ebp = stack_state.ebp;
                         process->blocked_regs.edi = stack_state.edi;
                         process->blocked_regs.esi = stack_state.esi;
@@ -891,7 +902,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 #define KEY_DOWN_ARROW  21
 
 
-    char keyboard_special_US[128] =
+    char keyboard_modifiers_US[128] =
     {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -901,7 +912,42 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         0,
         KEY_ALT,  /* Alt */
         0,  /* Space bar */
-        KEY_CAPS_LOCK,  /* Caps lock */
+        0,  /* Caps lock */
+        0,  /* 59 - F1 key ... > */
+        0,   0,   0,   0,   0,   0,   0,   0,
+        0,  /* < ... F10 */
+        0,  /* 69 - Num lock*/
+        0,  /* Scroll Lock */
+        0,  /* Home key */
+        0,  /* Up Arrow */
+        0,  /* Page Up */
+        0,
+        0,  /* Left Arrow */
+        0,
+        0,  /* Right Arrow */
+        0,
+        0,  /* 79 - End key*/
+        0,  /* Down Arrow */
+        0,  /* Page Down */
+        0,  /* Insert Key */
+        0,  /* Delete Key */
+        0,   0,   0,
+        0,  /* F11 Key */
+        0,  /* F12 Key */
+        0,  /* All other keys are undefined */
+    };
+
+    char keyboard_special_US[128] =
+    {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, /* <-- control key */
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,
+        0,  /* Alt */
+        0,  /* Space bar */
+        0,  /* Caps lock */
         KEY_F1,  /* 59 - F1 key ... > */
         KEY_F2,   KEY_F3,   KEY_F4,   KEY_F5,   KEY_F6,   KEY_F7,   KEY_F8,   KEY_F9,
         KEY_F10,  /* < ... F10 */
@@ -945,15 +991,15 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
         0,  /* 69 - Num lock*/
         0,  /* Scroll Lock */
         0,  /* Home key */
-        24,  /* Up Arrow */
+        0,  /* Up Arrow */
         0,  /* Page Up */
       '-',
-        27,  /* Left Arrow */
+        0,  /* Left Arrow */
         0,
-        26,  /* Right Arrow */
+        0,  /* Right Arrow */
       '+',
         0,  /* 79 - End key*/
-        25,  /* Down Arrow */
+        0,  /* Down Arrow */
         0,  /* Page Down */
         0,  /* Insert Key */
         0,  /* Delete Key */
@@ -1019,26 +1065,32 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 
 
         char key = keyboard_US[scancode];
+        bool send = true;
 
-        // Check for special key
+        // Check for modifiers
         if (key == 0) {
 
-            key = keyboard_special_US[scancode];
+            char mod = keyboard_modifiers_US[scancode];
 
-            if (key == KEY_LEFT_SHIFT || key == KEY_RIGHT_SHIFT) {
+            if (mod == 0)
+                key = keyboard_special_US[scancode];
+            else
+                send = false;
+
+            if (mod == KEY_LEFT_SHIFT || key == KEY_RIGHT_SHIFT) {
 
                 if (state == PRESSED)
                     shiftDown = true;
                 else
                     shiftDown = false;
 
-            } else if (key == KEY_CAPS_LOCK) {
+            } else if (mod == KEY_CAPS_LOCK) {
 
                 if (state == PRESSED)
                     capslock = !capslock;
 
-            } else if (key == KEY_LEFT_CTRL) {
-                
+            } else if (mod == KEY_LEFT_CTRL) {
+
                 if (state == PRESSED)
                     controlDown = true;
                 else
@@ -1047,8 +1099,9 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             } else {
                 // Not-implemented yet
             }
+        }
 
-        } else if (state == PRESSED) {
+        if (state == PRESSED && send) {
 
             if (shiftDown || capslock)
                 key = keyboard_shift_US[scancode];

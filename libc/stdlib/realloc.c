@@ -64,8 +64,10 @@ void* realloc(void* ptr, size_t size) {
     }
 
     // TODO if it is much smaller then split tag as in free
-    if (size <= tag->realsize)
+    if (size <= tag->realsize - sizeof(tag_t)) {
+        tag->size = size;
         return ptr;
+    }
 
 #if defined(__is_libk)
     void* new = kmalloc(size);
@@ -73,7 +75,8 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
-    memcpy(new, ptr, tag->realsize);
+    tag_t* nt = (tag_t*) ((uint32_t) new - sizeof(tag_t));
+    memcpy(new, ptr, tag->size);
 
 #if defined(__is_libk)
     kfree(ptr);

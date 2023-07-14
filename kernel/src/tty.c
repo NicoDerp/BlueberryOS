@@ -407,11 +407,11 @@ void terminal_writechar(const char c, bool updateCursor) {
     terminal_buffer[index] = vga_entry(c, vga_color(terminal_fg, terminal_bg));
 
     terminal_column++;
-    if (terminal_column > VGA_WIDTH) {
+    if (terminal_column >= VGA_WIDTH) {
         terminal_column = 0;
         terminal_row++;
 
-        if (terminal_row > VGA_HEIGHT) {
+        if (terminal_row >= VGA_HEIGHT) {
             terminal_scroll_down();
         }
     }

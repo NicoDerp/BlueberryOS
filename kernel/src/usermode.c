@@ -1552,6 +1552,7 @@ int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd,
 
         if (file->content != NULL) {
             memcpy(content, file->content, file->size);
+            printf("Here\n");
             kfree(file->content);
         }
 
@@ -1797,9 +1798,16 @@ void handleKeyboardBlock(char c) {
         // Then if the process isn't blocked by something else then write to stdin buffer
         else if (process->state == RUNNING) {
 
+            // If we reached the max then we setback STDIN_SETBACK chars
+            if (process->stdinSize >= MAX_STDIN_BUFFER_SIZE) {
+
+                memmove(process->stdinBuffer, process->stdinBuffer + MAX_STDIN_BUFFER_SIZE - STDIN_SETBACK, STDIN_SETBACK);
+                continue;
+            }
+
             if (process->stdinIndex >= process->stdinSize) {
                 process->stdinSize *= 2;
-                krealloc(process->stdinBuffer, process->stdinSize);
+                process->stdinBuffer = krealloc(process->stdinBuffer, process->stdinSize);
             }
 
             process->stdinBuffer[process->stdinIndex++] = c;
