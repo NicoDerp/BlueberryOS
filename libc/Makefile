@@ -49,6 +49,7 @@ FREEOBJS =\
 	stdlib/unsetenv.o \
 	stdlib/malloc.o \
 	stdlib/free.o \
+	stdlib/realloc.o \
 	string/memcmp.o \
 	string/memcpy.o \
 	string/memmove.o \
@@ -104,7 +105,7 @@ BINARIES = libc.a libk.a # Not ready for libc yet.
 .SUFFIXES: .o .libk.o .c .asm
 
 all:
-	$(MAKE) -j8 build
+	$(MAKE) -j12 build
 	$(MAKE) install
 
 build: $(BINARIES)

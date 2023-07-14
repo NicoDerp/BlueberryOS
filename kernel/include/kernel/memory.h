@@ -28,8 +28,9 @@ extern unsigned int _kernelstart;
 typedef void* pageframe_t;
 void memory_initialize(uint32_t framestart_, uint32_t bytes);
 
-void* kmalloc(size_t);
-void kfree(void*);
+void* kmalloc(size_t size);
+void kfree(void* ptr);
+void* krealloc(void* ptr, size_t size);
 
 pageframe_t kalloc_frame(void);
 pageframe_t kalloc_frames(unsigned int count);

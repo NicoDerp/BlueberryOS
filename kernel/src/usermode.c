@@ -246,6 +246,7 @@ process_t* newProcess(file_t* file, user_t* user) {
     strcpy(process->variables[0].value, "/bin;/usr/bin");
     process->variables[0].active = true;
 
+    process->stdinIndex = 0;
     process->stdinSize = MIN_STDIN_BUFFER_SIZE;
     process->stdinBuffer = (char*) kmalloc(MIN_STDIN_BUFFER_SIZE);
 
@@ -384,6 +385,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
     process->initialized = true;
     process->overwritten = true;
 
+    process->stdinIndex = 0;
     memset(process->stdinBuffer, 0, process->stdinSize);
 
     // Keep enviromental vairables
@@ -619,6 +621,7 @@ void forkProcess(process_t* parent) {
     memcpy(&child->variables, &parent->variables, sizeof(env_variable_t)*MAX_ENVIROMENT_VARIABLES);
     memcpy(&child->pfds, &parent->pfds, sizeof(pfd_t)*MAX_FILE_DESCRIPTORS);
 
+    child->stdinIndex = 0;
     child->stdinSize = MIN_STDIN_BUFFER_SIZE;
     child->stdinBuffer = (char*) kmalloc(MIN_STDIN_BUFFER_SIZE);
 
@@ -1771,7 +1774,11 @@ void handleKeyboardBlock(char c) {
     for (size_t i = 0; i < PROCESSES_MAX; i++) {
         process_t* process = &processes[i];
 
-        if (process->initialized && process->state == BLOCKED_KEYBOARD) {
+        if (!process->initialized)
+            continue;
+
+        // If process is waiting for input
+        if (process->state == BLOCKED_KEYBOARD) {
 
             // Quick fix
             loadPageDirectory(process->pd);
@@ -1783,9 +1790,19 @@ void handleKeyboardBlock(char c) {
             process->regs.eax++;          // Return value: bytes read
 
             // If counter is zero, then unblock
-            if (process->blocked_regs.edx == 0) {
+            if (process->blocked_regs.edx == 0)
                 process->state = RUNNING;
+        }
+
+        // Then if the process isn't blocked by something else then write to stdin buffer
+        else if (process->state == RUNNING) {
+
+            if (process->stdinIndex >= process->stdinSize) {
+                process->stdinSize *= 2;
+                krealloc(process->stdinBuffer, process->stdinSize);
             }
+
+            process->stdinBuffer[process->stdinIndex++] = c;
         }
     }
 

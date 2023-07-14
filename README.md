@@ -33,6 +33,8 @@ I want BlueberryOS to be simple, small and efficient.
 - [x] Filesystem (with initrd)
 - [x] Fancier terminal
 - [x] Shell
+- [ ] Ncurses + text editor
+- [ ] Dynamic libraries
 - [ ] Memory allocator
 - [ ] USB?
 - [ ] Graphics manager

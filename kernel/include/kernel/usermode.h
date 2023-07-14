@@ -157,7 +157,8 @@ typedef struct process {
     uint32_t virtual_stack;
     uint32_t virtual_stack_top;
     uint32_t id;
-    uint32_t stdinLen;
+    uint32_t stdinIndex;
+    uint32_t stdinSize;
     char* stdinBuffer;
     bool initialized;
     bool overwritten;
