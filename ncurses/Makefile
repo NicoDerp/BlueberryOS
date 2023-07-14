@@ -41,6 +41,7 @@ FREEOBJS =\
 	ncurses/getch.o \
 	ncurses/endwin.o \
 	ncurses/move.o \
+	ncurses/wmove.o \
 	ncurses/clear.o \
 	ncurses/wclear.o \
 

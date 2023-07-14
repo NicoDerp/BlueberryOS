@@ -61,6 +61,7 @@ int wrefresh(WINDOW* win);
 
 int getch(void);
 int move(int y, int x);
+int wmove(WINDOW* win, int y, int x);
 
 int clear(void);
 int wclear(WINDOW* win);

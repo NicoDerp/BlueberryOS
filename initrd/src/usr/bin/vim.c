@@ -197,7 +197,7 @@ void main(int argc, char* argv[]) {
                 cmdIndex = 0;
                 updateTopBar();
                 wclear(cmdBar);
-                mvwprintw(cmdBar, rows-1, 0, ":");
+                mvwprintw(cmdBar, 0, 0, ":");
                 wrefresh(cmdBar);
             }
             else if (ch == 'i') {
@@ -225,6 +225,14 @@ void main(int argc, char* argv[]) {
                 cmdBuffer[cmdIndex] = '\0';
                 parseCommand(cmdBuffer);
                 moveCursor();
+            }
+            else if (ch == '\b') {
+                if (cmdIndex == 0)
+                    continue;
+
+                mvwprintw(cmdBar, 0, cmdIndex, " ");
+                cmdBuffer[cmdIndex] = ' ';
+                wmove(cmdBar, 0, cmdIndex--);
             }
             else {
                 cmdBuffer[cmdIndex++] = ch;
