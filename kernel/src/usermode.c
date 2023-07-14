@@ -246,6 +246,9 @@ process_t* newProcess(file_t* file, user_t* user) {
     strcpy(process->variables[0].value, "/bin;/usr/bin");
     process->variables[0].active = true;
 
+    process->stdinSize = MIN_STDIN_BUFFER_SIZE;
+    process->stdinBuffer = (char*) kmalloc(MIN_STDIN_BUFFER_SIZE);
+
     /*
     strcpy(process->variables[1].key, "USER");
     strcpy(process->variables[1].value, user->name);
@@ -381,6 +384,8 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
     process->initialized = true;
     process->overwritten = true;
 
+    memset(process->stdinBuffer, 0, process->stdinSize);
+
     // Keep enviromental vairables
     //strcpy(process->variables[0].key, "PATH");
     //strcpy(process->variables[0].value, "/bin;/usr/bin");
@@ -448,6 +453,8 @@ void terminateProcess(process_t* process, int status) {
     } else {
         VERBOSE("terminateProcess: Terminating process %d:%s without parent\n", process->id, process->name);
     }
+
+    kfree(process->stdinBuffer);
 
     for (size_t i = 0; i < MAX_CHILDREN; i++) {
 
@@ -611,6 +618,9 @@ void forkProcess(process_t* parent) {
 
     memcpy(&child->variables, &parent->variables, sizeof(env_variable_t)*MAX_ENVIROMENT_VARIABLES);
     memcpy(&child->pfds, &parent->pfds, sizeof(pfd_t)*MAX_FILE_DESCRIPTORS);
+
+    child->stdinSize = MIN_STDIN_BUFFER_SIZE;
+    child->stdinBuffer = (char*) kmalloc(MIN_STDIN_BUFFER_SIZE);
 
     parent->regs.eax = child->id;
     child->regs.eax = 0;

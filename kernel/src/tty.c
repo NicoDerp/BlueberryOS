@@ -345,16 +345,6 @@ void terminal_writechar(const char c, bool updateCursor) {
         return;
     }
 
-    // Right arrow
-    else if (c == 26) {
-        terminal_column++;
-
-        if (updateCursor) {
-            terminal_move_cursor(terminal_column, terminal_row);
-        }
-        return;
-    }
-
     // Escape
     else if (c == 27) {
         escapeIndex = 0;

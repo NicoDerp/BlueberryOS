@@ -35,6 +35,7 @@ extern void* isr_stub_table[];
 static bool maskBackup;
 static bool shiftDown = false;
 static bool capslock = false;
+static bool controlDown = false;
 
 //static bool vectors[32];
 
@@ -1013,6 +1014,13 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
                 if (state == PRESSED)
                     capslock = !capslock;
 
+            } else if (key == KEY_LEFT_CTRL) {
+                
+                if (state == PRESSED)
+                    controlDown = true;
+                else
+                    controlDown = false;
+
             } else {
                 // Not-implemented yet
             }
@@ -1022,7 +1030,14 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             if (shiftDown || capslock)
                 key = keyboard_shift_US[scancode];
 
-            handleKeyboardBlock(key);
+            if (controlDown) {
+                key = keyboard_shift_US[scancode];
+
+                handleKeyboardBlock('\e');
+                handleKeyboardBlock(key);
+            } else {
+                handleKeyboardBlock(key);
+            }
         }
 
         PIC_sendEOI(irq);

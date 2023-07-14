@@ -46,6 +46,8 @@
 
 #define MMAP_START_ADDRESS    0x400000
 
+#define MIN_STDIN_BUFFER_SIZE 64
+
 
 struct user;
 struct kgroup;
@@ -155,6 +157,8 @@ typedef struct process {
     uint32_t virtual_stack;
     uint32_t virtual_stack_top;
     uint32_t id;
+    uint32_t stdinLen;
+    char* stdinBuffer;
     bool initialized;
     bool overwritten;
     char name[PROCESS_MAX_NAME_LENGTH+1];
