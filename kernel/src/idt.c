@@ -1109,7 +1109,8 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
             if (controlDown) {
                 key = keyboard_shift_US[scancode];
 
-                handleKeyboardBlock('\e');
+                //handleKeyboardBlock('\e');
+                //handleKeyboardBlock('^');
                 handleKeyboardBlock(key);
             } else {
                 handleKeyboardBlock(key);

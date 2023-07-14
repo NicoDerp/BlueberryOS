@@ -67,6 +67,24 @@ static inline void terminal_clear_row(void) {
     terminal_column = 0;
 }
 
+static inline void terminal_clear_row_from() {
+
+    size_t index = terminal_row * VGA_WIDTH;
+    for (size_t i = terminal_column; i < VGA_WIDTH; i++) {
+        terminal_buffer[index + i] = vga_entry(' ', vga_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG));
+    }
+    terminal_column = 0;
+}
+
+static inline void terminal_clear_row_to() {
+
+    size_t index = terminal_row * VGA_WIDTH;
+    for (size_t i = 0; i < terminal_column; i++) {
+        terminal_buffer[index + i] = vga_entry(' ', vga_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG));
+    }
+    terminal_column = 0;
+}
+
 static inline void terminal_save_screen(void) {
 
     if (savedScreen == NULL)
@@ -306,6 +324,20 @@ int terminal_execute_cmd(int cmd, int* args, unsigned int** ret) {
             }
             break;
 
+        /* Erase from cursor to end of line */
+        case (TTY_ERASE_FROM_CURSOR):
+            {
+                terminal_clear_row_from();
+            }
+            break;
+
+        /* Erase from start of line to cursor */
+        case (TTY_ERASE_TO_CURSOR):
+            {
+                terminal_clear_row_to();
+            }
+            break;
+
         default:
             return -1;
             break;
@@ -347,6 +379,7 @@ void terminal_writechar(const char c, bool updateCursor) {
 
     // Escape
     else if (c == 27) {
+
         escapeIndex = 0;
         argIndex = 0;
         insideEscape = true;

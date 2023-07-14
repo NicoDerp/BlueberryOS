@@ -456,7 +456,10 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
                 //printf("name so far: %s\n", name);
                 directory_t* p = getDirectoryFromParent(parent, name, true);
                 if (!p) {
-                    //ERROR("Directory '%s' not found in parent '%s'\n", name, parent->name);
+                    if (init) {
+                        FATAL("Directory '%s' not found in parent '%s' during initialization\n", name, parent->name);
+                        kabort();
+                    }
                     return (directory_t*) 0;
                 }
 
@@ -468,6 +471,9 @@ directory_t* findParent(directory_t* parent, const char* filename, size_t* slash
         } else {
             if (ni >= MAX_NAME_LENGTH) {
                 ERROR("Max name length reached\n");
+                if (init)
+                    kabort();
+
                 return (directory_t*) 0;
             }
 
