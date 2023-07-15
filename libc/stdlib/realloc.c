@@ -75,7 +75,6 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
-    tag_t* nt = (tag_t*) ((uint32_t) new - sizeof(tag_t));
     memcpy(new, ptr, tag->size);
 
 #if defined(__is_libk)

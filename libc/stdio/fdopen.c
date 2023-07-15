@@ -12,9 +12,9 @@
 #define MAX_FILES 8
 
 extern int syscall2(int, int, int);
-FILE _files[MAX_FILES];
+extern FILE _files[MAX_FILES];
 
-FILE* fopen(const char* filename, const char* mode) {
+FILE* fdopen(int fd, const char* mode) {
 
     size_t i;
     bool found = false;
@@ -30,6 +30,10 @@ FILE* fopen(const char* filename, const char* mode) {
         return (FILE*) 0;
     }
 
+
+    (void) mode;
+
+    /*
     int flags;
     if (strcmp(mode, "r") == 0) {
         flags = O_RDONLY;
@@ -44,10 +48,7 @@ FILE* fopen(const char* filename, const char* mode) {
     else {
         return (FILE*) 0;
     }
-
-    int fd = syscall2(SYS_open, (int) filename, flags);
-    if (!fd)
-        return (FILE*) 0;
+    */
 
     FILE* f = &_files[i];
     f->dd_buf = NULL;

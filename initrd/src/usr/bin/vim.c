@@ -18,6 +18,10 @@ typedef enum {
     INSERT,
 } state_t;
 
+typedef struct {
+    unsigned int size;
+    char* chars;
+} row_t;
 
 
 
@@ -30,12 +34,60 @@ char* currentFile;
 unsigned int cols;
 unsigned int rows;
 
+struct {
+    row_t** rows;
+    unsigned int numrows;
+} E;
+
 
 struct {
     unsigned int x;
     unsigned int y;
 } cursor;
 
+void appendRow(char* s) {
+
+    // If rows is NULL then realloc will call malloc for us
+    E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+    
+    row_t* r = E.rows[E.numrows];
+    r->size = strlen(s);
+    r->chars = (char*) malloc(r->size + 1);
+    memcpy(r->chars, s, r->size+1);
+
+    E.numrows++;
+}
+
+void readFile(char* filename) {
+
+    int fd = open(filename, O_RDONLY | O_CREAT, 0664);
+    if (fd == -1) {
+        int backup = errno;
+        printf("open error: %s\n", strerror(backup));
+        exit(1);
+    }
+
+    FILE* fp = fdopen(fd, "r");
+
+
+    char* line = NULL;
+    size_t linecap = 0;
+    ssize_t linelen;
+    while ((linelen = getline(&line, &linecap, fp)) != -1) {
+        printf("Got linelen %d and line: '%s'\n", linelen, line);
+        getchar();
+    }
+
+    free(line);
+
+    if (fclose(fp) == -1) {
+        int backup = errno;
+        printf("fclose error: %s\n", strerror(backup));
+        exit(1);
+    }
+
+    exit(0);
+}
 
 char* stateToString(state_t st) {
     if      (st == NORMAL)  return "-- NORMAL --";
@@ -104,13 +156,7 @@ void main(int argc, char* argv[]) {
         return;
 
     currentFile = argv[1];
-    int fd = open(argv[1], O_RDWR | O_CREAT, 0664);
-    if (fd == -1) {
-        int backup = errno;
-        printf("open error: %s\n", strerror(backup));
-        exit(1);
-    }
-
+    readFile(currentFile);
 
     initscr();
     noecho();
@@ -131,9 +177,8 @@ void main(int argc, char* argv[]) {
 
     rows -= 2;
     refresh();
-    //box(bar, '2', '2');
-    //box(bar, 0, 0);
 
+    /*
     struct stat st;
     if (stat(currentFile, &st) == -1) {
         int backup = errno;
@@ -155,13 +200,17 @@ void main(int argc, char* argv[]) {
             printf("vim: %s: close error: %s\n", currentFile, strerror(backup));
         }
 
+        free(buf);
         endwin();
         exit(1);
     }
 
+    free(buf);
     displayScreen(buf, count);
+    */
 
-
+    E.rows = NULL;
+    E.numrows = 0;
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
@@ -291,13 +340,5 @@ void main(int argc, char* argv[]) {
 
 
     endwin();
-
-
-
-    if (close(fd) == -1) {
-        int backup = errno;
-        printf("close error: %s\n", strerror(backup));
-        exit(1);
-    }
 }
 

@@ -2,7 +2,9 @@
 #ifndef _STDIO_H
 #define _STDIO_H 1
 
+#include <sys/types.h>
 #include <sys/cdefs.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
 
@@ -30,8 +32,12 @@ int getc(unsigned int);
 int getchar(void);
 
 FILE* fopen(const char*, const char*);
+FILE* fdopen(int fd, const char* mode);
 int fclose(FILE* file);
 //char* fgets(char* str, int n, FILE* stream);
+
+ssize_t getline(char** __restrict, size_t* __restrict, FILE* __restrict);
+
 
 #ifdef __cplusplus
 }

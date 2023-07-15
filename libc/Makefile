@@ -38,7 +38,9 @@ FREEOBJS =\
 	stdio/getc.o \
 	stdio/getchar.o \
 	stdio/fopen.o \
+	stdio/fdopen.o \
 	stdio/fclose.o \
+	stdio/getline.o \
 	stdlib/abort.o \
 	stdlib/itoa.o \
 	stdlib/uitoa.o \
