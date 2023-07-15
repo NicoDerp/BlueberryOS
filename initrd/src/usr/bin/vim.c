@@ -164,7 +164,8 @@ void main(int argc, char* argv[]) {
 
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
-    unsigned int cmdIndex = 0;
+    unsigned int cmdCursor = 0;
+    unsigned int cmdSize = 0;
     int ch;
 
     state = NORMAL;
@@ -207,7 +208,7 @@ void main(int argc, char* argv[]) {
 
             if (ch == ':') {
                 state = COMMAND;
-                cmdIndex = 0;
+                cmdCursor = 0;
                 updateTopBar();
                 wclear(cmdBar);
                 mvwprintw(cmdBar, 0, 0, ":");
@@ -221,7 +222,7 @@ void main(int argc, char* argv[]) {
         }
         else if (state == COMMAND) {
 
-            if (cmdIndex > MAX_CMD_BUFFER) {
+            if (cmdCursor > MAX_CMD_BUFFER) {
                 wprintw(cmdBar, "Max command buffer size reached\n");
                 break;
             }
@@ -235,26 +236,54 @@ void main(int argc, char* argv[]) {
             else if (ch == '\n') {
                 state = NORMAL;
                 updateTopBar();
-                cmdBuffer[cmdIndex] = '\0';
+                cmdBuffer[cmdSize] = '\0';
                 parseCommand(cmdBuffer);
                 moveCursor();
+                cmdSize = 0;
             }
-            else if (ch == '\b' || ch == KEY_BACKSPACE) {
-                if (cmdIndex == 0)
+            else if (ch == KEY_LEFT) {
+                if (cmdCursor == 0)
                     continue;
 
-                mvwprintw(cmdBar, 0, cmdIndex, " ");
-                cmdBuffer[cmdIndex] = ' ';
-                wmove(cmdBar, 0, cmdIndex--);
+                wmove(cmdBar, 0, --cmdCursor+1);
+            }
+            else if (ch == KEY_RIGHT) {
+                if (cmdCursor == cmdSize)
+                    continue;
+
+                wmove(cmdBar, 0, ++cmdCursor+1);
+            }
+            else if (ch == '\b' || ch == KEY_BACKSPACE) {
+                if (cmdCursor == 0)
+                    continue;
+
+                mvwprintw(cmdBar, 0, cmdCursor, " ");
+                cmdBuffer[cmdCursor] = ' ';
+                wmove(cmdBar, 0, cmdCursor--);
                 wrefresh(cmdBar);
+                cmdSize--;
             }
             else if (ch == 127) {
                 wdelch(cmdBar);
                 wrefresh(cmdBar);
+                cmdSize--;
             }
             else {
-                cmdBuffer[cmdIndex++] = ch;
-                wprintw(cmdBar, "%c", ch);
+
+                if (cmdCursor == cmdSize) {
+                    cmdBuffer[cmdCursor++] = ch;
+                    cmdSize++;
+                    wprintw(cmdBar, "%c", ch);
+                }
+                else {
+                    memmove(&cmdBuffer[cmdCursor+1], &cmdBuffer[cmdCursor], cmdSize-cmdCursor);
+                    cmdBuffer[cmdCursor++] = ch;
+                    cmdBuffer[++cmdSize] = '\0';
+                    wclear(cmdBar);
+                    mvwprintw(cmdBar, 0, 0, ":%s", cmdBuffer);
+                    wmove(cmdBar, 0, cmdCursor+1);
+                }
+
                 wrefresh(cmdBar);
             }
         }
