@@ -12,7 +12,12 @@ int getch(void) {
     if (buf == '\e') {
         buf = 0;
         read(STDIN_FILENO, &buf, 1);
-        buf += 256;
+
+        // Escape
+        if (buf == '[')
+            buf = '\e';
+        else
+            buf += 256;
     }
 
     return buf;

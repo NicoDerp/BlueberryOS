@@ -900,6 +900,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 #define KEY_F11         15
 #define KEY_F12         16
 #define KEY_CAPS_LOCK   17
+#define KEY_ESCAPE      '['
 
 #define KEY_LEFT_ARROW  27
 #define KEY_RIGHT_ARROW 26
@@ -944,7 +945,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 
     char keyboard_special_US[128] =
     {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, KEY_ESCAPE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, /* <-- control key */
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -981,7 +982,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
     //io_outb(PIC2, PIC_EOI);
     char keyboard_US[128] =
     {
-        0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+        0,  0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
       '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
         0, /* <-- control key */
       'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',  0, '\\',
@@ -1071,16 +1072,20 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 
         char key = keyboard_US[scancode];
         bool send = true;
+        bool special = false;
 
         // Check for modifiers
         if (key == 0) {
 
             char mod = keyboard_modifiers_US[scancode];
 
-            if (mod == 0)
+            if (mod == 0) {
+                special = true;
                 key = keyboard_special_US[scancode];
-            else
+            }
+            else {
                 send = false;
+            }
 
             if (mod == KEY_LEFT_SHIFT || key == KEY_RIGHT_SHIFT) {
 
@@ -1117,7 +1122,12 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
                 //handleKeyboardBlock('\e');
                 handleKeyboardBlock('\e');
                 handleKeyboardBlock(key);
-            } else {
+            }
+            else if (special) {
+                handleKeyboardBlock('\e');
+                handleKeyboardBlock(key);
+            }
+            else {
                 handleKeyboardBlock(key);
             }
         }

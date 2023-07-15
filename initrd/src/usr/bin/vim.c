@@ -94,7 +94,7 @@ void displayScreen(char* buf, unsigned int count) {
 }
 
 void moveCursor(void) {
-    move(cursor.x, cursor.y);
+    move(cursor.y, cursor.x);
 }
 
 void main(int argc, char* argv[]) {
@@ -185,10 +185,22 @@ void main(int argc, char* argv[]) {
                 updateTopBar();
                 moveCursor();
             }
+            else if (ch == '\n') {
+                cursor.x = 0;
+                cursor.y++;
+                moveCursor();
+            }
             else {
                 moveCursor();
                 printw("%c", ch);
                 wrefresh(stdscr);
+
+                cursor.x++;
+                if (cursor.x >= cols) {
+                    cursor.x = 0;
+                    cursor.y++;
+                }
+                moveCursor();
             }
         }
         else if (state == NORMAL) {
