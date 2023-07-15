@@ -1789,14 +1789,15 @@ void handleKeyboardBlock(char c) {
             buf[process->regs.eax] = c;   // Write to buffer
             process->blocked_regs.edx--;  // Count requested
             process->regs.eax++;          // Return value: bytes read
-
+            
             // If counter is zero, then unblock
             if (process->blocked_regs.edx == 0)
                 process->state = RUNNING;
         }
 
         // Then if the process isn't blocked by something else then write to stdin buffer
-        else if (process->state == RUNNING) {
+        // Don't bother saving for loop process
+        else if (process->state == RUNNING && process->id != 0) {
 
             // If we reached the max then we setback STDIN_SETBACK chars
             if (process->stdinSize >= MAX_STDIN_BUFFER_SIZE) {

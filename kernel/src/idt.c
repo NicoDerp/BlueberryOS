@@ -229,16 +229,17 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     saveRegisters(process, &stack_state, &frame, esp);
 
                     uint32_t requested = stack_state.edx;
+                    uint32_t left = stack_state.edx;
                     uint32_t count = requested > process->stdinIndex ? process->stdinIndex : requested;
-                    //printf("Count: %d\n", count);
                     if (count > 0) {
                         char* buf = (char*) stack_state.ecx;
                         memcpy(buf, process->stdinBuffer, count);
 
                         process->stdinIndex -= count;
-                        requested -= count;
+                        left -= count;
 
                         // We need to shift count times
+                        /*
                         for (uint32_t i = 0; i < count; i++) {
 
                             // Each shift we move one character down one-by-one
@@ -246,6 +247,9 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                                 process->stdinBuffer[process->stdinIndex + j - 1] = process->stdinBuffer[process->stdinIndex + j];
                             }
                         }
+                        */
+
+                        memmove(process->stdinBuffer, &process->stdinBuffer[count], count);
                     }
 
                     // If there is nothing or too little in the stdin buffer
@@ -256,7 +260,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                         process->blocked_regs.eax = stack_state.eax;
                         process->blocked_regs.ecx = stack_state.ebx;
                         process->blocked_regs.ecx = stack_state.ecx;
-                        process->blocked_regs.edx = requested;
+                        process->blocked_regs.edx = left;
                         process->blocked_regs.ebp = stack_state.ebp;
                         process->blocked_regs.edi = stack_state.edi;
                         process->blocked_regs.esi = stack_state.esi;
@@ -1110,7 +1114,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
                 key = keyboard_shift_US[scancode];
 
                 //handleKeyboardBlock('\e');
-                //handleKeyboardBlock('^');
+                handleKeyboardBlock('^');
                 handleKeyboardBlock(key);
             } else {
                 handleKeyboardBlock(key);
