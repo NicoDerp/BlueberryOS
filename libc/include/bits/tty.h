@@ -15,6 +15,7 @@
 #define TTY_GET_MAX_WIN_SIZE  8
 #define TTY_ERASE_FROM_CURSOR 9
 #define TTY_ERASE_TO_CURSOR   10
+#define TTY_DELETE_CHARACTERS 11
 
 #endif
 

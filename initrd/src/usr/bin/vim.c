@@ -99,6 +99,7 @@ void moveCursor(void) {
 
 void main(int argc, char* argv[]) {
 
+
     if (argc != 2)
         return;
 
@@ -226,13 +227,18 @@ void main(int argc, char* argv[]) {
                 parseCommand(cmdBuffer);
                 moveCursor();
             }
-            else if (ch == '\b') {
+            else if (ch == '\b' || ch == KEY_BACKSPACE) {
                 if (cmdIndex == 0)
                     continue;
 
                 mvwprintw(cmdBar, 0, cmdIndex, " ");
                 cmdBuffer[cmdIndex] = ' ';
                 wmove(cmdBar, 0, cmdIndex--);
+                wrefresh(cmdBar);
+            }
+            else if (ch == 127) {
+                wdelch(cmdBar);
+                wrefresh(cmdBar);
             }
             else {
                 cmdBuffer[cmdIndex++] = ch;

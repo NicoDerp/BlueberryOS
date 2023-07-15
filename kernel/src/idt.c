@@ -900,10 +900,11 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
 #define KEY_F11         15
 #define KEY_F12         16
 #define KEY_CAPS_LOCK   17
-#define KEY_LEFT_ARROW  18
-#define KEY_RIGHT_ARROW 19
-#define KEY_UP_ARROW    20
-#define KEY_DOWN_ARROW  21
+
+#define KEY_LEFT_ARROW  27
+#define KEY_RIGHT_ARROW 26
+#define KEY_UP_ARROW    24
+#define KEY_DOWN_ARROW  25
 
 
     char keyboard_modifiers_US[128] =
@@ -1114,7 +1115,7 @@ void interrupt_handler(test_struct_t test_struct, unsigned int interrupt_id, sta
                 key = keyboard_shift_US[scancode];
 
                 //handleKeyboardBlock('\e');
-                handleKeyboardBlock('^');
+                handleKeyboardBlock('\e');
                 handleKeyboardBlock(key);
             } else {
                 handleKeyboardBlock(key);

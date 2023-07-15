@@ -44,6 +44,8 @@ FREEOBJS =\
 	ncurses/wmove.o \
 	ncurses/clear.o \
 	ncurses/wclear.o \
+	ncurses/delch.o \
+	ncurses/wdelch.o \
 
 OBJS = $(FREEOBJS)
 

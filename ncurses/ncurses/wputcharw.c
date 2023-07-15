@@ -27,7 +27,10 @@ bool wputcharw(WINDOW* win, char c) {
     move(win->starty + win->cury, win->startx + win->curx);
 
     if (place) {
+        //unsigned int index = win->cury * win->width + win->curx;
+
         putchar(c);
+        //win->buf[index] = c;
         win->curx++;
     }
 

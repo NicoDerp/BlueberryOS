@@ -5,8 +5,16 @@
 
 
 int getch(void) {
-    char buf;
+    int buf = 0;
     read(STDIN_FILENO, &buf, 1);
-    return (int) buf;
+
+    // Check for special character
+    if (buf == '\e') {
+        buf = 0;
+        read(STDIN_FILENO, &buf, 1);
+        buf += 256;
+    }
+
+    return buf;
 }
 

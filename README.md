@@ -35,6 +35,7 @@ I want BlueberryOS to be simple, small and efficient.
 - [x] Shell
 - [ ] Ncurses + text editor
 - [ ] Dynamic libraries
+- [ ] Sound
 - [ ] Memory allocator
 - [ ] USB?
 - [ ] Graphics manager
@@ -103,10 +104,21 @@ Custom syscalls:
 | --- | --- | --- | --- |
 | `23` | `SYS_ttycmd`  | `int ttycmd(int cmd, int* args, unsigned** ret)` | It executes the terminal command `cmd` with arguments `args` and if the command returns anything, it is returned in `ret`. The syscall returns 0 if successful, -1 if there was an error. You can pass NULL to both `args` and `ret` if the command has no arguments or return values. |
 
-### Library
+### C-Library
 
 The C-library and kernel is pretty POSIX compliant, with a lot of similarities with Linux.
 You will find a lot of common functions are implemented, but not all.
+
+### Ncurses
+
+BlueberryOS has it's own Ncurses implementation! This means that you can use programs with text-based user interface.
+The OS has it's own version of Vim built-in, and this uses Ncurses.
+
+Though most of the common functions are implemented, there are some minor differences:
+
+ - Terminal is always in no-echo mode
+ - Terminal is always in non-canonical mode
+ - Ncureses is always accepts keypad / special keys (use `char` instead of `int` if you don't want this)
 
 ## License
 

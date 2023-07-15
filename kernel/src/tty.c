@@ -338,6 +338,22 @@ int terminal_execute_cmd(int cmd, int* args, unsigned int** ret) {
             }
             break;
 
+        /* Delete n characters at cursor and move row left capping at width  */
+        case (TTY_DELETE_CHARACTERS):
+            {
+                int n = args[0];
+                int width = args[1];
+
+                // Minus one because c<cursor>
+                size_t index = terminal_row * VGA_WIDTH + terminal_column - 1;
+
+                memmove(&terminal_buffer[index], &terminal_buffer[index + n], width - n);
+                for (int i = 0; i < n; i++) {
+                    terminal_buffer[index + width - n + i] = vga_entry(' ', vga_color(terminal_fg, terminal_bg));
+                }
+            }
+            break;
+
         default:
             return -1;
             break;

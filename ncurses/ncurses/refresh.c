@@ -1,7 +1,7 @@
 
 #include <ncurses.h>
 
-void refresh(void) {
-    wrefresh(stdscr);
+int refresh(void) {
+    return wrefresh(stdscr);
 }
 
