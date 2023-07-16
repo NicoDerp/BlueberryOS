@@ -47,6 +47,8 @@ void* krealloc(void* ptr, size_t size) {
 void* realloc(void* ptr, size_t size) {
 #endif
 
+    printf("Reallocing ptr 0x%x\n", ptr);
+
     if (ptr == NULL) {
 #if defined(__is_libk)
         return kmalloc(size);
@@ -59,15 +61,18 @@ void* realloc(void* ptr, size_t size) {
 
     tag_t* tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
     if (tag->magic != MEMORY_TAG_MAGIC) {
-        ERROR("free: Tag at 0x%x has been corrupted!\n", ptr);
+        ERROR("realloc: Tag at 0x%x has been corrupted!\n", ptr);
         return ptr;
     }
+    printf("Magic: 0x%x\n", tag->magic);
 
     // TODO if it is much smaller then split tag as in free
+    /*
     if (size <= tag->realsize - sizeof(tag_t)) {
         tag->size = size;
         return ptr;
     }
+    */
 
 #if defined(__is_libk)
     void* new = kmalloc(size);
@@ -75,7 +80,9 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
+    printf("Magic: 0x%x\n", tag->magic);
     memcpy(new, ptr, tag->size);
+    printf("Magic: 0x%x\n", tag->magic);
 
 #if defined(__is_libk)
     kfree(ptr);

@@ -62,24 +62,26 @@ void kfree(void* ptr) {
 void free(void* ptr) {
 #endif
 
+    tag_t* tag;
+
     if (ptr == NULL)
         return;
 
-    tag_t* tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
+    tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
     if (tag->magic != MEMORY_TAG_MAGIC) {
         ERROR("free: Tag at 0x%x has been corrupted!\n", ptr);
         return;
     }
 
-    int oldIndex = getIndex(tag->realsize - sizeof(tag_t));
+    //int oldIndex = getIndex(tag->realsize - sizeof(tag_t));
 
-    // Merge with previous
+    // Merge with previous free tags
     while ((tag->splitprev != NULL) && (tag->splitprev->index >= 0)) {
 
         VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
         if (left->magic != MEMORY_TAG_MAGIC) {
-            ERROR("free: Left tag at 0x%x has been corrupted, which means a program has overwritten their memory!\n", left);
+            ERROR("free: Left tag at 0x%x has been corrupted, which means a previous allocated memory has overwritten their memory!\n", left);
             return;
         }
 
@@ -125,7 +127,6 @@ void free(void* ptr) {
         tag->realsize += right->realsize;
 
         tag->splitnext = right->splitnext;
-
         if (right->splitnext != NULL) {
             if (right->splitnext->magic != MEMORY_TAG_MAGIC) {
                 ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", right->splitnext);
@@ -139,7 +140,7 @@ void free(void* ptr) {
         if (freePages[right->index] == right)
             freePages[right->index] = right->next;
 
-        if  (right->prev != NULL)
+        if (right->prev != NULL)
             right->prev->next = right->next;
 
         if (right->next != NULL)
@@ -152,6 +153,33 @@ void free(void* ptr) {
 
     int index = getIndex(tag->realsize - sizeof(tag_t));
     VERBOSE("Tag has size %d at index %d\n", tag->realsize, index);
+
+    // Remove tag from old index and cut ties if its size has changed
+    if (tag->index != index) {
+        if (freePages[tag->index] == tag)
+            freePages[tag->index] = tag->next;
+
+        if (tag->prev != NULL)
+            tag->prev->next = tag->next;
+
+        if (tag->next != NULL)
+            tag->next->prev = tag->prev;
+    }
+
+    tag->index = index;
+    tag->prev = NULL;
+    tag->next = NULL;
+
+    // Insert tag at start of new location
+    if (freePages[index] == NULL) {
+        freePages[index] = tag;
+    } else {
+        tag->next = freePages[index];
+        freePages[index]->prev = tag;
+        freePages[index] = tag;
+    }
+
+    // This needs to be done at the end because if we actually free then we can't access tag anymore
     if (tag->splitprev == NULL && tag->splitnext == NULL) {        
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
@@ -169,24 +197,6 @@ void free(void* ptr) {
         }
 
         completePages[index]++;
-    }
-
-    tag->index = index;
-
-    // Check if tag is the first in the list
-    if (freePages[oldIndex] == tag)
-        freePages[oldIndex] = tag->next;
-
-    tag->prev = NULL;
-    tag->next = NULL;
-
-    // Insert tag at start of new location
-    if (freePages[index] == NULL) {
-        freePages[index] = tag;
-    } else {
-        tag->next = freePages[index];
-        freePages[index]->prev = tag;
-        freePages[index] = tag;
     }
 }
 
