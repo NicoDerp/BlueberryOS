@@ -185,8 +185,9 @@ void free(void* ptr) {
     if (tag->splitprev == NULL && tag->splitnext == NULL) {        
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
-            //freePages[index] = NULL;
 
+            printf("Freeing tag!\n");
+            freePages[index] = NULL;
             uint32_t pages = tag->realsize / FRAME_SIZE;
             if ((tag->realsize & (FRAME_SIZE-1)) != 0)
                 pages++;

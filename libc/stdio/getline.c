@@ -22,28 +22,28 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
     if (fp->dd_buf == NULL) {
         printf("No buf\n");
         fp->dd_size = 512;
-        fp->dd_buf = (char*) malloc(513);
+        fp->dd_buf = (char*) malloc(512);
 
-        bytes = read(fp->dd_fd, fp->dd_buf, 512);
+        bytes = read(fp->dd_fd, fp->dd_buf, 511);
         if (bytes == -1)
             return -1;
 
         total += bytes;
+        fp->dd_index += bytes;
         fp->dd_buf[bytes] = '\0';
-        fp->dd_index = 0;
     }
-    else if (fp->dd_index >= fp->dd_size) {
+
+    if (fp->dd_index <= 0) {
         printf("Reached end of buffer so reading again\n");
 
-        bytes = read(fp->dd_fd, fp->dd_buf, fp->dd_size);
+        bytes = read(fp->dd_fd, fp->dd_buf, fp->dd_size-1);
         if (bytes == -1)
             return -1;
 
         printf("Read %d bytes\n", bytes);
-        fp->dd_buf[bytes] = '\0';
         total += bytes;
-
-        fp->dd_index = 0;
+        fp->dd_index += bytes;
+        fp->dd_buf[bytes] = '\0';
     }
 
     char* pos;
@@ -53,8 +53,9 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
 
         printf("Not found\n");
 
-        fp->dd_buf = realloc(fp->dd_buf, fp->dd_size + 513);
-        bytes = read(fp->dd_fd, fp->dd_buf + fp->dd_size, 512);
+        fp->dd_buf = realloc(fp->dd_buf, fp->dd_size + 512);
+        printf("Returned\n");
+        bytes = read(fp->dd_fd, fp->dd_buf + fp->dd_index, 511);
         if (bytes == -1)
             return -1;
 
@@ -84,13 +85,17 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         *lineptr = (char*) realloc(*lineptr, linesize+1);
     }
 
+    if (((unsigned int) fp->dd_index) > 1000) {
+        for (;;) {}
+    }
+
     printf("Index: %d/%d\n", fp->dd_index, fp->dd_size);
 
     memcpy(*lineptr, fp->dd_buf, linesize);
     (*lineptr)[linesize] = '\0';
 
     memmove(fp->dd_buf, pos + 1, fp->dd_size - linesize - 1);
-    fp->dd_index += linesize;
+    fp->dd_index -= linesize + 1;
 
     return linesize;
 }

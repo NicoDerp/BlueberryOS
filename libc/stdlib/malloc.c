@@ -18,7 +18,7 @@ int initialized = 0;
 
 #if !defined(__is_libk)
 #define VERBOSE(format, ...)
-#define ERROR(format, ...) {printf("Error: "format, ## __VA_ARGS__);}
+#define ERROR(format, ...) printf("Error: "format, ## __VA_ARGS__)
 #endif
 
 /*
@@ -78,7 +78,7 @@ void* malloc(size_t size) {
         initialized = 1;
     }
 
-    tag_t* tag;
+    tag_t* tag = NULL;
     int index = getIndex(size);
 
     uint32_t i;
@@ -88,8 +88,14 @@ void* malloc(size_t size) {
             tag = tag->next;
         }
 
-        if (tag != NULL)
+        if (tag != NULL) {
+            if (tag->magic != MEMORY_TAG_MAGIC) {
+                ERROR("malloc: Tag (0x%x) (%s) magic has been overwritten!\n", tag, tag);
+                continue;
+            }
+
             break;
+        }
     }
 
     if (tag == NULL) {
@@ -112,7 +118,7 @@ void* malloc(size_t size) {
     } else {
 
         if (tag->magic != MEMORY_TAG_MAGIC) {
-            ERROR("malloc: Tag (0x%x) (%d) magic has been overwritten!\n", tag, tag->index);
+            ERROR("malloc: Tag (0x%x) magic has been overwritten and it really shouldn't!\n", tag);
             for (;;) {}
         }
 
