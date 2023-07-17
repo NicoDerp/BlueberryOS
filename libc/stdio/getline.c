@@ -30,9 +30,6 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         fp->dd_index = 0;
     }
 
-    int* magic = (int*) (0x400295 - sizeof(tag_t));
-    printf("\nNumber: 0x%x\n", *magic);
-
     char* pos;
     int bytes;
     int total = 0;
@@ -65,25 +62,20 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
     unsigned int linesize = (unsigned int) pos - (unsigned int) fp->dd_buf;
     printf("Requesting %d\n", linesize+1);
 
-    printf("Number: 0x%x\n", *magic);
     if (*lineptr == NULL) {
         *lineptr = (char*) malloc(linesize+1);
         *n = linesize + 1;
     }
     else if (linesize+1 > *n) {
-        printf("Before 0x%x\n", *lineptr);
         *lineptr = (char*) realloc(*lineptr, linesize+1);
-        printf("After 0x%x\n", *lineptr);
         *n = linesize + 1;
     }
-    printf("Number: 0x%x\n", *magic);
 
     memcpy(*lineptr, fp->dd_buf, linesize);
     (*lineptr)[linesize] = '\0';
 
     memmove(fp->dd_buf, pos + 1, fp->dd_size - linesize - 1);
     fp->dd_index += linesize;
-    printf("Number: 0x%x\n", *magic);
 
     return linesize;
 }
