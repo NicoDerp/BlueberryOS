@@ -53,7 +53,7 @@ void main(int argc, char** argv) {
     }
 
     // TODO mmap
-    char* buf = (char*) malloc(st.st_size);
+    char* buf = (char*) malloc(st.st_size + 1);
     int bytes = read(fd, buf, st.st_size);
     if (bytes != 0) {
         buf[bytes] = '\0';

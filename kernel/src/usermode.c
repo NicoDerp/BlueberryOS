@@ -1505,7 +1505,7 @@ int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd) 
     if (file->size - pfd->position < count)
         count = file->size - pfd->position;
 
-    memcpy(buf, file->content, count);
+    memcpy(buf, file->content + pfd->position, count);
     pfd->position += count;
 
     return count;

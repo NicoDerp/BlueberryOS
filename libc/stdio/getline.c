@@ -11,6 +11,9 @@
 
 ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restrict fp) {
 
+    int total = 0;
+    int bytes;
+
     if (lineptr == NULL || n == NULL) {
         errno = EINVAL;
         return -1;
@@ -20,19 +23,30 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         printf("No buf\n");
         fp->dd_size = 512;
         fp->dd_buf = (char*) malloc(513);
-        read(fp->dd_fd, fp->dd_buf, 512);
-        //fp->dd_buf[512] = '\0';
+
+        bytes = read(fp->dd_fd, fp->dd_buf, 512);
+        if (bytes == -1)
+            return -1;
+
+        total += bytes;
+        fp->dd_buf[bytes] = '\0';
         fp->dd_index = 0;
     }
     else if (fp->dd_index >= fp->dd_size) {
-        printf("Reading again");
-        read(fp->dd_fd, fp->dd_buf, fp->dd_size);
+        printf("Reached end of buffer so reading again\n");
+
+        bytes = read(fp->dd_fd, fp->dd_buf, fp->dd_size);
+        if (bytes == -1)
+            return -1;
+
+        printf("Read %d bytes\n", bytes);
+        fp->dd_buf[bytes] = '\0';
+        total += bytes;
+
         fp->dd_index = 0;
     }
 
     char* pos;
-    int bytes;
-    int total = 0;
     int hasRead = 0;
     while ((pos = strchr(fp->dd_buf, '\n')) == NULL) {
         hasRead = 1;
@@ -41,12 +55,11 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
 
         fp->dd_buf = realloc(fp->dd_buf, fp->dd_size + 513);
         bytes = read(fp->dd_fd, fp->dd_buf + fp->dd_size, 512);
-        fp->dd_size += 512;
-        
         if (bytes == -1)
             return -1;
 
-        fp->dd_buf[fp->dd_size] = '\0';
+        fp->dd_buf[bytes] = '\0';
+        fp->dd_size += 512;
         fp->dd_index += bytes;
         total += bytes;
 
@@ -60,16 +73,18 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         return -1;
 
     unsigned int linesize = (unsigned int) pos - (unsigned int) fp->dd_buf;
+    *n = linesize + 1;
+
     printf("Requesting %d\n", linesize+1);
 
     if (*lineptr == NULL) {
         *lineptr = (char*) malloc(linesize+1);
-        *n = linesize + 1;
     }
     else if (linesize+1 > *n) {
         *lineptr = (char*) realloc(*lineptr, linesize+1);
-        *n = linesize + 1;
     }
+
+    printf("Index: %d/%d\n", fp->dd_index, fp->dd_size);
 
     memcpy(*lineptr, fp->dd_buf, linesize);
     (*lineptr)[linesize] = '\0';

@@ -67,6 +67,7 @@ void readFile(char* filename) {
         exit(1);
     }
 
+
     FILE* fp = fdopen(fd, "r");
 
 
