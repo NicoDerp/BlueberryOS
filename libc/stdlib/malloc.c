@@ -159,6 +159,7 @@ void* malloc(size_t size) {
         splitTag->next = NULL;
         splitTag->prev = NULL;
 
+        tag->splitnext = splitTag;
         splitTag->splitprev = tag;
 #if !defined(__is_libk)
         printf("Malloc Number: 0x%x\n", *magic);
@@ -166,11 +167,9 @@ void* malloc(size_t size) {
         splitTag->splitnext = tag->splitnext;
 #if !defined(__is_libk)
         printf("Malloc Number: 0x%x\n", *magic);
-        printf("Malloc Number: 0x%x\n", (unsigned int) magic);
-        printf("Malloc Number: 0x%x\n", (unsigned int) &splitTag->splitnext);
+        printf("Magic at: 0x%x\n", (unsigned int) magic);
+        printf("Splitnext at: 0x%x\n", (unsigned int) &splitTag->splitnext);
 #endif
-
-        tag->splitnext = splitTag;
 
         if (splitTag->splitnext != NULL)
             splitTag->splitnext->splitprev = splitTag;

@@ -78,6 +78,7 @@ void free(void* ptr) {
     // Merge with previous free tags
     while ((tag->splitprev != NULL) && (tag->splitprev->index >= 0)) {
 
+        printf("Mergining with free tag at 0x%x 0x%x 0x%x with size %d\n", tag->splitprev, tag->splitprev->realsize);
         VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
         if (left->magic != MEMORY_TAG_MAGIC) {
@@ -156,6 +157,9 @@ void free(void* ptr) {
 
     // Remove tag from old index and cut ties if its size has changed
     if (tag->index != index) {
+
+        tag->index = index;
+
         if (freePages[tag->index] == tag)
             freePages[tag->index] = tag->next;
 
@@ -164,20 +168,19 @@ void free(void* ptr) {
 
         if (tag->next != NULL)
             tag->next->prev = tag->prev;
+
+        // Insert tag at start of new location
+        if (freePages[index] == NULL) {
+            freePages[index] = tag;
+        } else {
+            tag->next = freePages[index];
+            freePages[index]->prev = tag;
+            freePages[index] = tag;
+        }
     }
 
-    tag->index = index;
     tag->prev = NULL;
     tag->next = NULL;
-
-    // Insert tag at start of new location
-    if (freePages[index] == NULL) {
-        freePages[index] = tag;
-    } else {
-        tag->next = freePages[index];
-        freePages[index]->prev = tag;
-        freePages[index] = tag;
-    }
 
     // This needs to be done at the end because if we actually free then we can't access tag anymore
     if (tag->splitprev == NULL && tag->splitnext == NULL) {        
