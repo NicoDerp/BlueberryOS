@@ -137,16 +137,11 @@ void* malloc(size_t size) {
 
     // Check if there is more space left in tag, in that case we split the tag
     int remainder = tag->realsize - size - sizeof(tag_t);
-    int* magic = (int*) (0x400295 - sizeof(tag_t));
 
     // Needs to be more than minimum to split
     if (remainder - sizeof(tag_t) > (1 << MEMORY_MIN_EXP)) {
 
         VERBOSE("kmalloc: Splitting tag with size %d with remainder %d\n", size, remainder);
-
-#if !defined(__is_libk)
-        printf("Malloc Number: 0x%x\n", *magic);
-#endif
 
         tag_t* splitTag = (tag_t*) ((uint32_t) tag + sizeof(tag_t) + tag->size);
         uint32_t splitIndex = getIndex(remainder - sizeof(tag_t));
@@ -161,15 +156,7 @@ void* malloc(size_t size) {
 
         tag->splitnext = splitTag;
         splitTag->splitprev = tag;
-#if !defined(__is_libk)
-        printf("Malloc Number: 0x%x\n", *magic);
-#endif
         splitTag->splitnext = tag->splitnext;
-#if !defined(__is_libk)
-        printf("Malloc Number: 0x%x\n", *magic);
-        printf("Magic at: 0x%x\n", (unsigned int) magic);
-        printf("Splitnext at: 0x%x\n", (unsigned int) &splitTag->splitnext);
-#endif
 
         if (splitTag->splitnext != NULL)
             splitTag->splitnext->splitprev = splitTag;
@@ -184,9 +171,6 @@ void* malloc(size_t size) {
         }
         VERBOSE("Split tag at 0x%x with index %d and size %d\n", splitTag, splitTag->index, remainder - sizeof(tag_t));
     }
-#if !defined(__is_libk)
-    printf("Malloc Number: 0x%x\n", *magic);
-#endif
 
     VERBOSE("kmalloc: Returning tag at 0x%x with index %d\n", tag, tag->index);
 

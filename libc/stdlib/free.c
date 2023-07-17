@@ -78,7 +78,6 @@ void free(void* ptr) {
     // Merge with previous free tags
     while ((tag->splitprev != NULL) && (tag->splitprev->index >= 0)) {
 
-        printf("Mergining with free tag at 0x%x 0x%x 0x%x with size %d\n", tag->splitprev, tag->splitprev->realsize);
         VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
         if (left->magic != MEMORY_TAG_MAGIC) {
