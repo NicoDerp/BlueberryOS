@@ -25,7 +25,7 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         fp->dd_buf = (char*) malloc(512);
 
         bytes = read(fp->dd_fd, fp->dd_buf, 511);
-        if (bytes == -1)
+        if (bytes <= 0)
             return -1;
 
         total += bytes;
@@ -37,7 +37,7 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         printf("Reached end of buffer so reading again\n");
 
         bytes = read(fp->dd_fd, fp->dd_buf, fp->dd_size-1);
-        if (bytes == -1)
+        if (bytes <= 0)
             return -1;
 
         printf("Read %d bytes\n", bytes);
@@ -53,10 +53,11 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
 
         printf("Not found\n");
 
-        fp->dd_buf = realloc(fp->dd_buf, fp->dd_size + 512);
+        fp->dd_buf = realloc(fp->dd_buf, fp->dd_size + fp->dd_index);
         printf("Returned\n");
         bytes = read(fp->dd_fd, fp->dd_buf + fp->dd_index, 511);
-        if (bytes == -1)
+        printf("Read %d bytes\n", bytes);
+        if (bytes <= 0)
             return -1;
 
         fp->dd_buf[bytes] = '\0';
@@ -74,7 +75,6 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         return -1;
 
     unsigned int linesize = (unsigned int) pos - (unsigned int) fp->dd_buf;
-    *n = linesize + 1;
 
     printf("Requesting %d\n", linesize+1);
 
@@ -85,9 +85,7 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         *lineptr = (char*) realloc(*lineptr, linesize+1);
     }
 
-    if (((unsigned int) fp->dd_index) > 1000) {
-        for (;;) {}
-    }
+    *n = linesize + 1;
 
     printf("Index: %d/%d\n", fp->dd_index, fp->dd_size);
 

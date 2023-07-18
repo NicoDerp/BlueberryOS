@@ -65,6 +65,7 @@ void* realloc(void* ptr, size_t size) {
 
     // TODO if it is much smaller then split tag as in free
     if (size <= tag->realsize - sizeof(tag_t)) {
+        printf("realloc: Increasing size\n");
         tag->size = size;
         return ptr;
     }
@@ -75,6 +76,7 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
+    printf("realloc: Malloced new ptr 0x%x\n", new);
     memcpy(new, ptr, tag->size);
 
 #if defined(__is_libk)
