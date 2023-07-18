@@ -157,8 +157,6 @@ void free(void* ptr) {
     // Remove tag from old index and cut ties if its size has changed
     if (tag->index != index) {
 
-        tag->index = index;
-
         if (freePages[tag->index] == tag)
             freePages[tag->index] = tag->next;
 
@@ -169,13 +167,13 @@ void free(void* ptr) {
             tag->next->prev = tag->prev;
 
         // Insert tag at start of new location
-        if (freePages[index] == NULL) {
-            freePages[index] = tag;
-        } else {
+        if (freePages[index] != NULL) {
             tag->next = freePages[index];
             freePages[index]->prev = tag;
-            freePages[index] = tag;
         }
+        freePages[index] = tag;
+
+        tag->index = index;
     }
 
     tag->prev = NULL;

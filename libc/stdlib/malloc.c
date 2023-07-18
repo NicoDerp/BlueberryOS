@@ -90,7 +90,8 @@ void* malloc(size_t size) {
 
         if (tag != NULL) {
             if (tag->magic != MEMORY_TAG_MAGIC) {
-                ERROR("malloc: Tag (0x%x) (%s) magic has been overwritten!\n", tag, tag);
+                ERROR("malloc: Tag (0x%x) magic has been overwritten!\n", tag);
+                tag = NULL;
                 continue;
             }
 
@@ -136,6 +137,13 @@ void* malloc(size_t size) {
             completePages[index]--;
     }
 
+    printf("malloc: New tag at 0x%x with size %d\n", tag, tag->realsize);
+    printf("Malloc: index %d\n", tag->index);
+    printf("Malloc: next at 0x%x\n", tag->splitnext);
+    if (tag->splitnext != NULL) {
+        printf("malloc: 0x%x Index %d, size %d\n", tag->splitnext->magic, tag->splitnext->index, tag->splitnext->realsize);
+    }
+
     tag->prev = NULL;
     tag->next = NULL;
     tag->size = size;
@@ -160,21 +168,20 @@ void* malloc(size_t size) {
         splitTag->next = NULL;
         splitTag->prev = NULL;
 
-        tag->splitnext = splitTag;
         splitTag->splitprev = tag;
         splitTag->splitnext = tag->splitnext;
+        tag->splitnext = splitTag;
 
         if (splitTag->splitnext != NULL)
             splitTag->splitnext->splitprev = splitTag;
 
         // Insert split tag at beginning
-        if (freePages[splitIndex] == NULL) {
-            freePages[splitIndex] = splitTag;
-        } else {
+        if (freePages[splitIndex] != NULL) {
             splitTag->next = freePages[splitIndex];
             freePages[splitIndex]->prev = splitTag;
-            freePages[splitIndex] = splitTag;
         }
+        freePages[splitIndex] = splitTag;
+
         VERBOSE("Split tag at 0x%x with index %d and size %d\n", splitTag, splitTag->index, remainder - sizeof(tag_t));
     }
 

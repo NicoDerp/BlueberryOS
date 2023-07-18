@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
+#include <bits/memory.h>
+
 
 #define MAX_CMD_BUFFER 32
 
@@ -35,7 +37,7 @@ unsigned int cols;
 unsigned int rows;
 
 struct {
-    row_t** rows;
+    row_t* rows;
     unsigned int numrows;
 } E;
 
@@ -45,17 +47,20 @@ struct {
     unsigned int y;
 } cursor;
 
-void appendRow(char* s) {
+void appendRow(char* s, unsigned int linelen) {
 
+    printf("Allocing %d * %d = %d\n", E.numrows + 1, sizeof(row_t), sizeof(row_t) * (E.numrows + 1));
     // If rows is NULL then realloc will call malloc for us
-    E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+    //E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
     
-    row_t* r = E.rows[E.numrows];
-    r->size = strlen(s);
-    r->chars = (char*) malloc(r->size + 1);
-    memcpy(r->chars, s, r->size+1);
+    /*
+    row_t* r = &E.rows[E.numrows];
+    r->size = linelen;
+    r->chars = (char*) malloc(linelen + 1);
+    //memcpy(r->chars, s, linelen+1);
+    */
 
-    E.numrows++;
+    //E.numrows++;
 }
 
 void readFile(char* filename) {
@@ -70,15 +75,33 @@ void readFile(char* filename) {
 
     FILE* fp = fdopen(fd, "r");
 
+    void* ptr1 = NULL;
+    void* ptr2 = NULL;
+    for (int i = 0; i < 64; i++) {
+        getchar();
+        ptr1 = realloc(ptr1, 8*i);
+        ptr2 = realloc(ptr2, 10*i);
+        printf("abc Magic 0x%x\n", *((int*) ((unsigned int) ptr2 - sizeof(tag_t))));
+        printf("Diff %d %d\n", (unsigned int) ptr2 - (unsigned int) ptr1, 8*i);
+        printf("Ptr 0x%x\n", ptr1);
+        printf("Ptr 0x%x\n\n", ptr2);
+    }
+
+    exit(0);
+
     char* line = NULL;
     size_t linecap = 0;
     ssize_t linelen;
     while ((linelen = getline(&line, &linecap, fp)) != -1) {
+        /*
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
+        */
 
-        printf("%s\n", line);
         getchar();
+        printf("Appending %d '%s'\n", linelen, line);
+        //appendRow(line, linelen);
+        E.rows = realloc(E.rows, 2*linelen);
     }
 
     free(line);
@@ -120,29 +143,24 @@ void parseCommand(char* buf) {
     wrefresh(cmdBar);
 }
 
-void displayScreen(char* buf, unsigned int count) {
+void displayScreen(void) {
 
     size_t i = 0;
-    if (count != 0) {
-        for (size_t j = 0, i = 0; i < getmaxy(stdscr)-2 && j < count; i++) {
-            for (; buf[j] != '\n' && j < count; j++) {
-                //putchar(buf[j]);
-                printw("%c", buf[j]);
-            }
-            //putchar('\n');
+    for (i = 0; i < rows-2 && i < E.numrows; i++) {
 
-            if (i != rows-1)
-                printw("\n");
-            j++;
-        }
-
+        if (i == rows-1)
+            printw("%s", E.rows[i].chars);
+        else
+            printw("%s\n", E.rows[i].chars);
     }
 
     // Draw '~' for empty lines
-    for (; i < getmaxy(stdscr)-2; i++) {
-        printw("~");
-        if (i != rows-1)
-            printw("\n");
+    for (; i < rows-2; i++) {
+
+        if (i == rows-1)
+            printw("~");
+        else
+            printw("~\n");
     }
 
     refresh();
@@ -161,16 +179,10 @@ void main(int argc, char* argv[]) {
     currentFile = argv[1];
     readFile(currentFile);
 
+    for(;;) {}
+
     initscr();
     noecho();
-
-    /*
-    mvaddstr(getmaxy(stdscr)-1, 0, argv[1]);
-
-    attron(A_REVERSE);
-    mvaddstr(getmaxy(stdscr)-2, 0, "NORMAL");
-    attroff(A_REVERSE);
-    */
 
     cols = getmaxx(stdscr);
     rows = getmaxy(stdscr);
@@ -181,39 +193,10 @@ void main(int argc, char* argv[]) {
     rows -= 2;
     refresh();
 
-    /*
-    struct stat st;
-    if (stat(currentFile, &st) == -1) {
-        int backup = errno;
-        wclear(cmdBar);
-        wprintw(cmdBar, "vim: %s: stat error: %s\n", currentFile, strerror(backup));
-        endwin();
-        exit(1);
-    }
-
-    char* buf = (char*) malloc(st.st_size);
-    int count = read(fd, buf, st.st_size);
-
-    if (count == -1) {
-        int backup = errno;
-        printf("vim: %s: read error: %s\n", currentFile, strerror(backup));
-
-        if (close(fd) == -1) {
-            int backup = errno;
-            printf("vim: %s: close error: %s\n", currentFile, strerror(backup));
-        }
-
-        free(buf);
-        endwin();
-        exit(1);
-    }
-
-    free(buf);
-    displayScreen(buf, count);
-    */
-
     E.rows = NULL;
     E.numrows = 0;
+
+
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
