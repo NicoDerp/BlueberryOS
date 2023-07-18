@@ -51,17 +51,21 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
     while ((pos = strchr(fp->dd_buf, '\n')) == NULL) {
         hasRead = 1;
 
-        printf("Not found\n");
+        printf("Not found with index %d/%d\n", fp->dd_index, fp->dd_size);
 
-        fp->dd_buf = realloc(fp->dd_buf, fp->dd_size + fp->dd_index);
-        printf("Returned\n");
+        if (fp->dd_index + 512 > fp->dd_size) {
+            printf("Increasing size from %d to %d\n", fp->dd_size, fp->dd_index + 512);
+            fp->dd_buf = realloc(fp->dd_buf, fp->dd_index + 512);
+            printf("Returned\n");
+            fp->dd_size = fp->dd_index + 512;
+        }
+
         bytes = read(fp->dd_fd, fp->dd_buf + fp->dd_index, 511);
         printf("Read %d bytes\n", bytes);
         if (bytes <= 0)
             return -1;
 
-        fp->dd_buf[bytes] = '\0';
-        fp->dd_size += 512;
+        fp->dd_buf[fp->dd_index + bytes] = '\0';
         fp->dd_index += bytes;
         total += bytes;
 
@@ -81,7 +85,7 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
     if (*lineptr == NULL) {
         *lineptr = (char*) malloc(linesize+1);
     }
-    else if (linesize+1 > *n) {
+    else if (linesize+1 != *n) {
         *lineptr = (char*) realloc(*lineptr, linesize+1);
     }
 

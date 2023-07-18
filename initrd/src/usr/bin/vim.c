@@ -70,7 +70,6 @@ void readFile(char* filename) {
 
     FILE* fp = fdopen(fd, "r");
 
-
     char* line = NULL;
     size_t linecap = 0;
     ssize_t linelen;

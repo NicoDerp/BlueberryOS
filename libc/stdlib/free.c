@@ -15,7 +15,7 @@
 
 #if !defined(__is_libk)
 #define VERBOSE(format, ...)
-#define ERROR(format, ...) {printf("Error: "format, ## __VA_ARGS__);}
+#define ERROR(format, ...) printf("Error: "format, ## __VA_ARGS__)
 #endif
 
 /*
