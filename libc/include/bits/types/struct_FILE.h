@@ -6,7 +6,7 @@
 struct _IO_FILE
 {
     char* dd_buf;
-    unsigned int dd_size;
+    int dd_size;
     int dd_index;
     int dd_fd;
     int dd_used;

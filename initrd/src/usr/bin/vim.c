@@ -74,7 +74,10 @@ void readFile(char* filename) {
     size_t linecap = 0;
     ssize_t linelen;
     while ((linelen = getline(&line, &linecap, fp)) != -1) {
-        printf("Got linelen %d and line: '%s'\n", linelen, line);
+        while (line[linelen-1] == '\n')
+            line[--linelen] = '\0';
+
+        printf("%s\n", line);
         getchar();
     }
 
