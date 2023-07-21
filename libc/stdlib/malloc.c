@@ -81,6 +81,19 @@ void* malloc(size_t size) {
     tag_t* tag = NULL;
     int index = getIndex(size);
 
+    for (unsigned int i = 0; i < MEMORY_TOT_EXP; i++) {
+        tag = freePages[i];
+
+        if (tag != NULL)
+            printf("Index %d: %d-%d:\n", i, 1<<(i+MEMORY_MIN_EXP), (1<<(i+MEMORY_MIN_EXP+1))-1);
+
+        while (tag != NULL) {
+            printf(" - Size %d at 0x%x 0x%x\n", tag->realsize, tag, (unsigned int) tag + sizeof(tag_t));
+            tag = tag->next;
+        }
+    }
+    tag = NULL;
+
     uint32_t i;
     for (i = index; i < MEMORY_TOT_EXP; i++) {
         tag = freePages[i];
@@ -137,12 +150,14 @@ void* malloc(size_t size) {
             completePages[index]--;
     }
 
+    /*
     printf("malloc: New tag at 0x%x with size %d\n", tag, tag->realsize);
     printf("Malloc: index %d\n", tag->index);
     printf("Malloc: next at 0x%x\n", tag->splitnext);
     if (tag->splitnext != NULL) {
         printf("malloc: 0x%x Index %d, size %d\n", tag->splitnext->magic, tag->splitnext->index, tag->splitnext->realsize);
     }
+    */
 
     tag->prev = NULL;
     tag->next = NULL;

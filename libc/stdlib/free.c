@@ -29,7 +29,6 @@
 static inline int getIndex(unsigned int num) {
 
     if (num <= (1 << MEMORY_MIN_EXP)) {
-        //return MEMORY_MIN_EXP-1;
         return 0;
     }
 
@@ -80,8 +79,9 @@ void free(void* ptr) {
 
         VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
+        printf("free: Merging with tag at 0x%x\n", left);
         if (left->magic != MEMORY_TAG_MAGIC) {
-            ERROR("free: Left tag at 0x%x has been corrupted, which means a previous allocated memory has overwritten their memory!\n", left);
+            ERROR("free: Left tag at 0x%x (0x%x) has been corrupted, which means a previous allocated memory has overwritten their memory!\n", left, left->magic);
             return;
         }
 
