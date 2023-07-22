@@ -393,6 +393,33 @@ void terminal_writechar(const char c, bool updateCursor) {
         return;
     }
 
+    // Tab
+    else if (c == '\t') {
+        const size_t index = terminal_row * VGA_WIDTH + terminal_column;
+
+        for (unsigned int i = 0; i < (4 - (index & 3)); i++) {
+
+            terminal_buffer[index+i] = vga_entry(' ', vga_color(terminal_fg, terminal_bg));
+
+            terminal_column++;
+            if (terminal_column >= VGA_WIDTH) {
+                terminal_column = 0;
+                terminal_row++;
+
+                if (terminal_row >= VGA_HEIGHT) {
+                    terminal_scroll_down();
+                }
+            }
+        }
+
+        if (updateCursor) {
+            terminal_move_cursor(terminal_column, terminal_row);
+        }
+
+        return;
+    }
+
+
     // Escape
     else if (c == 27) {
 

@@ -49,18 +49,15 @@ struct {
 
 void appendRow(char* s, unsigned int linelen) {
 
-    printf("Allocing %d * %d = %d\n", E.numrows + 1, sizeof(row_t), sizeof(row_t) * (E.numrows + 1));
     // If rows is NULL then realloc will call malloc for us
-    //E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+    E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
     
-    /*
     row_t* r = &E.rows[E.numrows];
     r->size = linelen;
     r->chars = (char*) malloc(linelen + 1);
-    //memcpy(r->chars, s, linelen+1);
-    */
+    memcpy(r->chars, s, linelen+1);
 
-    //E.numrows++;
+    E.numrows++;
 }
 
 void readFile(char* filename) {
@@ -75,35 +72,17 @@ void readFile(char* filename) {
 
     FILE* fp = fdopen(fd, "r");
 
-    void* ptr1 = NULL;
-    void* ptr2 = NULL;
-    for (int i = 0; i < 64; i++) {
-        getchar();
-        ptr1 = realloc(ptr1, 8*i);
-        printf("Tag 0x%x\n\n", ptr1 - sizeof(tag_t));
-        getchar();
-        ptr2 = realloc(ptr2, 10*i);
-
-        /*
-        printf("Diff %d %d\n", (unsigned int) ptr2 - (unsigned int) ptr1, 8*i);
-        */
-        printf("Tag 0x%x\n\n\n", ptr2 - sizeof(tag_t));
-    }
-
-    exit(0);
-
     char* line = NULL;
     size_t linecap = 0;
     ssize_t linelen;
     while ((linelen = getline(&line, &linecap, fp)) != -1) {
-        /*
+
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
-        */
 
         getchar();
-        printf("Appending %d '%s'\n", linelen, line);
-        //appendRow(line, linelen);
+        //printf("Appending %d '%s'\n", linelen, line);
+        appendRow(line, linelen);
         E.rows = realloc(E.rows, 2*linelen);
     }
 

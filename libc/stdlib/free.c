@@ -63,6 +63,7 @@ void free(void* ptr) {
 
     tag_t* tag;
 
+    /*
 #if !defined(__is_libk)
     printf("\n\nFree before. tag 0x%x. size %d. realsize %d\n",
            (unsigned int) ptr - sizeof(tag_t),
@@ -80,6 +81,7 @@ void free(void* ptr) {
         }
     }
 #endif
+    */
 
     if (ptr == NULL)
         return;
@@ -97,7 +99,6 @@ void free(void* ptr) {
 
         VERBOSE("free: Merging with left\n");
         tag_t* left = tag->splitprev;
-        printf("free: Merging with tag at 0x%x\n", left);
         if (left->magic != MEMORY_TAG_MAGIC) {
             ERROR("free: Left tag at 0x%x (0x%x) has been corrupted, which means a previous allocated memory has overwritten their memory!\n", left, left->magic);
             return;
@@ -218,6 +219,7 @@ void free(void* ptr) {
         completePages[index]++;
     }
 
+    /*
 #if !defined(__is_libk)
     printf("\nFree after\n");
     for (unsigned int i = 0; i < MEMORY_TOT_EXP; i++) {
@@ -232,6 +234,7 @@ void free(void* ptr) {
         }
     }
 #endif
+    */
 }
 
 

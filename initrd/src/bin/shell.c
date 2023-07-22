@@ -256,6 +256,10 @@ void main() {
 
             }
 
+            // Tab (autocomplete)
+            else if (c == '\t') {
+            }
+
             else {
                 historyScroll = 0;
 
