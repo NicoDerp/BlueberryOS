@@ -328,6 +328,15 @@ void escapeKey(void) {
     moveCursor();
 }
 
+void startOfLine(void) {
+
+    E.scurx = 0;
+    E.curx = 0;
+    E.coloff = 0;
+
+    displayScreen();
+    moveCursor();
+}
 
 
 bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
@@ -365,6 +374,7 @@ mapping_t normalMapping[] = {
     {'l', rightArrow},
     {'k', upArrow},
     {'j', downArrow},
+    {'0', startOfLine},
 };
 
 
@@ -466,8 +476,7 @@ void main(int argc, char* argv[]) {
                 moveCursor();
             }
             else {
-
-                executeMapping(insertMapping, sizeof(insertMapping), ch);
+                executeMapping(normalMapping, sizeof(normalMapping), ch);
             }
         }
         else if (state == COMMAND) {
