@@ -40,6 +40,7 @@ struct {
     row_t* rows;
     unsigned int numrows;
     unsigned int rowoff;
+    unsigned int coloff;
     unsigned int scurx;
     unsigned int curx;
     unsigned int cury;
@@ -130,13 +131,30 @@ void parseCommand(char* buf) {
 void displayScreen(void) {
 
     clear();
+
+    char* buf = NULL;
     size_t i = 0;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
+        unsigned int len = strlen(E.rows[i + E.rowoff].chars);
+        if (len < E.coloff) {
+            printw("\n");
+            continue;
+        }
+
+        len -= E.coloff;
+        len = len > maxcols ? maxcols : len;
+
+        buf = realloc(buf, len+1);
+        memcpy(buf, E.rows[i + E.rowoff].chars + E.coloff, len);
+        buf[len] = '\0';
+
         if (i == maxrows-1)
-            printw("%s", E.rows[i + E.rowoff].chars);
+            printw("%s", buf);
         else
-            printw("%s\n", E.rows[i + E.rowoff].chars);
+            printw("%s\n", buf);
+
+        free(buf);
     }
 
     // Draw '~' for empty lines
@@ -148,6 +166,8 @@ void displayScreen(void) {
             printw("~\n");
     }
 
+    updateTopBar();
+    clearCmdBar();
     refresh();
 }
 
@@ -170,17 +190,25 @@ void scrollDown(void) {
 
     E.rowoff++;
     displayScreen();
+}
 
-    updateTopBar();
-    clearCmdBar();
+void scrollLeft(void) {
+
+    E.coloff--;
+    displayScreen();
+}
+
+void scrollRight(void) {
+
+    E.coloff++;
+    displayScreen();
 }
 
 void moveCursor(void) {
-    move(E.cury, E.curx);
+    move(E.cury - E.rowoff, E.curx - E.coloff);
 }
 
 void main(int argc, char* argv[]) {
-
 
     if (argc != 2)
         return;
@@ -199,6 +227,7 @@ void main(int argc, char* argv[]) {
     E.rows = NULL;
     E.numrows = 0;
     E.rowoff = 0;
+    E.coloff = 0;
     E.scurx = 0;
     E.curx = 0;
     E.cury = 0;
@@ -214,8 +243,6 @@ void main(int argc, char* argv[]) {
     state = NORMAL;
 
     displayScreen();
-    updateTopBar();
-    clearCmdBar();
     moveCursor();
 
     while (true) {
@@ -248,17 +275,17 @@ void main(int argc, char* argv[]) {
                 moveCursor();
             }
             else if (ch == KEY_LEFT) {
-                if ((E.curx == 0) && (E.cury == 0))
+                if ((E.curx - E.coloff == 0) && (E.cury - E.rowoff == 0))
                     continue;
 
                 E.curx--;
                 moveCursor();
             }
             else if (ch == KEY_RIGHT) {
-                if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
+                if ((E.curx - E.coloff == maxcols-1) && (E.cury == E.numrows-1))
                     continue;
 
-                E.curx--;
+                E.curx++;
                 moveCursor();
             }
             else if (ch == KEY_UP) {
@@ -304,15 +331,25 @@ void main(int argc, char* argv[]) {
                 moveCursor();
             }
             else if ((ch == KEY_LEFT) || (ch == 'h')) {
-                if ((E.curx == 0) && (E.cury == 0))
+                if ((E.curx - E.coloff == 0) && (E.cury - E.rowoff == 0))
                     continue;
 
-                if (E.curx == 0) {
+                if (E.curx - E.coloff == 0) {
 
-                    E.cury--;
-                    E.curx = E.rows[E.cury + E.rowoff].len;
-                    if (E.curx != 0)
-                        E.curx--;
+                    if (E.coloff > 0) {
+                        scrollLeft();
+                    } else {
+                        if (E.cury - E.rowoff == 0)
+                            scrollUp();
+                        else
+                            E.cury--;
+
+                        E.curx = E.rows[E.cury].len;
+                        if (E.curx > maxcols) {
+                            E.coloff = E.curx - maxcols + 1;
+                            displayScreen();
+                        }
+                    }
 
                 } else {
                     E.curx--;
@@ -325,12 +362,26 @@ void main(int argc, char* argv[]) {
                 if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
                     continue;
 
-                if (E.curx+1 >= E.rows[E.cury + E.rowoff].len) {
+                if (E.curx >= E.rows[E.cury].len) {
+
+                    if (E.cury - E.rowoff == maxrows-1)
+                        scrollDown();
 
                     E.cury++;
                     E.curx = 0;
 
+                    if (E.coloff > 0) {
+                        E.coloff = 0;
+                        displayScreen();
+                    }
+
+                } else if (E.curx - E.coloff == maxcols-1) {
+
+                    scrollRight();
+                    E.curx++;
+
                 } else {
+
                     E.curx++;
                 }
                 E.scurx = E.curx;
@@ -338,17 +389,20 @@ void main(int argc, char* argv[]) {
                 moveCursor();
             }
             else if ((ch == KEY_UP) || (ch == 'k')) {
-
                 if (E.cury == 0)
+                    continue;
+
+                if (E.cury - E.rowoff == 0)
                     scrollUp();
-                else
-                    E.cury--;
 
-                unsigned int len = E.rows[E.cury + E.rowoff].len;
-                if (len > 0)
-                    len--;
+                E.cury--;
 
+                unsigned int len = E.rows[E.cury].len;
                 E.curx = len < E.scurx ? len : E.scurx;
+                if (E.coloff != 0) {
+                    E.coloff = 0;
+                    displayScreen();
+                }
 
                 moveCursor();
             }
@@ -356,16 +410,21 @@ void main(int argc, char* argv[]) {
                 if (E.cury == E.numrows-1)
                     continue;
 
-                if (E.cury == maxrows-1)
+                if (E.cury - E.rowoff == maxrows-1)
                     scrollDown();
-                else
-                    E.cury++;
 
-                unsigned int len = E.rows[E.cury + E.rowoff].len;
-                if (len > 0)
-                    len--;
+                E.cury++;
+
+                unsigned int len = E.rows[E.cury].len;
 
                 E.curx = len < E.scurx ? len : E.scurx;
+                if (E.curx > maxcols) {
+                    E.coloff = E.curx - maxcols;
+                    E.curx = maxcols;
+                    displayScreen();
+                } else {
+                    E.coloff = 0;
+                }
 
                 moveCursor();
             }
