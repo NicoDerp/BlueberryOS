@@ -14,6 +14,10 @@
 
 #define MAX_CMD_BUFFER 32
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+
 typedef enum {
     NORMAL,
     COMMAND,
@@ -141,7 +145,7 @@ void displayScreen(void) {
     size_t i = 0;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
-        unsigned int len = strlen(E.rows[i + E.rowoff].chars);
+        unsigned int len = E.rows[i + E.rowoff].len;
         if (len < E.coloff) {
             printw("\n");
             continue;
@@ -232,7 +236,7 @@ void leftArrow(void) {
 
             E.curx = E.rows[E.cury].len;
             if (E.curx > maxcols) {
-                E.coloff = E.curx - maxcols + 1;
+                E.coloff = E.curx - maxcols + maxcols/2;
                 displayScreen();
             }
         }
@@ -241,8 +245,6 @@ void leftArrow(void) {
         E.curx--;
     }
     E.scurx = E.curx;
-
-    moveCursor();
 }
 
 void rightArrow(void) {
@@ -273,8 +275,6 @@ void rightArrow(void) {
         E.curx++;
     }
     E.scurx = E.curx;
-
-    moveCursor();
 }
 
 void upArrow(void) {
@@ -288,13 +288,16 @@ void upArrow(void) {
     E.cury--;
 
     unsigned int len = E.rows[E.cury].len;
-    E.curx = len < E.scurx ? len : E.scurx;
-    if (E.coloff != 0) {
-        E.coloff = 0;
-        displayScreen();
-    }
+    unsigned int old = E.coloff;
 
-    moveCursor();
+    E.curx = MIN(len, E.scurx);
+    if (E.curx < maxcols-1)
+        E.coloff = 0;
+    else
+        E.coloff = (E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
+
+    if (E.coloff != old)
+        displayScreen();
 }
 
 void downArrow(void) {
@@ -308,24 +311,22 @@ void downArrow(void) {
     E.cury++;
 
     unsigned int len = E.rows[E.cury].len;
+    unsigned int old = E.coloff;
 
-    E.curx = len < E.scurx ? len : E.scurx;
-    if (E.curx > maxcols) {
-        E.coloff = E.curx - maxcols;
-        E.curx = maxcols;
-        displayScreen();
-    } else {
+    E.curx = MIN(len, E.scurx);
+    if (E.curx < maxcols-1)
         E.coloff = 0;
-    }
+    else
+        E.coloff = (E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
 
-    moveCursor();
+    if (E.coloff != old)
+        displayScreen();
 }
 
 void escapeKey(void) {
 
     state = NORMAL;
     updateTopBar();
-    moveCursor();
 }
 
 void startOfLine(void) {
@@ -335,7 +336,15 @@ void startOfLine(void) {
     E.coloff = 0;
 
     displayScreen();
-    moveCursor();
+}
+
+void endOfLine(void) {
+
+    E.scurx = E.rows[E.cury].len;
+    E.curx = E.scurx;
+    E.coloff = E.scurx > maxcols ? E.scurx-maxcols+maxcols/2 : 0;
+
+    displayScreen();
 }
 
 
@@ -375,6 +384,7 @@ mapping_t normalMapping[] = {
     {'k', upArrow},
     {'j', downArrow},
     {'0', startOfLine},
+    {'$', endOfLine},
 };
 
 
@@ -416,17 +426,16 @@ void main(int argc, char* argv[]) {
     state = NORMAL;
 
     displayScreen();
-    moveCursor();
 
     while (true) {
 
+        moveCursor();
         ch = getch();
         if (state == INSERT) {
 
             if (ch == '\n') {
                 E.curx = 0;
                 E.cury++;
-                moveCursor();
             }
             else if ((ch == KEY_BACKSPACE) || (ch == '\b')) {
                 if (E.curx == 0) {
@@ -441,7 +450,6 @@ void main(int argc, char* argv[]) {
 
                     E.curx--;
                 }
-                moveCursor();
             }
             else {
 
@@ -457,7 +465,6 @@ void main(int argc, char* argv[]) {
                     E.curx = 0;
                     E.cury++;
                 }
-                moveCursor();
             }
         }
         else if (state == NORMAL) {
@@ -473,7 +480,6 @@ void main(int argc, char* argv[]) {
             else if (ch == 'i') {
                 state = INSERT;
                 updateTopBar();
-                moveCursor();
             }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
@@ -490,14 +496,12 @@ void main(int argc, char* argv[]) {
                 state = NORMAL;
                 updateTopBar();
                 clearCmdBar();
-                moveCursor();
             }
             else if (ch == '\n') {
                 state = NORMAL;
                 updateTopBar();
                 cmdBuffer[cmdSize] = '\0';
                 parseCommand(cmdBuffer);
-                moveCursor();
                 cmdSize = 0;
             }
             else if (ch == KEY_LEFT) {
