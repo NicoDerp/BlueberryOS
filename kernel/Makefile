@@ -97,6 +97,7 @@ check: all
 		echo OS is not multiboot2!!;\
 	fi
 
+#qemu-system-i386 -cdrom $(ISO) -display gtk,zoom-to-fit=on -s
 run: all
 	qemu-system-i386 -cdrom $(ISO) -s
 

@@ -1181,7 +1181,7 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
     printf("\nException handler:\n");
 
-    //for (;;){}
+    for (;;){}
 
     const char* formatted = format_interrupt(interrupt_id);
 
@@ -1373,12 +1373,11 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
         }
     }
 
-    if (!resolved) {
-        __asm__ volatile ("cli; hlt"); // Completely hangs the computer
-    }
+    //if (!resolved) {
+    __asm__ volatile ("cli; hlt"); // Completely hangs the computer
+    //}
 
     printf("EXP: returning\n");
-    for (;;) {}
 }
 
 void idt_initialize(void) {

@@ -80,11 +80,14 @@ void readFile(char* filename) {
     for (int i = 0; i < 64; i++) {
         getchar();
         ptr1 = realloc(ptr1, 8*i);
+        printf("Tag 0x%x\n\n", ptr1 - sizeof(tag_t));
+        getchar();
         ptr2 = realloc(ptr2, 10*i);
-        printf("abc Magic 0x%x\n", *((int*) ((unsigned int) ptr2 - sizeof(tag_t))));
+
+        /*
         printf("Diff %d %d\n", (unsigned int) ptr2 - (unsigned int) ptr1, 8*i);
-        printf("Ptr 0x%x\n", ptr1);
-        printf("Ptr 0x%x\n\n", ptr2);
+        */
+        printf("Tag 0x%x\n\n\n", ptr2 - sizeof(tag_t));
     }
 
     exit(0);

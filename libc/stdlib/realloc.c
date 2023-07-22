@@ -14,13 +14,13 @@
 
 #if !defined(__is_libk)
 #define VERBOSE(format, ...)
-#define ERROR(format, ...) printf("Error: "format, ## __VA_ARGS__)
+#define ERROR(format, ...) //printf("Error: "format, ## __VA_ARGS__)
 #endif
 
 /*
 #if !defined(__is_libk)
-#define VERBOSE(format, ...) {printf("\e[f;0m[INFO]\e[0m "format, ## __VA_ARGS__);}
-#define ERROR(format, ...) {printf("ERROR!J "format, ## __VA_ARGS__);}
+#define VERBOSE(format, ...) {//printf("\e[f;0m[INFO]\e[0m "format, ## __VA_ARGS__);}
+#define ERROR(format, ...) {//printf("ERROR!J "format, ## __VA_ARGS__);}
 #endif
 */
 
@@ -55,8 +55,8 @@ void* realloc(void* ptr, size_t size) {
 #endif
     }
 
-    int* magic = (int*) 0x400040;
-    printf("realloc: Magic 0x%x\n", *magic);
+    //int* magic = (int*) 0x400040;
+    //printf("realloc: Magic 0x%x\n", *magic);
 
     // TODO check if tag can absorb right
 
@@ -71,7 +71,7 @@ void* realloc(void* ptr, size_t size) {
         tag->size = size;
         return ptr;
     }
-    printf("realloc: Magic 0x%x\n", *magic);
+    //printf("realloc: Magic 0x%x\n", *magic);
 
 #if defined(__is_libk)
     void* new = kmalloc(size);
@@ -79,16 +79,16 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
-    printf("realloc: Magic 0x%x\n", *magic);
+    //printf("realloc: Magic 0x%x\n", *magic);
     memcpy(new, ptr, tag->size);
 
-    printf("realloc: Magic 0x%x\n", *magic);
+    //printf("realloc: Magic 0x%x\n", *magic);
 #if defined(__is_libk)
     kfree(ptr);
 #else
     free(ptr);
 #endif
-    printf("realloc: Magic 0x%x\n", *magic);
+    //printf("realloc: Magic 0x%x\n", *magic);
 
     return new;
 }

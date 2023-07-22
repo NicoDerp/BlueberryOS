@@ -15,7 +15,7 @@
 
 #if !defined(__is_libk)
 #define VERBOSE(format, ...)
-#define ERROR(format, ...) printf("Error: "format, ## __VA_ARGS__)
+#define ERROR(format, ...) printf("Error: "format, ## __VA_ARGS__);for(;;){}
 #endif
 
 /*
@@ -62,6 +62,24 @@ void free(void* ptr) {
 #endif
 
     tag_t* tag;
+
+#if !defined(__is_libk)
+    printf("\n\nFree before. tag 0x%x. size %d. realsize %d\n",
+           (unsigned int) ptr - sizeof(tag_t),
+           ((tag_t*) ((unsigned int) ptr - sizeof(tag_t)))->size,
+           ((tag_t*) ((unsigned int) ptr - sizeof(tag_t)))->realsize);
+    for (unsigned int i = 0; i < MEMORY_TOT_EXP; i++) {
+        tag = freePages[i];
+
+        if (tag != NULL)
+            printf("Index %d: %d-%d:\n", i, 1<<(i+MEMORY_MIN_EXP), (1<<(i+MEMORY_MIN_EXP+1))-1);
+
+        while (tag != NULL) {
+            printf(" - Size %d at 0x%x 0x%x\n", tag->realsize, tag, (unsigned int) tag + sizeof(tag_t));
+            tag = tag->next;
+        }
+    }
+#endif
 
     if (ptr == NULL)
         return;
@@ -199,6 +217,21 @@ void free(void* ptr) {
 
         completePages[index]++;
     }
+
+#if !defined(__is_libk)
+    printf("\nFree after\n");
+    for (unsigned int i = 0; i < MEMORY_TOT_EXP; i++) {
+        tag = freePages[i];
+
+        if (tag != NULL)
+            printf("Index %d: %d-%d:\n", i, 1<<(i+MEMORY_MIN_EXP), (1<<(i+MEMORY_MIN_EXP+1))-1);
+
+        while (tag != NULL) {
+            printf(" - Size %d at 0x%x 0x%x\n", tag->realsize, tag, (unsigned int) tag + sizeof(tag_t));
+            tag = tag->next;
+        }
+    }
+#endif
 }
 
 

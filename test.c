@@ -1,15 +1,11 @@
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <ncurses.h>
-#include <unistd.h>
 
 
 int main() {
 
-    //keypad(stdscr, TRUE);
-    
-    printf("Hei: \eC\n");
+    int remainder = 26;
+    printf("Num: %d\n", (remainder-32) > (1 << 4));
 
     return 0;
 }
