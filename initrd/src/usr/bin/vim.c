@@ -30,6 +30,11 @@ unsigned int maxcols;
 unsigned int maxrows;
 
 
+typedef void (*handler_t)(void);
+typedef struct {
+    int key;
+    handler_t handler;
+} mapping_t;
 
 typedef struct {
     unsigned int len;
@@ -208,6 +213,164 @@ void moveCursor(void) {
     move(E.cury - E.rowoff, E.curx - E.coloff);
 }
 
+
+
+void leftArrow(void) {
+
+    if ((E.curx - E.coloff == 0) && (E.cury - E.rowoff == 0))
+        return;
+
+    if (E.curx - E.coloff == 0) {
+
+        if (E.coloff > 0) {
+            scrollLeft();
+        } else {
+            if (E.cury - E.rowoff == 0)
+                scrollUp();
+            else
+                E.cury--;
+
+            E.curx = E.rows[E.cury].len;
+            if (E.curx > maxcols) {
+                E.coloff = E.curx - maxcols + 1;
+                displayScreen();
+            }
+        }
+
+    } else {
+        E.curx--;
+    }
+    E.scurx = E.curx;
+
+    moveCursor();
+}
+
+void rightArrow(void) {
+
+    if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
+        return;
+
+    if (E.curx >= E.rows[E.cury].len) {
+
+        if (E.cury - E.rowoff == maxrows-1)
+            scrollDown();
+
+        E.cury++;
+        E.curx = 0;
+
+        if (E.coloff > 0) {
+            E.coloff = 0;
+            displayScreen();
+        }
+
+    } else if (E.curx - E.coloff == maxcols-1) {
+
+        scrollRight();
+        E.curx++;
+
+    } else {
+
+        E.curx++;
+    }
+    E.scurx = E.curx;
+
+    moveCursor();
+}
+
+void upArrow(void) {
+
+    if (E.cury == 0)
+        return;
+
+    if (E.cury - E.rowoff == 0)
+        scrollUp();
+
+    E.cury--;
+
+    unsigned int len = E.rows[E.cury].len;
+    E.curx = len < E.scurx ? len : E.scurx;
+    if (E.coloff != 0) {
+        E.coloff = 0;
+        displayScreen();
+    }
+
+    moveCursor();
+}
+
+void downArrow(void) {
+
+    if (E.cury == E.numrows-1)
+        return;
+
+    if (E.cury - E.rowoff == maxrows-1)
+        scrollDown();
+
+    E.cury++;
+
+    unsigned int len = E.rows[E.cury].len;
+
+    E.curx = len < E.scurx ? len : E.scurx;
+    if (E.curx > maxcols) {
+        E.coloff = E.curx - maxcols;
+        E.curx = maxcols;
+        displayScreen();
+    } else {
+        E.coloff = 0;
+    }
+
+    moveCursor();
+}
+
+void escapeKey(void) {
+
+    state = NORMAL;
+    updateTopBar();
+    moveCursor();
+}
+
+
+
+bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
+
+    for (unsigned int i = 0; i < size/sizeof(mapping_t); i++) {
+
+        if (mapping[i].key == c) {
+            mapping[i].handler();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
+
+
+mapping_t insertMapping[] = {
+    {'\e', escapeKey},
+    {KEY_LEFT, leftArrow},
+    {KEY_RIGHT, rightArrow},
+    {KEY_UP, upArrow},
+    {KEY_DOWN, downArrow},
+};
+
+mapping_t normalMapping[] = {
+    {'\e', escapeKey},
+    {KEY_LEFT, leftArrow},
+    {KEY_RIGHT, rightArrow},
+    {KEY_UP, upArrow},
+    {KEY_DOWN, downArrow},
+    {'h', leftArrow},
+    {'l', rightArrow},
+    {'k', upArrow},
+    {'j', downArrow},
+};
+
+
+
+
+
 void main(int argc, char* argv[]) {
 
     if (argc != 2)
@@ -249,12 +412,8 @@ void main(int argc, char* argv[]) {
 
         ch = getch();
         if (state == INSERT) {
-            if (ch == '\e') {
-                state = NORMAL;
-                updateTopBar();
-                moveCursor();
-            }
-            else if (ch == '\n') {
+
+            if (ch == '\n') {
                 E.curx = 0;
                 E.cury++;
                 moveCursor();
@@ -274,35 +433,11 @@ void main(int argc, char* argv[]) {
                 }
                 moveCursor();
             }
-            else if (ch == KEY_LEFT) {
-                if ((E.curx - E.coloff == 0) && (E.cury - E.rowoff == 0))
-                    continue;
-
-                E.curx--;
-                moveCursor();
-            }
-            else if (ch == KEY_RIGHT) {
-                if ((E.curx - E.coloff == maxcols-1) && (E.cury == E.numrows-1))
-                    continue;
-
-                E.curx++;
-                moveCursor();
-            }
-            else if (ch == KEY_UP) {
-                if (E.cury == 0)
-                    continue;
-
-                E.cury--;
-                moveCursor();
-            }
-            else if (ch == KEY_DOWN) {
-                if (E.cury == E.numrows-1)
-                    continue;
-
-                E.cury++;
-                moveCursor();
-            }
             else {
+
+                if (executeMapping(insertMapping, sizeof(insertMapping), ch))
+                    continue;
+
                 moveCursor();
                 printw("%c", ch);
                 wrefresh(stdscr);
@@ -330,103 +465,9 @@ void main(int argc, char* argv[]) {
                 updateTopBar();
                 moveCursor();
             }
-            else if ((ch == KEY_LEFT) || (ch == 'h')) {
-                if ((E.curx - E.coloff == 0) && (E.cury - E.rowoff == 0))
-                    continue;
+            else {
 
-                if (E.curx - E.coloff == 0) {
-
-                    if (E.coloff > 0) {
-                        scrollLeft();
-                    } else {
-                        if (E.cury - E.rowoff == 0)
-                            scrollUp();
-                        else
-                            E.cury--;
-
-                        E.curx = E.rows[E.cury].len;
-                        if (E.curx > maxcols) {
-                            E.coloff = E.curx - maxcols + 1;
-                            displayScreen();
-                        }
-                    }
-
-                } else {
-                    E.curx--;
-                }
-                E.scurx = E.curx;
-
-                moveCursor();
-            }
-            else if ((ch == KEY_RIGHT) || (ch == 'l')) {
-                if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
-                    continue;
-
-                if (E.curx >= E.rows[E.cury].len) {
-
-                    if (E.cury - E.rowoff == maxrows-1)
-                        scrollDown();
-
-                    E.cury++;
-                    E.curx = 0;
-
-                    if (E.coloff > 0) {
-                        E.coloff = 0;
-                        displayScreen();
-                    }
-
-                } else if (E.curx - E.coloff == maxcols-1) {
-
-                    scrollRight();
-                    E.curx++;
-
-                } else {
-
-                    E.curx++;
-                }
-                E.scurx = E.curx;
-
-                moveCursor();
-            }
-            else if ((ch == KEY_UP) || (ch == 'k')) {
-                if (E.cury == 0)
-                    continue;
-
-                if (E.cury - E.rowoff == 0)
-                    scrollUp();
-
-                E.cury--;
-
-                unsigned int len = E.rows[E.cury].len;
-                E.curx = len < E.scurx ? len : E.scurx;
-                if (E.coloff != 0) {
-                    E.coloff = 0;
-                    displayScreen();
-                }
-
-                moveCursor();
-            }
-            else if ((ch == KEY_DOWN) || (ch == 'j')) {
-                if (E.cury == E.numrows-1)
-                    continue;
-
-                if (E.cury - E.rowoff == maxrows-1)
-                    scrollDown();
-
-                E.cury++;
-
-                unsigned int len = E.rows[E.cury].len;
-
-                E.curx = len < E.scurx ? len : E.scurx;
-                if (E.curx > maxcols) {
-                    E.coloff = E.curx - maxcols;
-                    E.curx = maxcols;
-                    displayScreen();
-                } else {
-                    E.coloff = 0;
-                }
-
-                moveCursor();
+                executeMapping(insertMapping, sizeof(insertMapping), ch);
             }
         }
         else if (state == COMMAND) {
