@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 
-#define MAX_CMD_BUFFER 32
+#define MAX_CMD_BUFFER 32 Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga
 
 typedef enum {
     NORMAL,

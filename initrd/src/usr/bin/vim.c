@@ -20,13 +20,6 @@ typedef enum {
     INSERT,
 } state_t;
 
-typedef struct {
-    unsigned int size;
-    char* chars;
-} row_t;
-
-
-
 WINDOW* topBar;
 WINDOW* cmdBar;
 
@@ -36,10 +29,18 @@ char* currentFile;
 unsigned int maxcols;
 unsigned int maxrows;
 
+
+
+typedef struct {
+    unsigned int len;
+    char* chars;
+} row_t;
+
 struct {
     row_t* rows;
     unsigned int numrows;
     unsigned int rowoff;
+    unsigned int scurx;
     unsigned int curx;
     unsigned int cury;
 } E;
@@ -50,7 +51,7 @@ void appendRow(char* s, unsigned int linelen) {
     // If maxrows is NULL then realloc will call malloc for us
     E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
-    E.rows[E.numrows].size = linelen;
+    E.rows[E.numrows].len = linelen;
     E.rows[E.numrows].chars = (char*) malloc(linelen + 1);
     memcpy(E.rows[E.numrows].chars, s, linelen+1);
 
@@ -198,6 +199,7 @@ void main(int argc, char* argv[]) {
     E.rows = NULL;
     E.numrows = 0;
     E.rowoff = 0;
+    E.scurx = 0;
     E.curx = 0;
     E.cury = 0;
 
@@ -305,14 +307,34 @@ void main(int argc, char* argv[]) {
                 if ((E.curx == 0) && (E.cury == 0))
                     continue;
 
-                E.curx--;
+                if (E.curx == 0) {
+
+                    E.cury--;
+                    E.curx = E.rows[E.cury + E.rowoff].len;
+                    if (E.curx != 0)
+                        E.curx--;
+
+                } else {
+                    E.curx--;
+                }
+                E.scurx = E.curx;
+
                 moveCursor();
             }
             else if ((ch == KEY_RIGHT) || (ch == 'l')) {
                 if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
                     continue;
 
-                E.curx++;
+                if (E.curx+1 >= E.rows[E.cury + E.rowoff].len) {
+
+                    E.cury++;
+                    E.curx = 0;
+
+                } else {
+                    E.curx++;
+                }
+                E.scurx = E.curx;
+
                 moveCursor();
             }
             else if ((ch == KEY_UP) || (ch == 'k')) {
@@ -321,6 +343,9 @@ void main(int argc, char* argv[]) {
                     scrollUp();
                 else
                     E.cury--;
+
+                int len = E.rows[E.cury + E.rowoff].len;
+                E.curx = len < E.scurx ? len : E.scurx;
 
                 moveCursor();
             }
@@ -332,6 +357,9 @@ void main(int argc, char* argv[]) {
                     scrollDown();
                 else
                     E.cury++;
+
+                unsigned int len = E.rows[E.cury + E.rowoff].len - 1;
+                E.curx = len < E.scurx ? len : E.scurx;
 
                 moveCursor();
             }
