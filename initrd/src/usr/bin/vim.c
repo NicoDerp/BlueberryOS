@@ -344,7 +344,10 @@ void main(int argc, char* argv[]) {
                 else
                     E.cury--;
 
-                int len = E.rows[E.cury + E.rowoff].len;
+                unsigned int len = E.rows[E.cury + E.rowoff].len;
+                if (len > 0)
+                    len--;
+
                 E.curx = len < E.scurx ? len : E.scurx;
 
                 moveCursor();
@@ -358,7 +361,10 @@ void main(int argc, char* argv[]) {
                 else
                     E.cury++;
 
-                unsigned int len = E.rows[E.cury + E.rowoff].len - 1;
+                unsigned int len = E.rows[E.cury + E.rowoff].len;
+                if (len > 0)
+                    len--;
+
                 E.curx = len < E.scurx ? len : E.scurx;
 
                 moveCursor();
