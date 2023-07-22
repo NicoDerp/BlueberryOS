@@ -150,6 +150,18 @@ void displayScreen(void) {
     refresh();
 }
 
+void scrollUp(void) {
+
+    if (E.rowoff == 0)
+        return;
+
+    E.rowoff--;
+    displayScreen();
+
+    updateTopBar();
+    clearCmdBar();
+}
+
 void scrollDown(void) {
 
     if (E.rowoff + maxrows == E.numrows)
@@ -304,10 +316,12 @@ void main(int argc, char* argv[]) {
                 moveCursor();
             }
             else if ((ch == KEY_UP) || (ch == 'k')) {
-                if (E.cury == 0)
-                    continue;
 
-                E.cury--;
+                if (E.cury == 0)
+                    scrollUp();
+                else
+                    E.cury--;
+
                 moveCursor();
             }
             else if ((ch == KEY_DOWN) || (ch == 'j')) {
