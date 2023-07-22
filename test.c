@@ -1,11 +1,18 @@
 
 #include <stdio.h>
+#include <ncurses.h>
 
 
 int main() {
 
-    int remainder = 26;
-    printf("Num: %d\n", (remainder-32) > (1 << 4));
+    initscr();
+
+    printw("Hello world!");
+    clear();
+    refresh();
+    getch();
+
+    endwin();
 
     return 0;
 }

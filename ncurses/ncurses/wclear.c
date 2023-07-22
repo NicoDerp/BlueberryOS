@@ -26,6 +26,7 @@ int wclear(WINDOW* win) {
             }
         }
     }
+    move(0, 0);
 
     return OK;
 }

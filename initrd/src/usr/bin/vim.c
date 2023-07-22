@@ -33,23 +33,21 @@ WINDOW* cmdBar;
 state_t state;
 char* currentFile;
 
-unsigned int cols;
-unsigned int rows;
+unsigned int maxcols;
+unsigned int maxrows;
 
 struct {
     row_t* rows;
     unsigned int numrows;
+    unsigned int rowoff;
+    unsigned int curx;
+    unsigned int cury;
 } E;
 
 
-struct {
-    unsigned int x;
-    unsigned int y;
-} cursor;
-
 void appendRow(char* s, unsigned int linelen) {
 
-    // If rows is NULL then realloc will call malloc for us
+    // If maxrows is NULL then realloc will call malloc for us
     E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
     E.rows[E.numrows].size = linelen;
@@ -108,6 +106,12 @@ void updateTopBar(void) {
     wrefresh(topBar);
 }
 
+void clearCmdBar(void) {
+
+    wclear(cmdBar);
+    wrefresh(cmdBar);
+}
+
 void parseCommand(char* buf) {
 
     if (strcmp(buf, "q") == 0) {
@@ -124,20 +128,20 @@ void parseCommand(char* buf) {
 
 void displayScreen(void) {
 
+    clear();
     size_t i = 0;
-    for (i = 0; i < rows-2 && i < E.numrows; i++) {
+    for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
-        if (i == rows-1)
-            printw("%s", E.rows[i].chars);
+        if (i == maxrows-1)
+            printw("%s", E.rows[i + E.rowoff].chars);
         else
-            printw("%s\n", E.rows[i].chars);
+            printw("%s\n", E.rows[i + E.rowoff].chars);
     }
 
     // Draw '~' for empty lines
-    for (; i < rows-2; i++) {
+    for (; i < maxrows; i++) {
 
-        getchar();
-        if (i == rows-1)
+        if (i == maxrows-1)
             printw("~");
         else
             printw("~\n");
@@ -146,8 +150,20 @@ void displayScreen(void) {
     refresh();
 }
 
+void scrollDown(void) {
+
+    if (E.rowoff + maxrows == E.numrows)
+        return;
+
+    E.rowoff++;
+    displayScreen();
+
+    updateTopBar();
+    clearCmdBar();
+}
+
 void moveCursor(void) {
-    move(cursor.y, cursor.x);
+    move(E.cury, E.curx);
 }
 
 void main(int argc, char* argv[]) {
@@ -159,16 +175,19 @@ void main(int argc, char* argv[]) {
     initscr();
     noecho();
 
-    cols = getmaxx(stdscr);
-    rows = getmaxy(stdscr);
+    maxcols = getmaxx(stdscr);
+    maxrows = getmaxy(stdscr);
 
-    topBar = newwin(1, cols, rows-2, 0);
-    cmdBar = newwin(1, cols, rows-1, 0);
-    rows -= 2;
+    topBar = newwin(1, maxcols, maxrows-2, 0);
+    cmdBar = newwin(1, maxcols, maxrows-1, 0);
+    maxrows -= 2;
     refresh();
 
     E.rows = NULL;
     E.numrows = 0;
+    E.rowoff = 0;
+    E.curx = 0;
+    E.cury = 0;
 
     currentFile = argv[1];
     readFile(currentFile);
@@ -180,14 +199,11 @@ void main(int argc, char* argv[]) {
 
     state = NORMAL;
 
-    cursor.x = 0;
-    cursor.y = 0;
-
     displayScreen();
     updateTopBar();
-    wclear(cmdBar);
-    wrefresh(cmdBar);
+    clearCmdBar();
     moveCursor();
+
     while (true) {
 
         ch = getch();
@@ -198,8 +214,51 @@ void main(int argc, char* argv[]) {
                 moveCursor();
             }
             else if (ch == '\n') {
-                cursor.x = 0;
-                cursor.y++;
+                E.curx = 0;
+                E.cury++;
+                moveCursor();
+            }
+            else if ((ch == KEY_BACKSPACE) || (ch == '\b')) {
+                if (E.curx == 0) {
+
+                    if (E.cury == 0)
+                        continue;
+
+                    //E.curx = line.linelen;
+                    E.cury--;
+
+                } else {
+
+                    E.curx--;
+                }
+                moveCursor();
+            }
+            else if (ch == KEY_LEFT) {
+                if ((E.curx == 0) && (E.cury == 0))
+                    continue;
+
+                E.curx--;
+                moveCursor();
+            }
+            else if (ch == KEY_RIGHT) {
+                if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
+                    continue;
+
+                E.curx--;
+                moveCursor();
+            }
+            else if (ch == KEY_UP) {
+                if (E.cury == 0)
+                    continue;
+
+                E.cury--;
+                moveCursor();
+            }
+            else if (ch == KEY_DOWN) {
+                if (E.cury == E.numrows-1)
+                    continue;
+
+                E.cury++;
                 moveCursor();
             }
             else {
@@ -207,10 +266,10 @@ void main(int argc, char* argv[]) {
                 printw("%c", ch);
                 wrefresh(stdscr);
 
-                cursor.x++;
-                if (cursor.x >= cols) {
-                    cursor.x = 0;
-                    cursor.y++;
+                E.curx++;
+                if (E.curx >= maxcols) {
+                    E.curx = 0;
+                    E.cury++;
                 }
                 moveCursor();
             }
@@ -230,6 +289,38 @@ void main(int argc, char* argv[]) {
                 updateTopBar();
                 moveCursor();
             }
+            else if ((ch == KEY_LEFT) || (ch == 'h')) {
+                if ((E.curx == 0) && (E.cury == 0))
+                    continue;
+
+                E.curx--;
+                moveCursor();
+            }
+            else if ((ch == KEY_RIGHT) || (ch == 'l')) {
+                if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
+                    continue;
+
+                E.curx++;
+                moveCursor();
+            }
+            else if ((ch == KEY_UP) || (ch == 'k')) {
+                if (E.cury == 0)
+                    continue;
+
+                E.cury--;
+                moveCursor();
+            }
+            else if ((ch == KEY_DOWN) || (ch == 'j')) {
+                if (E.cury == E.numrows-1)
+                    continue;
+
+                if (E.cury == maxrows-1)
+                    scrollDown();
+                else
+                    E.cury++;
+
+                moveCursor();
+            }
         }
         else if (state == COMMAND) {
 
@@ -241,7 +332,7 @@ void main(int argc, char* argv[]) {
             if (ch == '\e') {
                 state = NORMAL;
                 updateTopBar();
-                wclear(cmdBar);
+                clearCmdBar();
                 moveCursor();
             }
             else if (ch == '\n') {
