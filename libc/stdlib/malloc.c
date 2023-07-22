@@ -121,6 +121,7 @@ void* malloc(size_t size) {
     }
 
     if (tag == NULL) {
+
         uint32_t realsize = size + sizeof(tag_t);
         uint32_t pages = realsize / FRAME_SIZE;
         if ((realsize & (FRAME_SIZE-1)) != 0)

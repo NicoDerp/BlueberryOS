@@ -173,6 +173,37 @@ void free(void* ptr) {
     int index = getIndex(tag->realsize - sizeof(tag_t));
     VERBOSE("Tag has size %d at index %d\n", tag->realsize, index);
 
+    // This is before since we return anyway
+    if ((tag->splitprev == NULL) && (tag->splitnext == NULL)) {
+
+        if (completePages[index] >= MEMORY_MAX_COMPLETE) {
+
+            if (freePages[tag->index] == tag)
+                freePages[tag->index] = tag->next;
+
+            if (tag->prev != NULL)
+                tag->prev->next = tag->next;
+
+            if (tag->next != NULL)
+                tag->next->prev = tag->prev;
+
+            tag->prev = NULL;
+            tag->next = NULL;
+
+            uint32_t pages = tag->realsize / FRAME_SIZE;
+            if ((tag->realsize & (FRAME_SIZE-1)) != 0)
+                pages++;
+
+            if (pages < MEMORY_MIN_FRAMES)
+                pages = MEMORY_MIN_FRAMES;
+
+            freeFrames((void*) tag, pages);
+            return;
+        }
+
+        completePages[index]++;
+    }
+
     // Remove tag from old index and cut ties if its size has changed
     if (tag->index != index) {
 
@@ -197,27 +228,6 @@ void free(void* ptr) {
 
     tag->prev = NULL;
     tag->next = NULL;
-
-    // This needs to be done at the end because if we actually free then we can't access tag anymore
-    if (tag->splitprev == NULL && tag->splitnext == NULL) {        
-
-        if (completePages[index] >= MEMORY_MAX_COMPLETE) {
-
-            //printf("free: Freeing tag!\n");
-            freePages[index] = NULL;
-            uint32_t pages = tag->realsize / FRAME_SIZE;
-            if ((tag->realsize & (FRAME_SIZE-1)) != 0)
-                pages++;
-
-            if (pages < MEMORY_MIN_FRAMES)
-                pages = MEMORY_MIN_FRAMES;
-
-            freeFrames((void*) tag, pages);
-            return;
-        }
-
-        completePages[index]++;
-    }
 
     /*
 #if !defined(__is_libk)

@@ -36,7 +36,6 @@ static inline int getIndex(unsigned int num) {
     while (num >>= 1)
         exp++;
 
-    //return exp-1;
     return exp - MEMORY_MIN_EXP;
 }
 
@@ -55,9 +54,6 @@ void* realloc(void* ptr, size_t size) {
 #endif
     }
 
-    //int* magic = (int*) 0x400040;
-    //printf("realloc: Magic 0x%x\n", *magic);
-
     // TODO check if tag can absorb right
 
     tag_t* tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
@@ -71,7 +67,6 @@ void* realloc(void* ptr, size_t size) {
         tag->size = size;
         return ptr;
     }
-    //printf("realloc: Magic 0x%x\n", *magic);
 
 #if defined(__is_libk)
     void* new = kmalloc(size);
@@ -79,16 +74,13 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
-    //printf("realloc: Magic 0x%x\n", *magic);
     memcpy(new, ptr, tag->size);
 
-    //printf("realloc: Magic 0x%x\n", *magic);
 #if defined(__is_libk)
     kfree(ptr);
 #else
     free(ptr);
 #endif
-    //printf("realloc: Magic 0x%x\n", *magic);
 
     return new;
 }

@@ -51,11 +51,10 @@ void appendRow(char* s, unsigned int linelen) {
 
     // If rows is NULL then realloc will call malloc for us
     E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
-    
-    row_t* r = &E.rows[E.numrows];
-    r->size = linelen;
-    r->chars = (char*) malloc(linelen + 1);
-    memcpy(r->chars, s, linelen+1);
+
+    E.rows[E.numrows].size = linelen;
+    E.rows[E.numrows].chars = (char*) malloc(linelen + 1);
+    memcpy(E.rows[E.numrows].chars, s, linelen+1);
 
     E.numrows++;
 }
@@ -80,11 +79,11 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        getchar();
-        //printf("Appending %d '%s'\n", linelen, line);
+        //printf("Appending '%s' with len %d\n", line, linelen);
         appendRow(line, linelen);
-        E.rows = realloc(E.rows, 2*linelen);
     }
+
+    //printf("Row size %s\n", E.rows[0].chars);
 
     free(line);
 
@@ -93,8 +92,6 @@ void readFile(char* filename) {
         printf("fclose error: %s\n", strerror(backup));
         exit(1);
     }
-
-    exit(0);
 }
 
 char* stateToString(state_t st) {
@@ -139,6 +136,7 @@ void displayScreen(void) {
     // Draw '~' for empty lines
     for (; i < rows-2; i++) {
 
+        getchar();
         if (i == rows-1)
             printw("~");
         else
@@ -158,11 +156,6 @@ void main(int argc, char* argv[]) {
     if (argc != 2)
         return;
 
-    currentFile = argv[1];
-    readFile(currentFile);
-
-    for(;;) {}
-
     initscr();
     noecho();
 
@@ -171,14 +164,14 @@ void main(int argc, char* argv[]) {
 
     topBar = newwin(1, cols, rows-2, 0);
     cmdBar = newwin(1, cols, rows-1, 0);
-
     rows -= 2;
     refresh();
 
     E.rows = NULL;
     E.numrows = 0;
 
-
+    currentFile = argv[1];
+    readFile(currentFile);
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
@@ -190,6 +183,7 @@ void main(int argc, char* argv[]) {
     cursor.x = 0;
     cursor.y = 0;
 
+    displayScreen();
     updateTopBar();
     wclear(cmdBar);
     wrefresh(cmdBar);
