@@ -294,7 +294,7 @@ void upArrow(void) {
     if (E.curx < maxcols-1)
         E.coloff = 0;
     else
-        E.coloff = (E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
+        E.coloff = (E.curx+maxcols > E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
 
     if (E.coloff != old)
         displayScreen();
@@ -317,7 +317,7 @@ void downArrow(void) {
     if (E.curx < maxcols-1)
         E.coloff = 0;
     else
-        E.coloff = (E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
+        E.coloff = (E.curx+maxcols > E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
 
     if (E.coloff != old)
         displayScreen();
