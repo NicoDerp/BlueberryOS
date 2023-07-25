@@ -121,7 +121,7 @@ void parseCommand(char* buf) {
         exit(0);
     }
     else {
-        wclear(cmdBar);
+        werase(cmdBar);
         mvwprintw(cmdBar, 0, 0, "Not an editor command: %s", buf);
     }
 }
@@ -132,7 +132,7 @@ void displayScreen(void) {
 
     char* buf = NULL;
     size_t i = 0;
-    for (i = 0; (i < maxrows-1) && (i < E.numrows-E.rowoff); i++) {
+    for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
         unsigned int len = E.rows[i + E.rowoff].len;
         if (len < E.coloff) {
@@ -391,14 +391,13 @@ void main(int argc, char* argv[]) {
 
     clear();
     refresh();
-    //wclear(cmdBar);
     while (true) {
 
         displayScreen();
         updateTopBar();
 
-        wrefresh(topBar);
         wrefresh(cmdBar);
+        wrefresh(topBar);
         refresh();
         moveCursor();
 
@@ -462,7 +461,7 @@ void main(int argc, char* argv[]) {
 
             if (ch == '\e') {
                 state = NORMAL;
-                wclear(cmdBar);
+                werase(cmdBar);
             }
             else if (ch == '\n') {
                 state = NORMAL;
@@ -507,7 +506,7 @@ void main(int argc, char* argv[]) {
                     memmove(&cmdBuffer[cmdCursor+1], &cmdBuffer[cmdCursor], cmdSize-cmdCursor);
                     cmdBuffer[cmdCursor++] = ch;
                     cmdBuffer[++cmdSize] = '\0';
-                    wclear(cmdBar);
+                    werase(cmdBar);
                     mvwprintw(cmdBar, 0, 0, ":%s", cmdBuffer);
                     wmove(cmdBar, 0, cmdCursor+1);
                 }
