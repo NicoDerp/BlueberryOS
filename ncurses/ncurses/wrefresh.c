@@ -46,8 +46,9 @@ int wrefresh(WINDOW* win) {
 
         win->lineschanged[y] = 0;
 
-        memcpy(buf, &win->buf[y * win->width], win->width);
-        win->buf[y * win->width + (win->width - 1)] = '\0';
+        unsigned int index = y * win->width;
+        memcpy(buf, &win->buf[index], win->width);
+        buf[index + win->width] = '\0';
 
         move(win->starty + y, win->startx);
         printf(buf);
