@@ -10,6 +10,13 @@
 #include <stdbool.h>
 
 
+
+
+#define TAB_RENDER "    "
+#define TAB_SIZE   (sizeof(TAB_RENDER)-1)
+
+
+
 #define MAX_CMD_BUFFER 32
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -39,7 +46,9 @@ typedef struct {
 
 typedef struct {
     unsigned int len;
+    unsigned int rlen;
     char* chars;
+    char* rchars;
 } row_t;
 
 struct {
@@ -54,14 +63,50 @@ struct {
 } E;
 
 
+/*
+void renderRow(row_t* row) {
+
+    // Incase there is something there
+    free(row->rchars);
+
+    row->rlen = 0;
+    row->rchars = (char*) malloc(1);
+    for (unsigned int i = 0; i < row->len; i++) {
+        char c = row->chars[i];
+        if (c == '\t') {
+            row->rchars = realloc(row->rchars, row->rlen + TAB_SIZE);
+            memcpy(row->rchars + row->rlen, TAB_RENDER, TAB_SIZE);
+            row->rlen += TAB_SIZE;
+        }
+        if (c == '\e') {
+            row->rchars = realloc(row->rchars, row->rlen + 1);
+            memcpy(row->rchars + row->rlen, "^[", 2);
+            row->rlen += 2;
+        }
+        else {
+            row->rchars = realloc(row->rchars, row->rlen + 1);
+            row->rchars[row->rlen++] = c;
+        }
+    }
+    row->rchars = realloc(row->rchars, row->rlen + 1);
+    row->rchars[row->rlen] = '\0';
+}
+*/
+
 void appendRow(char* s, unsigned int linelen) {
 
     // If maxrows is NULL then realloc will call malloc for us
+    printf("Before\n");
     E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
-    E.rows[E.numrows].len = linelen;
-    E.rows[E.numrows].chars = (char*) malloc(linelen + 1);
-    memcpy(E.rows[E.numrows].chars, s, linelen+1);
+    row_t* row = &E.rows[E.numrows];
+    printf("Row at 0x%x\n", row);
+    row->len = linelen;
+    row->chars = (char*) malloc(linelen + 1);
+    memcpy(row->chars, s, linelen+1);
+
+    //row->rchars = NULL;
+    //renderRow(row);
 
     E.numrows++;
 }
@@ -86,11 +131,10 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        //printf("Appending '%s' with len %d\n", line, linelen);
+        printf("Appending '%s' with len %d\n", line, linelen);
         appendRow(line, linelen);
     }
-
-    //printf("Row size %s\n", E.rows[0].chars);
+    for (;;) {}
 
     free(line);
 

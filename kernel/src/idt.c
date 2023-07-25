@@ -1200,7 +1200,7 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
     printf(" - eflags: 0x%x\n", frame.eflags);
     */
     printf(" - cs: 0x%x\n", frame.cs);
-    printf(" - current esp: 0x%x\n", stack_state.esp);
+    //printf(" - current esp: 0x%x\n", stack_state.esp);
     printf(" - faulted from ring %d\n", frame.cs & 0x3);
 
     printf(" - program eip: 0x%x\n", frame.eip);
@@ -1209,9 +1209,11 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
         printf(" - program ss: 0x%x\n", ss);
     }
 
+    /*
     uint32_t cs;
     asm volatile("mov %%cs, %0" : "=r"(cs));
     printf(" - current cs: 0x%x\n", cs);
+    */
 
     bool resolved = false;
     if (interrupt_id == INT_GENERAL_PROTECTION) {

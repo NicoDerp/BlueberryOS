@@ -102,7 +102,7 @@ void* malloc(size_t size) {
 #endif
     */
 
-    uint32_t i;
+    unsigned int i;
     for (i = index; i < MEMORY_TOT_EXP; i++) {
         tag = freePages[i];
         while ((tag != NULL) && (size + sizeof(tag_t) > tag->realsize)) {
@@ -122,8 +122,9 @@ void* malloc(size_t size) {
 
     if (tag == NULL) {
 
-        uint32_t realsize = size + sizeof(tag_t);
-        uint32_t pages = realsize / FRAME_SIZE;
+        printf("No tag found! Allocating new one\n");
+        unsigned int realsize = size + sizeof(tag_t);
+        unsigned int pages = realsize / FRAME_SIZE;
         if ((realsize & (FRAME_SIZE-1)) != 0)
             pages++;
 
@@ -139,6 +140,7 @@ void* malloc(size_t size) {
         tag->splitnext = NULL;
 
     } else {
+        printf("Using existing tag at 0x%x\n", tag);
 
         if (tag->magic != MEMORY_TAG_MAGIC) {
             ERROR("malloc: Tag (0x%x) magic has been overwritten and it really shouldn't!\n", tag);
@@ -181,8 +183,8 @@ void* malloc(size_t size) {
 
         VERBOSE("kmalloc: Splitting tag with size %d with remainder %d\n", size, remainder);
 
-        tag_t* splitTag = (tag_t*) ((uint32_t) tag + sizeof(tag_t) + size);
-        uint32_t splitIndex = getIndex(remainder - sizeof(tag_t));
+        tag_t* splitTag = (tag_t*) ((unsigned int) tag + sizeof(tag_t) + size);
+        unsigned int splitIndex = getIndex(remainder - sizeof(tag_t));
         splitTag->magic = MEMORY_TAG_MAGIC;
         splitTag->index = splitIndex;
 
@@ -230,6 +232,10 @@ void* malloc(size_t size) {
 #endif
     */
 
-    return (void*) ((uint32_t) tag + sizeof(tag_t));
+    //printf("Using existing tag at 0x%x\n", ((unsigned int) tag) + sizeof(tag_t));
+    //printf("Tag size 0x%x %d\n", sizeof(tag_t), sizeof(tag_t));
+    //printf("Returning 0x%x\n", (void*) ((unsigned int) tag + sizeof(tag_t)));
+
+    return (void*) ((unsigned int) tag + sizeof(tag_t));
 }
 

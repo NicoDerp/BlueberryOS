@@ -74,6 +74,10 @@ void* realloc(void* ptr, size_t size) {
     void* new = malloc(size);
 #endif
 
+    // Shouldn't happen but just in case
+    if (size < tag->size)
+        tag->size = size;
+
     memcpy(new, ptr, tag->size);
 
 #if defined(__is_libk)

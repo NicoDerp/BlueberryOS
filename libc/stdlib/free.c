@@ -86,7 +86,7 @@ void free(void* ptr) {
     if (ptr == NULL)
         return;
 
-    tag = (tag_t*) ((uint32_t) ptr - sizeof(tag_t));
+    tag = (tag_t*) ((unsigned int) ptr - sizeof(tag_t));
     if (tag->magic != MEMORY_TAG_MAGIC) {
         ERROR("free: Tag at 0x%x has been corrupted!\n", ptr);
         return;
@@ -178,6 +178,15 @@ void free(void* ptr) {
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
 
+            unsigned int pages = tag->realsize / FRAME_SIZE;
+            if ((tag->realsize & (FRAME_SIZE-1)) != 0)
+                pages++;
+
+            if (pages < MEMORY_MIN_FRAMES)
+                pages = MEMORY_MIN_FRAMES;
+
+
+
             if (freePages[tag->index] == tag)
                 freePages[tag->index] = tag->next;
 
@@ -189,13 +198,10 @@ void free(void* ptr) {
 
             tag->prev = NULL;
             tag->next = NULL;
+            tag->index = -1;
 
-            uint32_t pages = tag->realsize / FRAME_SIZE;
-            if ((tag->realsize & (FRAME_SIZE-1)) != 0)
-                pages++;
 
-            if (pages < MEMORY_MIN_FRAMES)
-                pages = MEMORY_MIN_FRAMES;
+            printf("Freeing %d pages at 0x%x!\n", pages, tag);
 
             freeFrames((void*) tag, pages);
             return;
