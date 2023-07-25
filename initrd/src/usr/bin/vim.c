@@ -132,7 +132,7 @@ void displayScreen(void) {
 
     char* buf = NULL;
     size_t i = 0;
-    for (i = 0; (i < maxrows-15) && (i < E.numrows-E.rowoff); i++) {
+    for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
         unsigned int len = E.rows[i + E.rowoff].len;
         if (len <= E.coloff) {
@@ -144,8 +144,6 @@ void displayScreen(void) {
         len -= E.coloff;
         len = len > maxcols ? maxcols : len;
 
-        printw(".0x%x.", E.rows[i + E.rowoff].chars);
-        //printf("%s.", E.rows[i + E.rowoff].chars);
         buf = realloc(buf, len+1);
         memcpy(buf, E.rows[i + E.rowoff].chars + E.coloff, len);
         buf[len] = '\0';
@@ -153,18 +151,10 @@ void displayScreen(void) {
         printw("%s", buf);
         clrtoeol();
         printw("\n");
-        /*
-        if (i == 4) {
-            refresh();
-            printf(".%s. ", E.rows[1].chars);
-            for(;;){}
-        }
-        */
     }
     free(buf);
 
     // Draw '~' for empty lines
-    /*
     for (; i < maxrows; i++) {
 
         printw("~");
@@ -172,7 +162,6 @@ void displayScreen(void) {
         if (i != maxrows-1)
             printw("\n");
     }
-    */
 }
 
 void scrollUp(void) {
@@ -403,12 +392,12 @@ void main(int argc, char* argv[]) {
     while (true) {
 
         displayScreen();
-        //updateTopBar();
+        updateTopBar();
 
-        //wrefresh(cmdBar);
-        //wrefresh(topBar);
+        wrefresh(cmdBar);
+        wrefresh(topBar);
         refresh();
-        //moveCursor();
+        moveCursor();
 
         ch = getch();
         if (state == INSERT) {

@@ -60,7 +60,6 @@ int wrefresh(WINDOW* win) {
         printf(buf);
     }
     free(buf);
-    printf("Buf at 0x%x - 0x%x\n", buf, buf + win->width+1);
 
     return OK;
 }
