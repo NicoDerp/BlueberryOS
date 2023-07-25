@@ -12,14 +12,22 @@ int wclear(WINDOW* win) {
     win->toclear = 1;
 
     memset(win->buf, ' ', win->width * win->height);
-    memset(win->lineschanged, 1, win->height);
+    memset(win->lineschanged, 0, win->height);
 
     // If the window width goes from start to end of screen
     if (win->width + win->startx == stdscr->width) {
 
-        for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
-            move(y, win->startx);
-            ttycmd(TTY_ERASE_FROM_CURSOR, NULL, NULL);
+        if (win->startx == 0) {
+            move(win->starty, win->startx);
+            for (unsigned int y = 0; y < win->height; y++) {
+                ttycmd(TTY_ERASE_FROM_CURSOR, NULL, NULL);
+            }
+        }
+        else {
+            for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
+                move(y, win->startx);
+                ttycmd(TTY_ERASE_FROM_CURSOR, NULL, NULL);
+            }
         }
     }
     else {
@@ -29,9 +37,19 @@ int wclear(WINDOW* win) {
         buf[win->width] = '\0';
 
         // Else then manual erasing is required :(
-        for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
-            move(y, win->startx);
-            printf(buf);
+
+        if (win->startx == 0) {
+            move(win->starty, win->startx);
+            for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
+                printf("%s\n", buf);
+            }
+
+        }
+        else {
+            for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
+                move(y, win->startx);
+                printf(buf);
+            }
         }
 
         free(buf);

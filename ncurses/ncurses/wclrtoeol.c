@@ -10,7 +10,7 @@
 int wclrtoeol(WINDOW* win) {
 
     unsigned int index = win->cury * win->width + win->curx;
-    memset(win->buf + index, 'o', win->width - win->curx);
+    memset(win->buf + index, ' ', win->width - win->curx);
     win->lineschanged[win->cury] = 1;
     move(win->cury, win->curx);
 

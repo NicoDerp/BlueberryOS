@@ -110,7 +110,6 @@ char* stateToString(state_t st) {
 
 void updateTopBar(void) {
 
-    wclear(topBar);
     mvwprintw(topBar, 0, 0, "%s  %s", stateToString(state), currentFile);
     wclrtoeol(topBar);
 }
@@ -131,22 +130,6 @@ void displayScreen(void) {
 
     move(0, 0);
 
-    refresh();
-    getchar();
-
-    mvwprintw(stdscr, 0, 0, "Hello");
-
-    refresh();
-    getchar();
-
-    mvwprintw(stdscr, 0, 0, "abc");
-    clrtoeol();
-
-    refresh();
-    getchar();
-
-    for (;;){}
-
     char* buf = NULL;
     size_t i = 0;
     for (i = 0; (i < maxrows-1) && (i < E.numrows-E.rowoff); i++) {
@@ -165,24 +148,22 @@ void displayScreen(void) {
         memcpy(buf, E.rows[i + E.rowoff].chars + E.coloff, len);
         buf[len] = '\0';
 
-        //printw("%s", buf);
-        //clrtoeol();
-        //if (i != maxrows-1)
-        //    printw("\n");
+        printw("%s", buf);
+        clrtoeol();
+        if (i != maxrows-1)
+            printw("\n");
 
     }
     free(buf);
 
     // Draw '~' for empty lines
-    /*
     for (; i < maxrows; i++) {
 
-        if (i == maxrows-1)
-            printw("~");
-        else
-            printw("~\n");
+        printw("~");
+        clrtoeol();
+        if (i != maxrows-1)
+            printw("\n");
     }
-    */
 }
 
 void scrollUp(void) {
@@ -408,17 +389,17 @@ void main(int argc, char* argv[]) {
 
     state = NORMAL;
 
-    //clear();
+    clear();
+    refresh();
     //wclear(cmdBar);
     while (true) {
 
         displayScreen();
-        //updateTopBar();
-        refresh();
-        for(;;){}
+        updateTopBar();
 
         wrefresh(topBar);
         wrefresh(cmdBar);
+        refresh();
         moveCursor();
 
         ch = getch();
