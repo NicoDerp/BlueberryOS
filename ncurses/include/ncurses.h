@@ -12,9 +12,7 @@
 #define OK   0
 #define ERR -1
 
-struct _win;
-
-typedef struct _win {
+typedef struct {
 
     unsigned int curx;
     unsigned int cury;
@@ -25,10 +23,10 @@ typedef struct _win {
     unsigned int startx;
     unsigned int starty;
 
-    struct _win* next;
-    struct _win* prev;
+    bool toclear;
 
     char* buf;
+    char* lineschanged;
 
 } WINDOW;
 
@@ -81,8 +79,14 @@ int wmove(WINDOW* win, int y, int x);
 int clear(void);
 int wclear(WINDOW* win);
 
+int erase(void);
+int werase(WINDOW* win);
+
 int delch(void);
 int wdelch(WINDOW* win);
+
+int clrtoeol(void);
+int wclrtoeol(WINDOW* win);
 
 #ifdef __cplusplus
 }

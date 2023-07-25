@@ -2,9 +2,8 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-
-WINDOW* firstwin = NULL;
 
 WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, unsigned int startx) {
 
@@ -18,14 +17,13 @@ WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, uns
     win->startx = startx;
     win->starty = starty;
 
-    win->next = firstwin;
-
-    if (firstwin)
-        firstwin->prev = win;
-
-    firstwin = win;
+    win->toclear = 0;
 
     win->buf = (char*) malloc(width * height);
+    win->lineschanged = (char*) malloc(height);
+
+    memset(win->buf, ' ', width * height);
+    memset(win->lineschanged, 1, height);
 
     return win;
 }

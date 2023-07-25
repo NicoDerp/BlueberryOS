@@ -328,6 +328,8 @@ int terminal_execute_cmd(int cmd, int* args, unsigned int** ret) {
         case (TTY_ERASE_FROM_CURSOR):
             {
                 terminal_clear_row_from();
+                if (terminal_row < VGA_HEIGHT-1)
+                    terminal_row++;
             }
             break;
 

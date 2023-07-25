@@ -21,19 +21,20 @@ bool wputcharw(WINDOW* win, char c) {
     }
 
     if (win->cury >= win->height)
-        return false;
-
-    // TODO check if actually move is needed
-    move(win->starty + win->cury, win->startx + win->curx);
+        win->cury = win->height-1;
+    //    return false;
 
     if (place) {
-        //unsigned int index = win->cury * win->width + win->curx;
+        // TODO check if actually move is needed
+        //move(win->starty + win->cury, win->startx + win->curx);
 
-        putchar(c);
-        //win->buf[index] = c;
+        unsigned int index = win->cury * win->width + win->curx;
+
+        //putchar(c);
+        win->buf[index] = c;
+        win->lineschanged[win->cury] = 1;
         win->curx++;
     }
-
 
     return true;
 }

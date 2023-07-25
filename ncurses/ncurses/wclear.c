@@ -3,9 +3,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <bits/tty.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 int wclear(WINDOW* win) {
+
+    win->toclear = 1;
+
+    memset(win->buf, ' ', win->width * win->height);
+    memset(win->lineschanged, 1, win->height);
 
     // If the window width goes from start to end of screen
     if (win->width + win->startx == stdscr->width) {
@@ -17,16 +24,19 @@ int wclear(WINDOW* win) {
     }
     else {
 
+        char* buf = malloc(win->width + 1);
+        memset(buf, ' ', win->width);
+        buf[win->width] = '\0';
+
         // Else then manual erasing is required :(
         for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
-
-            //ttycmd(TTY_ERASE_SCREEN, NULL, NULL);
-            for (unsigned int x = 0; x < win->width; x++) {
-                putchar(' ');
-            }
+            move(y, win->startx);
+            printf(buf);
         }
+
+        free(buf);
     }
-    move(0, 0);
+    move(win->starty, win->startx);
 
     return OK;
 }

@@ -1,20 +1,58 @@
 
 #include <ncurses.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <bits/tty.h>
+#include <unistd.h>
 
 
 int wrefresh(WINDOW* win) {
 
-    (void) win;
+    if (win->toclear) {
+        win->toclear = 0;
 
-    /*
-    for (unsigned int y = 0; y < win->height; y++) {
-        move(win->starty + y, win->startx);
-        for (unsigned int x = 0; x < win->width; x++) {
-            putchar(win->buf[y * win->width + x]);
+        if (win == stdscr) {
+            ttycmd(TTY_ERASE_SCREEN, NULL, NULL);
+            return OK;
+        }
+
+        // If it ends at end of screen
+        if (win->startx + win->width == stdscr->width) {
+            move(win->starty, win->startx);
+            for (unsigned int i = 0; i < win->height; i++) {
+                ttycmd(TTY_ERASE_FROM_CURSOR, NULL, NULL);
+            }
+        }
+        else {
+
+            char* buf = malloc(win->width+1);
+            memset(buf, ' ', win->width);
+            buf[win->width] = '\0';
+
+            for (unsigned int i = 0; i < win->height; i++) {
+                move(win->starty+i, win->startx);
+                printf(buf);
+            }
+
+            free(buf);
         }
     }
-    */
+
+    char* buf = malloc(win->width+1);
+    for (unsigned int y = 0; y < win->height; y++) {
+        if (!win->lineschanged[y])
+            continue;
+
+        win->lineschanged[y] = 0;
+
+        memcpy(buf, &win->buf[y * win->width], win->width);
+        win->buf[y * win->width + (win->width - 1)] = '\0';
+
+        move(win->starty + y, win->startx);
+        printf(buf);
+    }
+    free(buf);
 
     return OK;
 }

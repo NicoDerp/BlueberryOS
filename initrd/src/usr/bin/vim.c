@@ -9,8 +9,6 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
-#include <bits/memory.h>
-
 
 #define MAX_CMD_BUFFER 32
 
@@ -114,13 +112,7 @@ void updateTopBar(void) {
 
     wclear(topBar);
     mvwprintw(topBar, 0, 0, "%s  %s", stateToString(state), currentFile);
-    wrefresh(topBar);
-}
-
-void clearCmdBar(void) {
-
-    wclear(cmdBar);
-    wrefresh(cmdBar);
+    wclrtoeol(topBar);
 }
 
 void parseCommand(char* buf) {
@@ -133,13 +125,11 @@ void parseCommand(char* buf) {
         wclear(cmdBar);
         mvwprintw(cmdBar, 0, 0, "Not an editor command: %s", buf);
     }
-
-    wrefresh(cmdBar);
 }
 
 void displayScreen(void) {
 
-    clear();
+    move(0, 0);
 
     char* buf = NULL;
     size_t i = 0;
@@ -147,6 +137,7 @@ void displayScreen(void) {
 
         unsigned int len = E.rows[i + E.rowoff].len;
         if (len < E.coloff) {
+            clrtoeol();
             printw("\n");
             continue;
         }
@@ -158,13 +149,13 @@ void displayScreen(void) {
         memcpy(buf, E.rows[i + E.rowoff].chars + E.coloff, len);
         buf[len] = '\0';
 
-        if (i == maxrows-1)
-            printw("%s", buf);
-        else
-            printw("%s\n", buf);
+        printw("%s", buf);
+        clrtoeol();
+        if (i != maxrows-1)
+            printw("\n");
 
-        free(buf);
     }
+    free(buf);
 
     // Draw '~' for empty lines
     for (; i < maxrows; i++) {
@@ -174,10 +165,6 @@ void displayScreen(void) {
         else
             printw("~\n");
     }
-
-    updateTopBar();
-    clearCmdBar();
-    refresh();
 }
 
 void scrollUp(void) {
@@ -186,10 +173,6 @@ void scrollUp(void) {
         return;
 
     E.rowoff--;
-    displayScreen();
-
-    updateTopBar();
-    clearCmdBar();
 }
 
 void scrollDown(void) {
@@ -198,19 +181,16 @@ void scrollDown(void) {
         return;
 
     E.rowoff++;
-    displayScreen();
 }
 
 void scrollLeft(void) {
 
     E.coloff--;
-    displayScreen();
 }
 
 void scrollRight(void) {
 
     E.coloff++;
-    displayScreen();
 }
 
 void moveCursor(void) {
@@ -237,7 +217,6 @@ void leftArrow(void) {
             E.curx = E.rows[E.cury].len;
             if (E.curx > maxcols) {
                 E.coloff = E.curx - maxcols + maxcols/2;
-                displayScreen();
             }
         }
 
@@ -262,7 +241,6 @@ void rightArrow(void) {
 
         if (E.coloff > 0) {
             E.coloff = 0;
-            displayScreen();
         }
 
     } else if (E.curx - E.coloff == maxcols-1) {
@@ -288,16 +266,12 @@ void upArrow(void) {
     E.cury--;
 
     unsigned int len = E.rows[E.cury].len;
-    unsigned int old = E.coloff;
 
     E.curx = MIN(len, E.scurx);
     if (E.curx < maxcols-1)
         E.coloff = 0;
     else
         E.coloff = (E.curx+maxcols > E.coloff || E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
-
-    if (E.coloff != old)
-        displayScreen();
 }
 
 void downArrow(void) {
@@ -311,22 +285,17 @@ void downArrow(void) {
     E.cury++;
 
     unsigned int len = E.rows[E.cury].len;
-    unsigned int old = E.coloff;
 
     E.curx = MIN(len, E.scurx);
     if (E.curx < maxcols-1)
         E.coloff = 0;
     else
         E.coloff = (E.curx+maxcols > E.coloff || E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
-
-    if (E.coloff != old)
-        displayScreen();
 }
 
 void escapeKey(void) {
 
     state = NORMAL;
-    updateTopBar();
 }
 
 void startOfLine(void) {
@@ -334,8 +303,6 @@ void startOfLine(void) {
     E.scurx = 0;
     E.curx = 0;
     E.coloff = 0;
-
-    displayScreen();
 }
 
 void endOfLine(void) {
@@ -343,8 +310,6 @@ void endOfLine(void) {
     E.scurx = E.rows[E.cury].len;
     E.curx = E.scurx;
     E.coloff = E.scurx > maxcols ? E.scurx-maxcols+maxcols/2 : 0;
-
-    displayScreen();
 }
 
 
@@ -425,11 +390,17 @@ void main(int argc, char* argv[]) {
 
     state = NORMAL;
 
-    displayScreen();
-
+    wclear(cmdBar);
     while (true) {
 
+        displayScreen();
+        updateTopBar();
+
+        wrefresh(topBar);
+        wrefresh(cmdBar);
+        refresh();
         moveCursor();
+
         ch = getch();
         if (state == INSERT) {
 
@@ -458,7 +429,6 @@ void main(int argc, char* argv[]) {
 
                 moveCursor();
                 printw("%c", ch);
-                wrefresh(stdscr);
 
                 E.curx++;
                 if (E.curx >= maxcols) {
@@ -472,14 +442,11 @@ void main(int argc, char* argv[]) {
             if (ch == ':') {
                 state = COMMAND;
                 cmdCursor = 0;
-                updateTopBar();
-                wclear(cmdBar);
                 mvwprintw(cmdBar, 0, 0, ":");
-                wrefresh(cmdBar);
+                wclrtoeol(cmdBar);
             }
             else if (ch == 'i') {
                 state = INSERT;
-                updateTopBar();
             }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
@@ -494,12 +461,10 @@ void main(int argc, char* argv[]) {
 
             if (ch == '\e') {
                 state = NORMAL;
-                updateTopBar();
-                clearCmdBar();
+                wclear(cmdBar);
             }
             else if (ch == '\n') {
                 state = NORMAL;
-                updateTopBar();
                 cmdBuffer[cmdSize] = '\0';
                 parseCommand(cmdBuffer);
                 cmdSize = 0;
@@ -523,12 +488,10 @@ void main(int argc, char* argv[]) {
                 mvwprintw(cmdBar, 0, cmdCursor, " ");
                 cmdBuffer[cmdCursor] = ' ';
                 wmove(cmdBar, 0, cmdCursor--);
-                wrefresh(cmdBar);
                 cmdSize--;
             }
             else if (ch == 127) {
                 wdelch(cmdBar);
-                wrefresh(cmdBar);
                 cmdSize--;
             }
             else {
@@ -537,6 +500,7 @@ void main(int argc, char* argv[]) {
                     cmdBuffer[cmdCursor++] = ch;
                     cmdSize++;
                     wprintw(cmdBar, "%c", ch);
+                    wclrtoeol(cmdBar);
                 }
                 else {
                     memmove(&cmdBuffer[cmdCursor+1], &cmdBuffer[cmdCursor], cmdSize-cmdCursor);
@@ -547,12 +511,13 @@ void main(int argc, char* argv[]) {
                     wmove(cmdBar, 0, cmdCursor+1);
                 }
 
-                wrefresh(cmdBar);
             }
         }
     }
 
 
+    delwin(topBar);
+    delwin(cmdBar);
     endwin();
 }
 

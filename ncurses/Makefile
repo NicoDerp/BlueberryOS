@@ -40,12 +40,17 @@ FREEOBJS =\
 	ncurses/wrefresh.o \
 	ncurses/getch.o \
 	ncurses/endwin.o \
+	ncurses/delwin.o \
 	ncurses/move.o \
 	ncurses/wmove.o \
 	ncurses/clear.o \
 	ncurses/wclear.o \
+	ncurses/erase.o \
+	ncurses/werase.o \
 	ncurses/delch.o \
 	ncurses/wdelch.o \
+	ncurses/clrtoeol.o \
+	ncurses/wclrtoeol.o \
 
 OBJS = $(FREEOBJS)
 
