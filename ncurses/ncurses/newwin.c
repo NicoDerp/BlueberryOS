@@ -23,7 +23,7 @@ WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, uns
     win->lineschanged = (char*) malloc(height);
 
     memset(win->buf, ' ', width * height);
-    memset(win->lineschanged, 1, height);
+    memset(win->lineschanged, 0, height);
 
     return win;
 }
