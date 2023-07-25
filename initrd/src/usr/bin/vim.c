@@ -15,17 +15,16 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-
 typedef enum {
     NORMAL,
     COMMAND,
     INSERT,
 } state_t;
 
+
 WINDOW* topBar;
 WINDOW* cmdBar;
 
-state_t state;
 char* currentFile;
 
 unsigned int maxcols;
@@ -51,6 +50,7 @@ struct {
     unsigned int scurx;
     unsigned int curx;
     unsigned int cury;
+    state_t state;
 } E;
 
 
@@ -110,7 +110,7 @@ char* stateToString(state_t st) {
 
 void updateTopBar(void) {
 
-    mvwprintw(topBar, 0, 0, "%s  %s", stateToString(state), currentFile);
+    mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), currentFile);
     wclrtoeol(topBar);
 }
 
@@ -292,7 +292,7 @@ void downArrow(void) {
 
 void escapeKey(void) {
 
-    state = NORMAL;
+    E.state = NORMAL;
 }
 
 void startOfLine(void) {
@@ -385,7 +385,7 @@ void main(int argc, char* argv[]) {
     unsigned int cmdSize = 0;
     int ch;
 
-    state = NORMAL;
+    E.state = NORMAL;
 
     clear();
     refresh();
@@ -400,7 +400,7 @@ void main(int argc, char* argv[]) {
         moveCursor();
 
         ch = getch();
-        if (state == INSERT) {
+        if (E.state == INSERT) {
 
             if (ch == '\n') {
                 E.curx = 0;
@@ -435,22 +435,22 @@ void main(int argc, char* argv[]) {
                 }
             }
         }
-        else if (state == NORMAL) {
+        else if (E.state == NORMAL) {
 
             if (ch == ':') {
-                state = COMMAND;
+                E.state = COMMAND;
                 cmdCursor = 0;
                 mvwprintw(cmdBar, 0, 0, ":");
                 wclrtoeol(cmdBar);
             }
             else if (ch == 'i') {
-                state = INSERT;
+                E.state = INSERT;
             }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
             }
         }
-        else if (state == COMMAND) {
+        else if (E.state == COMMAND) {
 
             if (cmdCursor > MAX_CMD_BUFFER) {
                 wprintw(cmdBar, "Max command buffer size reached\n");
@@ -458,11 +458,11 @@ void main(int argc, char* argv[]) {
             }
 
             if (ch == '\e') {
-                state = NORMAL;
+                E.state = NORMAL;
                 werase(cmdBar);
             }
             else if (ch == '\n') {
-                state = NORMAL;
+                E.state = NORMAL;
                 cmdBuffer[cmdSize] = '\0';
                 parseCommand(cmdBuffer);
                 cmdSize = 0;
