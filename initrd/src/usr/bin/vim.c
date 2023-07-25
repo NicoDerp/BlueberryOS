@@ -392,10 +392,10 @@ void main(int argc, char* argv[]) {
     while (true) {
 
         displayScreen();
-        //updateTopBar();
+        updateTopBar();
 
-        //wrefresh(cmdBar);
-        //wrefresh(topBar);
+        wrefresh(cmdBar);
+        wrefresh(topBar);
         refresh();
         moveCursor();
 
