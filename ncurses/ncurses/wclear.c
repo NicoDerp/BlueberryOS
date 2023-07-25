@@ -48,7 +48,7 @@ int wclear(WINDOW* win) {
         else {
             for (unsigned int y = win->starty; y < win->starty+win->height; y++) {
                 move(y, win->startx);
-                printf(buf);
+                printf("%s", buf);
             }
         }
 

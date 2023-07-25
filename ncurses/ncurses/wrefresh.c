@@ -32,7 +32,7 @@ int wrefresh(WINDOW* win) {
 
                 for (unsigned int i = 0; i < win->height; i++) {
                     move(win->starty+i, win->startx);
-                    printf(buf);
+                    printf("%s", buf);
                 }
 
                 free(buf);
@@ -57,7 +57,7 @@ int wrefresh(WINDOW* win) {
             buf[win->width] = '\0';
 
         move(win->starty + y, win->startx);
-        printf(buf);
+        printf("%s", buf);
     }
     free(buf);
 

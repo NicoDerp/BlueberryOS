@@ -275,7 +275,7 @@ void main() {
                     cursor++;
                     index++;
 
-                    printf(cmd+cursor-1);
+                    printf("%s", cmd+cursor-1);
                     for (size_t j = 0; j < index-cursor; j++) {
                         putchar('\b');
                     }
