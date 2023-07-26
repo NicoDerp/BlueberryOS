@@ -13,7 +13,7 @@
 
 
 #define TAB_RENDER   "    "
-#define TAB_AS_SPACE 1
+#define TAB_AS_SPACE 0
 
 
 
@@ -72,12 +72,13 @@ inline row_t* currentRow(void) {
     return &E.rows[E.cury];
 }
 
-inline void snapCursor(void) {
+extern inline void snapCursor(void) {
+//void snapCursor(void) {
 
     unsigned int len = currentRow()->rlen;
     unsigned int max = MIN(len, E.rscurx);
 
-#ifdef TAB_AS_SPACE
+#if TAB_AS_SPACE
     E.rcurx = max;
     E.curx = max;
 #else
@@ -93,6 +94,22 @@ inline void snapCursor(void) {
             E.rcurx++;
     }
 #endif
+}
+
+extern inline unsigned int curxToRCurx(unsigned int curx) {
+
+    unsigned int rcurx = 0;
+    for (unsigned int i = 0; i < curx; i++) {
+        char c = currentRow()->chars[i];
+        if (c == '\t')
+            rcurx += TAB_SIZE - (rcurx % TAB_SIZE);
+        else if (c == '\e')
+            rcurx += 2;
+        else
+            rcurx++;
+    }
+
+    return rcurx;
 }
 
 void renderRow(row_t* row) {
@@ -300,7 +317,7 @@ void leftArrow(void) {
         E.rcurx--;
 #else
         if (currentRow()->chars[E.curx] == '\t')
-            E.rcurx -= TAB_SIZE;
+            E.rcurx = curxToRCurx(E.curx);
         else if (currentRow()->chars[E.curx] == '\e')
             E.rcurx -= 2;
         else
@@ -338,14 +355,15 @@ void rightArrow(void) {
         E.rcurx++;
 #else
         if (currentRow()->chars[E.curx] == '\t')
-            E.rcurx += TAB_SIZE;
+            E.rcurx += TAB_SIZE - (E.rcurx % TAB_SIZE);
         else if (currentRow()->chars[E.curx] == '\e')
             E.rcurx += 2;
         else
             E.rcurx++;
 
-        E.curx++;
 #endif
+
+    E.curx++;
 
     } else {
 
@@ -353,7 +371,7 @@ void rightArrow(void) {
         E.rcurx++;
 #else
         if (currentRow()->chars[E.curx] == '\t')
-            E.rcurx += TAB_SIZE;
+            E.rcurx += TAB_SIZE - (E.rcurx % TAB_SIZE);
         else if (currentRow()->chars[E.curx] == '\e')
             E.rcurx += 2;
         else
