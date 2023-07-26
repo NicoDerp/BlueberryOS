@@ -12,11 +12,12 @@
 
 
 
-#define TAB_RENDER "    "
+#define TAB_RENDER   "    "
+#define TAB_AS_SPACE 0
+
+
+
 #define TAB_SIZE   (sizeof(TAB_RENDER)-1)
-
-
-
 #define MAX_CMD_BUFFER 32
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -54,14 +55,45 @@ typedef struct {
 struct {
     row_t* rows;
     unsigned int numrows;
+
     unsigned int rowoff;
     unsigned int coloff;
+    unsigned int rscurx;
+    unsigned int rcurx;
     unsigned int scurx;
     unsigned int curx;
+
     unsigned int cury;
     state_t state;
 } E;
 
+
+inline row_t* currentRow(void) {
+    return &E.rows[E.cury];
+}
+
+inline void snapCursor(void) {
+
+    unsigned int len = currentRow()->rlen;
+    unsigned int max = MIN(len, E.rscurx);
+
+#ifdef TAB_AS_SPACE
+    E.rcurx = max;
+    E.curx = max;
+#else
+    E.curx = 0;
+    E.rcurx = 0;
+    for (; E.rcurx < max; E.curx++) {
+        char c = currentRow()->chars[E.curx];
+        if (c == '\t')
+            E.rcurx += TAB_SIZE - (E.rcurx % TAB_SIZE);
+        else if (c == '\e')
+            E.rcurx += 2;
+        else
+            E.rcurx++;
+    }
+#endif
+}
 
 void renderRow(row_t* row) {
 
@@ -233,17 +265,17 @@ void scrollRight(void) {
 }
 
 void moveCursor(void) {
-    move(E.cury - E.rowoff, E.curx - E.coloff);
+    move(E.cury - E.rowoff, E.rcurx - E.coloff);
 }
 
 
 
 void leftArrow(void) {
 
-    if ((E.curx - E.coloff == 0) && (E.cury - E.rowoff == 0))
+    if ((E.rcurx - E.coloff == 0) && (E.cury - E.rowoff == 0))
         return;
 
-    if (E.curx - E.coloff == 0) {
+    if (E.rcurx - E.coloff == 0) {
 
         if (E.coloff > 0) {
             scrollLeft();
@@ -253,44 +285,84 @@ void leftArrow(void) {
             else
                 E.cury--;
 
-            E.curx = E.rows[E.cury].len;
-            if (E.curx > maxcols) {
-                E.coloff = E.curx - maxcols + maxcols/2;
+            E.rcurx = currentRow()->rlen;
+            E.curx = currentRow()->len;
+            if (E.rcurx > maxcols) {
+                E.coloff = E.rcurx - maxcols + maxcols/2;
             }
         }
 
     } else {
+
         E.curx--;
+
+#if TAB_AS_SPACE
+        E.rcurx--;
+#else
+        if (currentRow()->chars[E.curx] == '\t')
+            E.rcurx -= TAB_SIZE;
+        else if (currentRow()->chars[E.curx] == '\e')
+            E.rcurx -= 2;
+        else
+            E.rcurx--;
+#endif
+
     }
+    E.rscurx = E.rcurx;
     E.scurx = E.curx;
 }
 
 void rightArrow(void) {
 
-    if ((E.curx == maxcols-1) && (E.cury == E.numrows-1))
+    if ((E.rcurx == maxcols-1) && (E.cury == E.numrows-1))
         return;
 
-    if (E.curx >= E.rows[E.cury].len) {
+    if (E.rcurx >= currentRow()->rlen) {
 
         if (E.cury - E.rowoff == maxrows-1)
             scrollDown();
 
         E.cury++;
+        E.rcurx = 0;
         E.curx = 0;
 
         if (E.coloff > 0) {
             E.coloff = 0;
         }
 
-    } else if (E.curx - E.coloff == maxcols-1) {
+    } else if (E.rcurx - E.coloff == maxcols-1) {
 
         scrollRight();
+
+#if TAB_AS_SPACE
+        E.rcurx++;
+#else
+        if (currentRow()->chars[E.curx] == '\t')
+            E.rcurx += TAB_SIZE;
+        else if (currentRow()->chars[E.curx] == '\e')
+            E.rcurx += 2;
+        else
+            E.rcurx++;
+
         E.curx++;
+#endif
 
     } else {
 
+#if TAB_AS_SPACE
+        E.rcurx++;
+#else
+        if (currentRow()->chars[E.curx] == '\t')
+            E.rcurx += TAB_SIZE;
+        else if (currentRow()->chars[E.curx] == '\e')
+            E.rcurx += 2;
+        else
+            E.rcurx++;
+#endif
+
         E.curx++;
     }
+    E.rscurx = E.rcurx;
     E.scurx = E.curx;
 }
 
@@ -304,13 +376,12 @@ void upArrow(void) {
 
     E.cury--;
 
-    unsigned int len = E.rows[E.cury].len;
+    snapCursor();
 
-    E.curx = MIN(len, E.scurx);
-    if (E.curx < maxcols-1)
+    if (E.rcurx < maxcols-1)
         E.coloff = 0;
     else
-        E.coloff = (E.curx+maxcols > E.coloff || E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
+        E.coloff = (E.rcurx+maxcols > E.coloff || E.rcurx < E.coloff) ? (E.rcurx-maxcols+maxcols/2) : (E.coloff);
 }
 
 void downArrow(void) {
@@ -323,13 +394,12 @@ void downArrow(void) {
 
     E.cury++;
 
-    unsigned int len = E.rows[E.cury].len;
+    snapCursor();
 
-    E.curx = MIN(len, E.scurx);
-    if (E.curx < maxcols-1)
+    if (E.rcurx < maxcols-1)
         E.coloff = 0;
     else
-        E.coloff = (E.curx+maxcols > E.coloff || E.curx < E.coloff) ? (E.curx-maxcols+maxcols/2) : (E.coloff);
+        E.coloff = (E.rcurx+maxcols > E.coloff || E.rcurx < E.coloff) ? (E.rcurx-maxcols+maxcols/2) : (E.coloff);
 }
 
 void escapeKey(void) {
@@ -339,16 +409,22 @@ void escapeKey(void) {
 
 void startOfLine(void) {
 
+    E.rscurx = 0;
+    E.rcurx = 0;
     E.scurx = 0;
     E.curx = 0;
+
     E.coloff = 0;
 }
 
-void endOfLine(void) {
+void gotoEndOfLine(void) {
 
-    E.scurx = E.rows[E.cury].len;
+    E.rscurx = currentRow()->rlen;
+    E.rcurx = E.rscurx;
+    E.scurx = currentRow()->len;
     E.curx = E.scurx;
-    E.coloff = E.scurx > maxcols ? E.scurx-maxcols+maxcols/2 : 0;
+
+    E.coloff = E.rscurx > maxcols ? E.rscurx-maxcols+maxcols/2 : 0;
 }
 
 
@@ -388,7 +464,7 @@ mapping_t normalMapping[] = {
     {'k', upArrow},
     {'j', downArrow},
     {'0', startOfLine},
-    {'$', endOfLine},
+    {'$', gotoEndOfLine},
 };
 
 
@@ -415,6 +491,9 @@ void main(int argc, char* argv[]) {
     E.numrows = 0;
     E.rowoff = 0;
     E.coloff = 0;
+
+    E.rscurx = 0;
+    E.rcurx = 0;
     E.scurx = 0;
     E.curx = 0;
     E.cury = 0;
@@ -445,21 +524,21 @@ void main(int argc, char* argv[]) {
         if (E.state == INSERT) {
 
             if (ch == '\n') {
-                E.curx = 0;
+                E.rcurx = 0;
                 E.cury++;
             }
             else if ((ch == KEY_BACKSPACE) || (ch == '\b')) {
-                if (E.curx == 0) {
+                if (E.rcurx == 0) {
 
                     if (E.cury == 0)
                         continue;
 
-                    //E.curx = line.linelen;
+                    //E.rcurx = line.linelen;
                     E.cury--;
 
                 } else {
 
-                    E.curx--;
+                    E.rcurx--;
                 }
             }
             else {
@@ -470,9 +549,9 @@ void main(int argc, char* argv[]) {
                 moveCursor();
                 printw("%c", ch);
 
-                E.curx++;
-                if (E.curx >= maxcols) {
-                    E.curx = 0;
+                E.rcurx++;
+                if (E.rcurx >= maxcols) {
+                    E.rcurx = 0;
                     E.cury++;
                 }
             }
