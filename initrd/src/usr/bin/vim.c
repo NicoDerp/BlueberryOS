@@ -13,7 +13,7 @@
 
 
 #define TAB_RENDER   "    "
-#define TAB_AS_SPACE 0
+#define TAB_AS_SPACE 1
 
 
 

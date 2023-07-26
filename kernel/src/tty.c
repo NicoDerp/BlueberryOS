@@ -219,6 +219,46 @@ void parseArgs(char type) {
             terminal_clear_row();
         }
     }
+    else if (type == 'D') {
+
+        int num = atoi(argBuf[0]);
+
+        /* \e[#D -> Move cursor left # columns */
+        while (num) {
+            if (terminal_column == 0) {
+                if (terminal_row == 0)
+                    return;
+
+                terminal_column = VGA_WIDTH-1;
+                terminal_row--;
+            }
+            else {
+                terminal_column--;
+            }
+
+            num--;
+        }
+    }
+    else if (type == 'C') {
+
+        int num = atoi(argBuf[0]);
+
+        /* \e[#C -> Move cursor right # columns */
+        while (num) {
+            if (terminal_column == VGA_WIDTH-1) {
+                if (terminal_row == VGA_HEIGHT-1)
+                    return;
+
+                terminal_column = 0;
+                terminal_row++;
+            }
+            else {
+                terminal_column++;
+            }
+
+            num--;
+        }
+    }
     else if (privateMode) {
 
         int num = atoi(argBuf[0]);

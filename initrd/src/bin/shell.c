@@ -14,10 +14,18 @@
 #define HISTORY_SIZE    64
 #define MAX_ARGS        32
 
+
+#define PS1 "\e[2K\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ "
+#define PS1ARGS pwd.pw_name, cwd
+
+
 char cmd[MAX_LINE_LENGTH+1];
 char history[MAX_LINE_LENGTH][HISTORY_SIZE];
 size_t historyCount = 0;
 char cwd[256];
+
+struct passwd pwd;
+char pwdBuf[256];
 
 void execArgs(char** args) {
 
@@ -141,9 +149,7 @@ void main(int argc, char* argv[]) {
 void main() {
 
 
-    struct passwd pwd;
     struct passwd* tmpPwdPtr;
-    char pwdBuf[256];
     int error;
 
     if ((error = getpwuid_r(getuid(), &pwd, pwdBuf, sizeof(pwdBuf), &tmpPwdPtr)) != 0) {
@@ -168,7 +174,7 @@ void main() {
 
     while (true) {
 
-        printf("\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ ", pwd.pw_name, cwd);
+        printf(PS1, PS1ARGS);
 
         char c;
         size_t index = 0;
@@ -180,34 +186,33 @@ void main() {
                 continue;
             }
 
-            // Backspace
-            if (c == '\b') {
-                if (index != 0) {
-                    index--;
-                    cursor--;
-                    printf("\b \b");
-                }
-            }
+            // Special character
+            if (c == '\e') {
+                c = getchar();
 
-            // Left arrow
-            else if (c == 27) {
-                if (cursor != 0) {
-                    putchar(27);
+                // Left arrow
+                if (c == 27) {
+                    if (cursor == 0)
+                        continue;
+
+                    printf("\e[1D");
                     cursor--;
                 }
-            }
 
-            // Right arrow
-            else if (c == 26) {
-                if (cursor < index) {
-                    putchar(26);
+                // Right arrow
+                else if (c == 26) {
+                    if (cursor >= index)
+                        continue;
+
+                    printf("\e[1C");
                     cursor++;
                 }
-            }
 
-            // Up arrow
-            else if (c == 24) {
-                if (historyScroll != historyCount) {
+                // Up arrow
+                else if (c == 24) {
+                    if (historyScroll == historyCount)
+                        continue;
+
                     historyScroll++;
 
                     /*
@@ -217,43 +222,52 @@ void main() {
                     */
 
                     strcpy(cmd, history[historyCount - historyScroll]);
-                    printf("\e[2K\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ %s", pwd.pw_name, cwd, cmd);
+                    printf(PS1" %s", PS1ARGS, cmd);
 
                     size_t len = strlen(cmd);
                     index = len;
                     cursor = len;
                 }
+
+                // Down arrow
+                else if (c == 25) {
+                    if (historyScroll == 0) {
+
+                        for (size_t i = 0; i < index; i++) {
+                            printf("\b \b");
+                        }
+
+                        index = 0;
+                        cursor = 0;
+
+                    } else {
+                        historyScroll--;
+
+                        /*
+                        for (size_t i = 0; i < index; i++) {
+                            printf("\b \b");
+                        }
+                        */
+
+                        size_t len = strlen(history[historyCount - historyScroll]);
+                        memcpy(cmd, history[historyCount - historyScroll], len);
+                        cmd[len] = '\0';
+                        printf(PS1" %s", PS1ARGS, cmd);
+
+                        index = len;
+                        cursor = len;
+                    }
+
+                }
             }
 
-            // Down arrow
-            else if (c == 25) {
-                if (historyScroll == 0) {
-
-                    for (size_t i = 0; i < index; i++) {
-                        printf("\b \b");
-                    }
-
-                    index = 0;
-                    cursor = 0;
-
-                } else {
-                    historyScroll--;
-
-                    /*
-                    for (size_t i = 0; i < index; i++) {
-                        printf("\b \b");
-                    }
-                    */
-
-                    size_t len = strlen(history[historyCount - historyScroll]);
-                    memcpy(cmd, history[historyCount - historyScroll], len);
-                    cmd[len] = '\0';
-                    printf("\e[2K\e[40;46m%s\e[0m:\e[39;46m%s\e[0m$ %s", pwd.pw_name, cwd, cmd);
-
-                    index = len;
-                    cursor = len;
+            // Backspace
+            else if (c == '\b') {
+                if (index != 0) {
+                    index--;
+                    cursor--;
+                    printf("\b \b");
                 }
-
             }
 
             // Tab (autocomplete)
