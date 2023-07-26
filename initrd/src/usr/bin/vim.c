@@ -20,8 +20,8 @@
 #define TAB_SIZE   (sizeof(TAB_RENDER)-1)
 #define MAX_CMD_BUFFER 32
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
 typedef enum {
     NORMAL,
@@ -29,11 +29,8 @@ typedef enum {
     INSERT,
 } state_t;
 
-
 WINDOW* topBar;
 WINDOW* cmdBar;
-
-char* currentFile;
 
 unsigned int maxcols;
 unsigned int maxrows;
@@ -65,6 +62,8 @@ struct {
 
     unsigned int cury;
     state_t state;
+
+    char* filename;
 } E;
 
 
@@ -161,6 +160,12 @@ void appendRow(char* s, unsigned int linelen) {
 
 void readFile(char* filename) {
 
+    free(E.filename);
+
+    unsigned int fnlen = strlen(filename);
+    E.filename = malloc(fnlen + 1);
+    memcpy(E.filename, filename, fnlen + 1);
+
     int fd = open(filename, O_RDONLY | O_CREAT, 0664);
     if (fd == -1) {
         int backup = errno;
@@ -201,7 +206,11 @@ char* stateToString(state_t st) {
 
 void updateTopBar(void) {
 
-    mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), currentFile);
+    if (E.filename)
+        mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), E.filename);
+    else
+        mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), "[No Name]");
+
     wclrtoeol(topBar);
 }
 
@@ -491,9 +500,6 @@ mapping_t normalMapping[] = {
 
 void main(int argc, char* argv[]) {
 
-    if (argc != 2)
-        return;
-
     initscr();
     noecho();
 
@@ -516,8 +522,10 @@ void main(int argc, char* argv[]) {
     E.curx = 0;
     E.cury = 0;
 
-    currentFile = argv[1];
-    readFile(currentFile);
+    E.filename = NULL;
+
+    if (argc > 1)
+        readFile(argv[1]);
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
