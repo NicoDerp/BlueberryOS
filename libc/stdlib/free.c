@@ -107,13 +107,13 @@ void free(void* ptr) {
         left->realsize += tag->realsize;
 
         left->splitnext = tag->splitnext;
-        if (tag->splitnext != NULL) {
-            if (tag->splitnext->magic != MEMORY_TAG_MAGIC) {
-                ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", tag->splitnext);
+        if (left->splitnext != NULL) {
+            if (left->splitnext->magic != MEMORY_TAG_MAGIC) {
+                ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", left->splitnext);
                 return;
             }
 
-            tag->splitnext->splitprev = left;
+            left->splitnext->splitprev = left;
         }
 
         // Check if tag is the first in the list
@@ -146,13 +146,13 @@ void free(void* ptr) {
         tag->realsize += right->realsize;
 
         tag->splitnext = right->splitnext;
-        if (right->splitnext != NULL) {
-            if (right->splitnext->magic != MEMORY_TAG_MAGIC) {
-                ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", right->splitnext);
+        if (tag->splitnext != NULL) {
+            if (tag->splitnext->magic != MEMORY_TAG_MAGIC) {
+                ERROR("free: Splitnext tag at 0x%x has been corrupted!\n", tag->splitnext);
                 return;
             }
 
-            right->splitnext->splitprev = tag;
+            tag->splitnext->splitprev = tag;
         }
 
         // Check if tag is the first in the list
@@ -178,6 +178,9 @@ void free(void* ptr) {
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
 
+            printf("Split: 0x%x - 0x%x - 0x%x\n", tag->splitprev, tag, tag->splitnext);
+            printf("Size: %d\n", tag->realsize);
+
             unsigned int pages = tag->realsize / FRAME_SIZE;
             if ((tag->realsize & (FRAME_SIZE-1)) != 0)
                 pages++;
@@ -202,6 +205,7 @@ void free(void* ptr) {
 
 
             printf("Freeing %d pages at 0x%x!\n", pages, tag);
+            for (;;) {}
 
             freeFrames((void*) tag, pages);
             return;

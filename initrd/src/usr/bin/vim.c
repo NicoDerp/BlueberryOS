@@ -96,7 +96,6 @@ void renderRow(row_t* row) {
 void appendRow(char* s, unsigned int linelen) {
 
     // If maxrows is NULL then realloc will call malloc for us
-    printf("Before\n");
     E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
     row_t* row = &E.rows[E.numrows];
@@ -131,7 +130,7 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        printf("Appending '%s' with len %d\n", line, linelen);
+        //printf("Appending '%s' with len %d\n", line, linelen);
         appendRow(line, linelen);
     }
     for (;;) {}
