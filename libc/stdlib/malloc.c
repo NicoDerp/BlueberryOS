@@ -122,21 +122,7 @@ void* malloc(size_t size) {
 
     if (tag == NULL) {
 
-        printf("malloc: No tag found! Allocating new one\n");
-        printf("\nMalloc before\n");
-
-        tag_t* t = NULL;
-        for (unsigned int i = 0; i < MEMORY_TOT_EXP; i++) {
-            t = freePages[i];
-
-            if (t != NULL)
-                printf("Index %d: %d-%d:\n", i, 1<<(i+MEMORY_MIN_EXP), (1<<(i+MEMORY_MIN_EXP+1))-1);
-
-            while (t != NULL) {
-                printf(" - Size %d at 0x%x 0x%x\n", t->realsize, t, (unsigned int) t + sizeof(tag_t));
-                t = t->next;
-            }
-        }
+        //printf("malloc: No tag found! Allocating new one\n");
 
         unsigned int realsize = size + sizeof(tag_t);
         unsigned int pages = realsize / FRAME_SIZE;
@@ -155,7 +141,8 @@ void* malloc(size_t size) {
         tag->splitnext = NULL;
 
     } else {
-        printf("malloc: Using existing tag from 0x%x to 0x%x\n", tag, tag + tag->realsize);
+
+        //printf("malloc: Using existing tag from 0x%x to 0x%x\n", tag, tag + tag->realsize);
 
         if (tag->magic != MEMORY_TAG_MAGIC) {
             ERROR("malloc: Tag (0x%x) magic has been overwritten and it really shouldn't!\n", tag);
@@ -256,10 +243,6 @@ void* malloc(size_t size) {
     tag = bak;
 #endif
     */
-
-    //printf("Using existing tag at 0x%x\n", ((unsigned int) tag) + sizeof(tag_t));
-    //printf("Tag size 0x%x %d\n", sizeof(tag_t), sizeof(tag_t));
-    //printf("Returning 0x%x\n", (void*) ((unsigned int) tag + sizeof(tag_t)));
 
     return (void*) ((unsigned int) tag + sizeof(tag_t));
 }

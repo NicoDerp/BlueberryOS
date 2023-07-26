@@ -49,7 +49,7 @@ inline void freeFrames(void* frame, unsigned int count) {
 
 #else
 inline void freeFrames(void* frame, unsigned int count) {
-    munmap(frame, count);
+    munmap(frame, count * FRAME_4KB);
 }
 
 #endif
@@ -178,9 +178,6 @@ void free(void* ptr) {
 
         if (completePages[index] >= MEMORY_MAX_COMPLETE) {
 
-            printf("Split: 0x%x - 0x%x - 0x%x\n", tag->splitprev, tag, tag->splitnext);
-            printf("Size: %d\n", tag->realsize);
-
             unsigned int pages = tag->realsize / FRAME_SIZE;
             if ((tag->realsize & (FRAME_SIZE-1)) != 0)
                 pages++;
@@ -203,9 +200,6 @@ void free(void* ptr) {
             tag->next = NULL;
             tag->index = -1;
 
-
-            printf("Freeing %d pages at 0x%x!\n", pages, tag);
-            for (;;) {}
 
             freeFrames((void*) tag, pages);
             return;

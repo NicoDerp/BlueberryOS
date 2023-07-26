@@ -69,7 +69,7 @@ void install_tss(uint8_t* gdt) {
 
 void freeProcessPagedirectory(pagedirectory_t pd, bool freeReadOnly) {
 
-    VERBOSE("freProcessPagedirectory: with freeReadOnly %d\n", freeReadOnly);
+    VERBOSE("freeProcessPagedirectory: with freeReadOnly %d\n", freeReadOnly);
 
     for (size_t i = 0; i < 768; i++) {
         if (pd[i] & 1) {
@@ -106,7 +106,7 @@ void freeProcessPagedirectory(pagedirectory_t pd, bool freeReadOnly) {
         }
     }
 
-    VERBOSE("freProcessPagedirectory: freeing pagedirectory\n");
+    VERBOSE("freeProcessPagedirectory: freeing pagedirectory\n");
     kfree_frame(pd);
 }
 
@@ -1182,10 +1182,10 @@ int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* er
         return -1;
     }
 
-    uint32_t chunks = ((FRAME_SIZE - (length & (FRAME_SIZE-1)) + length)) >> 12;
+    uint32_t chunks = (length + FRAME_SIZE - 1) / FRAME_SIZE;
 
     uint32_t cleared = 0;
-    for (uint32_t i = address/FRAME_4MB; i < 1024 && cleared < chunks; i++) {
+    for (uint32_t i = address/FRAME_4MB; (i < 1024) && (cleared < chunks); i++) {
 
         if (!(process->pd[i] & PAGE_PRESENT))
             continue;
@@ -1193,13 +1193,13 @@ int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* er
         pagetable_t pt = getPagetable(process->pd[i]);
 
         size_t jstart;
-        if (i == 0)
+        if (i == address/FRAME_4MB)
             jstart = (address / FRAME_4KB) & 0x03FF;
         else {
             jstart = 0;
         }
 
-        for (uint32_t j = jstart; j < 1024 && cleared < chunks; j++) {
+        for (uint32_t j = jstart; (j < 1024) && (cleared < chunks); j++) {
 
             if (!(pt[j] & PAGE_PRESENT) || !(pt[j] & PAGE_MMAPPED))
                 continue;
@@ -1207,8 +1207,12 @@ int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* er
             uint32_t page = getPageLocation(pt[j]);
             kfree_frame((void*) page);
 
+            VERBOSE("munmap: Freeing 0x%x\n", i*FRAME_4MB + j*FRAME_4KB);
+
             // Unmapping
             pt[j] = 0;
+
+            cleared++;
         }
     }
 
