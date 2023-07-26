@@ -63,22 +63,24 @@ struct {
 } E;
 
 
-/*
 void renderRow(row_t* row) {
 
     // Incase there is something there
     free(row->rchars);
 
     row->rlen = 0;
-    row->rchars = (char*) malloc(1);
+    row->rchars = NULL;
     for (unsigned int i = 0; i < row->len; i++) {
         char c = row->chars[i];
         if (c == '\t') {
-            row->rchars = realloc(row->rchars, row->rlen + TAB_SIZE);
-            memcpy(row->rchars + row->rlen, TAB_RENDER, TAB_SIZE);
-            row->rlen += TAB_SIZE;
+
+            unsigned int size = TAB_SIZE - (row->rlen % TAB_SIZE);
+
+            row->rchars = realloc(row->rchars, row->rlen + size);
+            memcpy(row->rchars + row->rlen, TAB_RENDER, size);
+            row->rlen += size;
         }
-        if (c == '\e') {
+        else if (c == '\e') {
             row->rchars = realloc(row->rchars, row->rlen + 1);
             memcpy(row->rchars + row->rlen, "^[", 2);
             row->rlen += 2;
@@ -91,7 +93,6 @@ void renderRow(row_t* row) {
     row->rchars = realloc(row->rchars, row->rlen + 1);
     row->rchars[row->rlen] = '\0';
 }
-*/
 
 void appendRow(char* s, unsigned int linelen) {
 
@@ -99,13 +100,12 @@ void appendRow(char* s, unsigned int linelen) {
     E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
     row_t* row = &E.rows[E.numrows];
-    printf("Row at 0x%x\n", row);
     row->len = linelen;
     row->chars = (char*) malloc(linelen + 1);
     memcpy(row->chars, s, linelen+1);
 
-    //row->rchars = NULL;
-    //renderRow(row);
+    row->rchars = NULL;
+    renderRow(row);
 
     E.numrows++;
 }
@@ -133,7 +133,6 @@ void readFile(char* filename) {
         //printf("Appending '%s' with len %d\n", line, linelen);
         appendRow(line, linelen);
     }
-    for (;;) {}
 
     free(line);
 
@@ -177,7 +176,7 @@ void displayScreen(void) {
     size_t i = 0;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
-        unsigned int len = E.rows[i + E.rowoff].len;
+        unsigned int len = E.rows[i + E.rowoff].rlen;
         if (len <= E.coloff) {
             clrtoeol();
             printw("\n");
@@ -188,7 +187,7 @@ void displayScreen(void) {
         len = len > maxcols ? maxcols : len;
 
         buf = realloc(buf, len+1);
-        memcpy(buf, E.rows[i + E.rowoff].chars + E.coloff, len);
+        memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
         buf[len] = '\0';
 
         printw("%s", buf);

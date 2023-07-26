@@ -11,7 +11,8 @@
 #define MAX_CMD_BUFFER 32 Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga
 #define MAX_CMD_BUFFER 32 Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga
 
-typedef enum {
+	typedef enum {
+a	hei
     NORMAL,
     COMMAND,
     INSERT,
