@@ -10,6 +10,7 @@ int endwin(void) {
     delwin(stdscr);
 
     // Restores screen
+    ttycmd(TTY_RESET_MODES, NULL, NULL);
     ttycmd(TTY_RESTORE_SCREEN, NULL, NULL);
     //printw("\e[?47l");
 

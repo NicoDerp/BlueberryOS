@@ -4,6 +4,8 @@
 #include <stdbool.h>
 
 
+extern color_pair_t color_pairs[];
+
 bool wputcharw(WINDOW* win, char c) {
 
     bool place = true;
@@ -32,6 +34,7 @@ bool wputcharw(WINDOW* win, char c) {
 
         //putchar(c);
         win->buf[index] = c;
+        win->colors[index] = win->curColor;
         win->lineschanged[win->cury] = 1;
         win->curx++;
     }

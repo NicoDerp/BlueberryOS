@@ -21,9 +21,13 @@ WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, uns
 
     win->buf = (char*) malloc(width * height);
     win->lineschanged = (char*) malloc(height);
+    win->colors = (char*) malloc(width * height);
+
+    win->curColor = 0;
 
     memset(win->buf, ' ', width * height);
     memset(win->lineschanged, 0, height);
+    memset(win->colors, 0, width * height);
 
     return win;
 }

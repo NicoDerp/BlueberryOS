@@ -13,6 +13,11 @@
 #define ERR -1
 
 typedef struct {
+    short fg;
+    short bg;
+} color_pair_t;
+
+typedef struct {
 
     unsigned int curx;
     unsigned int cury;
@@ -27,9 +32,13 @@ typedef struct {
 
     char* buf;
     char* lineschanged;
+    char* colors;
+
+    unsigned char curColor;
 
 } WINDOW;
 
+extern WINDOW* stdscr;
 
 
 
@@ -49,9 +58,25 @@ typedef struct {
 #define getmaxy(win)            ((win) ? ((win)->height) : ERR)
 #define getmaxyx(win,y,x)       (y = getmaxy(win), x = getmaxx(win))
 
-#define noecho()
 
-extern WINDOW* stdscr;
+#define COLOR_BLACK         0
+#define COLOR_BLUE          1
+#define COLOR_GREEN         2
+#define COLOR_CYAN          3
+#define COLOR_RED           4
+#define COLOR_MAGENTA       5
+#define COLOR_BROWN         6
+#define COLOR_WHITE         7
+#define COLOR_LIGHT_GRAY    7
+#define COLOR_DARK_GRAY     8
+#define COLOR_LIGHT_BLUE    9
+#define COLOR_LIGHT_GREEN   10
+#define COLOR_LIGHT_CYAN    11
+#define COLOR_LIGHT_RED     12
+#define COLOR_LIGHT_MAGENTA 13
+#define COLOR_LIGHT_BROWN   14
+//#define COLOR_WHITE         15
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +86,20 @@ WINDOW* initscr(void);
 WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, unsigned int startx);
 int endwin(void);
 int delwin(WINDOW* win);
+
+inline int noecho(void) { return OK; }
+
+int init_pair(short pair, short f, short b);
+inline int has_colors(void) { return 1; };
+inline int start_color(void) { return OK; }
+
+int wattron(WINDOW* win, int attrs);
+inline int attron(int attrs) { return wattron(stdscr, attrs); }
+
+int wattroff(WINDOW* win, int attrs);
+inline int attroff(int attrs) { return wattroff(stdscr, attrs); }
+
+#define COLOR_PAIR(n) ((int) (n & 0xFF))
 
 int printw(char*, ...);
 int wprintw(WINDOW* win, const char* format, ...);

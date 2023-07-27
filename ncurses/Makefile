@@ -1,5 +1,4 @@
 
-
 # Default
 CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
@@ -41,6 +40,9 @@ FREEOBJS =\
 	ncurses/getch.o \
 	ncurses/endwin.o \
 	ncurses/delwin.o \
+	ncurses/init_pair.o \
+	ncurses/wattron.o \
+	ncurses/wattroff.o \
 	ncurses/move.o \
 	ncurses/wmove.o \
 	ncurses/clear.o \

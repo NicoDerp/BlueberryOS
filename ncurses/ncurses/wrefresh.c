@@ -7,6 +7,9 @@
 #include <unistd.h>
 
 
+extern color_pair_t color_pairs[];
+unsigned char prevColor = 0;
+
 int wrefresh(WINDOW* win) {
 
     if (win->toclear) {
@@ -41,7 +44,7 @@ int wrefresh(WINDOW* win) {
 
     }
 
-    char* buf = malloc(win->width+1);
+    char* buf = malloc(win->width + 1);
     for (unsigned int y = 0; y < win->height; y++) {
         if (!win->lineschanged[y])
             continue;
@@ -50,14 +53,44 @@ int wrefresh(WINDOW* win) {
 
         unsigned int index = y * win->width;
 
-        memcpy(buf, &win->buf[index], win->width);
-        if (win->starty + y == stdscr->height-1)
-            buf[win->width - 1] = '\0';
-        else
-            buf[win->width] = '\0';
+        unsigned int startx = 0;
+        unsigned int x;
+        for (x = 0; x < win->width; x++) {
 
-        move(win->starty + y, win->startx);
-        printf("%s", buf);
+            unsigned char pair = win->colors[index + x];
+            if (pair == prevColor)
+                continue;
+
+            int args[] = {color_pairs[pair].fg + 30, color_pairs[pair].bg + 46};
+            ttycmd(TTY_CHANGE_COLOR, args, NULL);
+
+            if (x > 0) {
+                unsigned int size = x - startx;
+                memcpy(buf, &win->buf[index + startx], size);
+                if (win->starty + y == stdscr->height-1)
+                    buf[size - 1] = '\0';
+                else
+                    buf[size] = '\0';
+
+                move(win->starty + y, win->startx + startx);
+                printf("%s", buf);
+            }
+
+            prevColor = pair;
+            startx = x;
+        }
+
+        unsigned int size = x - startx;
+        if (size > 0) {
+            memcpy(buf, &win->buf[index + startx], size);
+            if (win->starty + y == stdscr->height-1)
+                buf[size - 1] = '\0';
+            else
+                buf[size] = '\0';
+
+            move(win->starty + y, win->startx + startx);
+            printf("%s", buf);
+        }
     }
     free(buf);
 

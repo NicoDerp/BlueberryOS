@@ -222,7 +222,7 @@ void main() {
                     */
 
                     strcpy(cmd, history[historyCount - historyScroll]);
-                    printf(PS1" %s", PS1ARGS, cmd);
+                    printf(PS1"%s", PS1ARGS, cmd);
 
                     size_t len = strlen(cmd);
                     index = len;
@@ -252,7 +252,7 @@ void main() {
                         size_t len = strlen(history[historyCount - historyScroll]);
                         memcpy(cmd, history[historyCount - historyScroll], len);
                         cmd[len] = '\0';
-                        printf(PS1" %s", PS1ARGS, cmd);
+                        printf(PS1"%s", PS1ARGS, cmd);
 
                         index = len;
                         cursor = len;

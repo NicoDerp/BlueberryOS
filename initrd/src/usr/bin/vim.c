@@ -173,7 +173,6 @@ void readFile(char* filename) {
         exit(1);
     }
 
-
     FILE* fp = fdopen(fd, "r");
 
     char* line = NULL;
@@ -206,12 +205,14 @@ char* stateToString(state_t st) {
 
 void updateTopBar(void) {
 
+    //attron(COLOR_PAIR(2));
     if (E.filename)
         mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), E.filename);
     else
         mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), "[No Name]");
 
     wclrtoeol(topBar);
+    //attroff(COLOR_PAIR(2));
 }
 
 void parseCommand(char* buf) {
@@ -229,6 +230,7 @@ void parseCommand(char* buf) {
 void displayScreen(void) {
 
     move(0, 0);
+    //attron(COLOR_PAIR(1));
 
     char* buf = NULL;
     size_t i = 0;
@@ -262,6 +264,8 @@ void displayScreen(void) {
         if (i != maxrows-1)
             printw("\n");
     }
+
+    //attroff(COLOR_PAIR(1));
 }
 
 void scrollUp(void) {
@@ -501,7 +505,11 @@ mapping_t normalMapping[] = {
 void main(int argc, char* argv[]) {
 
     initscr();
+    start_color();
     noecho();
+
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_BLACK, COLOR_WHITE);
 
     maxcols = getmaxx(stdscr);
     maxrows = getmaxy(stdscr);
@@ -534,8 +542,9 @@ void main(int argc, char* argv[]) {
 
     E.state = NORMAL;
 
-    clear();
-    refresh();
+    //clear();
+    //refresh();
+    attron(COLOR_PAIR(2));
     while (true) {
 
         displayScreen();

@@ -25,7 +25,13 @@ WINDOW* initscr(void) {
     ttycmd(TTY_ERASE_SCREEN, NULL, NULL);
     //printf("\e[?47h\e[2J");
 
+    init_pair(0, COLOR_WHITE, COLOR_BLACK);
+    attron(COLOR_PAIR(0));
+
     stdscr = newwin(height, width, 0, 0);
+
+    ttycmd(TTY_MOVE_CURSOR, (int[]) {0, 0}, NULL);
+
     return stdscr;
 }
 

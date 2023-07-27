@@ -9,8 +9,7 @@ int move(int y, int x) {
     stdscr->curx = x;
     stdscr->cury = y;
 
-    int args[] = {y, x};
-    if (ttycmd(TTY_MOVE_CURSOR, args, NULL) == -1)
+    if (ttycmd(TTY_MOVE_CURSOR, (int[]) {y, x}, NULL) == -1)
         return ERR;
 
     return OK;
