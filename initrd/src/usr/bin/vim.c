@@ -67,7 +67,7 @@ struct {
 } E;
 
 
-inline row_t* currentRow(void) {
+extern inline row_t* currentRow(void) {
     return &E.rows[E.cury];
 }
 
@@ -458,6 +458,29 @@ void gotoEndOfLine(void) {
     E.coloff = E.rscurx > maxcols ? E.rscurx-maxcols+maxcols/2 : 0;
 }
 
+void gotoStartOfFile(void) {
+
+    E.rscurx = 0;
+    E.rcurx = 0;
+    E.scurx = 0;
+    E.curx = 0;
+
+    E.cury = 0;
+    E.rowoff = 0;
+    E.coloff = 0;
+}
+
+void gotoEndOfFile(void) {
+
+    E.rscurx = 0;
+    E.rcurx = 0;
+    E.scurx = 0;
+    E.curx = 0;
+
+    E.cury = E.numrows-1;
+    E.rowoff = E.numrows-maxrows;
+    E.coloff = 0;
+}
 
 bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
 
@@ -496,6 +519,8 @@ mapping_t normalMapping[] = {
     {'j', downArrow},
     {'0', startOfLine},
     {'$', gotoEndOfLine},
+    {'g', gotoStartOfFile},
+    {'G', gotoEndOfFile},
 };
 
 
@@ -544,7 +569,9 @@ void main(int argc, char* argv[]) {
 
     //clear();
     //refresh();
-    attron(COLOR_PAIR(2));
+    attron(COLOR_PAIR(1));
+    wattron(topBar, COLOR_PAIR(2));
+    wattron(cmdBar, COLOR_PAIR(1));
     while (true) {
 
         displayScreen();

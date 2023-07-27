@@ -32,7 +32,6 @@ bool wputcharw(WINDOW* win, char c) {
 
         unsigned int index = win->cury * win->width + win->curx;
 
-        //putchar(c);
         win->buf[index] = c;
         win->colors[index] = win->curColor;
         win->lineschanged[win->cury] = 1;

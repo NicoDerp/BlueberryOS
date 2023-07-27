@@ -13,8 +13,8 @@
 #define ERR -1
 
 typedef struct {
-    short fg;
-    short bg;
+    char fg;
+    char bg;
 } color_pair_t;
 
 typedef struct {
