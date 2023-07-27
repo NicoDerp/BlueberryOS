@@ -180,6 +180,9 @@ void install_tss(uint8_t* entryBytes);
 void set_kernel_stack(uint32_t esp);
 void use_system_tss(void);
 
+bool resolveProcessAddress(process_t* process, const void* virtaddr, uint32_t count, bool needrw);
+bool resolveZeroProcessAddress(process_t* process, const void* virtaddr, bool needrw);
+
 process_t* findNextProcess(void);
 process_t* getCurrentProcess(void);
 

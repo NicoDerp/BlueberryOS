@@ -110,6 +110,66 @@ void freeProcessPagedirectory(pagedirectory_t pd, bool freeReadOnly) {
     kfree_frame(pd);
 }
 
+// Check if virtaddr doesn't pagefault
+bool resolveProcessAddress(process_t* process, const void* virtaddr, uint32_t count, bool needrw) {
+
+    uint32_t vaddr = (uint32_t) virtaddr;
+    unsigned int pages = 0;
+    while (count > 0) {
+
+        uint32_t pti = vaddr / FRAME_4MB + (pages / 1024);
+        uint32_t pi = ((vaddr / FRAME_4KB) & 0x03FF) + (pages & 1023);
+
+        if (pti >= 0xC0000000 / FRAME_4MB)
+            return false;
+
+        if (!(process->pd[pti] & 1))
+            return false;
+
+        pagetable_t pagetable = getPagetable(process->pd[pti]);
+        if (!(pagetable[pi] & 1) || (!(pagetable[pi] & PAGE_USER)) || (needrw && !(pagetable[pi] & PAGE_READWRITE)))
+            return false;
+
+        count = count >= FRAME_4KB ? count - FRAME_4KB : 0;
+        pages++;
+    }
+
+    return true;
+}
+
+// Does the same but way more costly
+bool resolveZeroProcessAddress(process_t* process, const void* virtaddr, bool needrw) {
+
+    uint32_t vaddr = (uint32_t) virtaddr;
+    unsigned int pages = 0;
+    while (true) {
+
+        uint32_t pti = vaddr / FRAME_4MB + (pages / 1024);
+        uint32_t pi = ((vaddr / FRAME_4KB) & 0x03FF) + (pages & 1023);
+
+        if (pti >= 0xC0000000 / FRAME_4MB)
+            return false;
+
+        if (!(process->pd[pti] & 1))
+            return false;
+
+        pagetable_t pagetable = getPagetable(process->pd[pti]);
+        if (!(pagetable[pi] & 1) || (!(pagetable[pi] & PAGE_USER)) || (needrw && !(pagetable[pi] & PAGE_READWRITE)))
+            return false;
+
+        uint32_t* page = (uint32_t*) getPageLocation(pagetable[pi]);
+        for (unsigned int i = 0; i < FRAME_4KB; i++) {
+            if (page[i] == '\0')
+                return true;
+        }
+
+        pages++;
+    }
+
+    // Can't really get here but just in-case
+    return false;
+}
+
 process_t* findNextProcess(void) {
 
     //VERBOSE("findNextProcess\n");

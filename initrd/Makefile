@@ -42,6 +42,7 @@ SRC_C = src/sbin/loop.c \
 		src/usr/bin/mmaptest.c \
 		src/usr/bin/filetest.c \
 		src/usr/bin/vim.c \
+		src/usr/bin/pappatest.c \
 
 SRC_ASM = src/usr/bin/userfunc.asm \
 
