@@ -167,6 +167,7 @@ void readFile(char* filename) {
     E.filename = malloc(fnlen + 1);
     memcpy(E.filename, filename, fnlen + 1);
 
+    //int fd = open(filename, O_RDONLY | O_CREAT, 0664);
     int fd = open(filename, O_RDONLY, 0664);
     if (fd == -1) {
         int backup = errno;
@@ -226,15 +227,89 @@ void updateTopBar(void) {
     wclrtoeol(topBar);
 }
 
+void saveFile(void) {
+
+    int fd = open(E.filename, O_WRONLY | O_TRUNC | O_CREAT, 0664);
+    if (fd == -1) {
+        int backup = errno;
+
+        // Don't exit because file didn't exist
+        if (backup == ENOENT) {
+            E.saved = false;
+            return;
+        }
+
+        printf("open error: %s\n", strerror(backup));
+        endwin();
+        exit(1);
+    }
+
+    E.saved = true;
+
+    for (unsigned int i = 0; i < E.numrows; i++) {
+        write(fd, E.rows[i].chars, E.rows[i].len);
+        write(fd, "\n", 1);
+    }
+
+    if (close(fd) == -1) {
+        int backup = errno;
+        printf("close error: %s\n", strerror(backup));
+        exit(1);
+    }
+}
+
 void parseCommand(char* buf) {
 
     if (strcmp(buf, "q") == 0) {
         endwin();
         exit(0);
     }
+    else if (strcmp(buf, "w") == 0) {
+
+        if (!E.filename) {
+            mvwprintw(cmdBar, 0, 0, "No filename");
+            wclrtoeol(cmdBar);
+            return;
+        }
+
+        saveFile();
+
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %d written", E.filename, E.numrows);
+        wclrtoeol(cmdBar);
+    }
+    else if (strncmp(buf, "w ") == 0) {
+
+        char* fn = buf + 2;
+        if (!E.filename || *fn == '\0') {
+            mvwprintw(cmdBar, 0, 0, "No filename");
+            wclrtoeol(cmdBar);
+            return;
+        }
+        E.filename = fn;
+
+        saveFile();
+
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %d written", E.filename, E.numrows);
+        wclrtoeol(cmdBar);
+    }
+    else if (strcmp(buf, "wq") == 0) {
+        if (!E.filename) {
+            mvwprintw(cmdBar, 0, 0, "No filename");
+            wclrtoeol(cmdBar);
+            return;
+        }
+
+        saveFile();
+
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %d written", E.filename, E.numrows);
+        wclrtoeol(cmdBar);
+
+        endwin();
+        exit(0);
+    }
     else {
-        werase(cmdBar);
         mvwprintw(cmdBar, 0, 0, "Not an editor command: %s", buf);
+        wclrtoeol(cmdBar);
     }
 }
 
