@@ -354,7 +354,7 @@ void leftArrow(void) {
 
 void rightArrow(void) {
 
-    if ((E.rcurx == maxcols-1) && (E.cury == E.numrows-1))
+    if ((E.numrows == 0) || ((E.rcurx == maxcols-1) && ((E.cury == E.numrows-1))))
         return;
 
     if (E.rcurx >= currentRow()->rlen) {
@@ -427,7 +427,7 @@ void upArrow(void) {
 
 void downArrow(void) {
 
-    if (E.cury == E.numrows-1)
+    if ((E.numrows == 0) || (E.cury == E.numrows-1))
         return;
 
     if (E.cury - E.rowoff == maxrows-1)
@@ -543,17 +543,6 @@ void main(int argc, char* argv[]) {
     start_color();
     noecho();
 
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
-    init_pair(2, COLOR_BLACK, COLOR_WHITE);
-
-    maxcols = getmaxx(stdscr);
-    maxrows = getmaxy(stdscr);
-
-    topBar = newwin(1, maxcols, maxrows-2, 0);
-    cmdBar = newwin(1, maxcols, maxrows-1, 0);
-    maxrows -= 2;
-    refresh();
-
     E.rows = NULL;
     E.numrows = 0;
     E.rowoff = 0;
@@ -567,6 +556,19 @@ void main(int argc, char* argv[]) {
 
     E.filename = NULL;
     E.saved = false;
+
+
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_BLACK, COLOR_WHITE);
+
+    maxcols = getmaxx(stdscr);
+    maxrows = getmaxy(stdscr);
+
+    topBar = newwin(1, maxcols, maxrows-2, 0);
+    cmdBar = newwin(1, maxcols, maxrows-1, 0);
+    maxrows -= 2;
+    refresh();
+
 
     if (argc > 1)
         readFile(argv[1]);
