@@ -138,7 +138,7 @@ bool resolveProcessAddress(process_t* process, const void* virtaddr, uint32_t co
 }
 
 // Does the same but way more costly
-bool resolveZeroProcessAddress(process_t* process, const void* virtaddr, bool needrw) {
+bool resolveZeroProcessAddress(process_t* process, const void* virtaddr) {
 
     uint32_t vaddr = (uint32_t) virtaddr;
     unsigned int pages = 0;
@@ -154,7 +154,7 @@ bool resolveZeroProcessAddress(process_t* process, const void* virtaddr, bool ne
             return false;
 
         pagetable_t pagetable = getPagetable(process->pd[pti]);
-        if (!(pagetable[pi] & 1) || (!(pagetable[pi] & PAGE_USER)) || (needrw && !(pagetable[pi] & PAGE_READWRITE)))
+        if (!(pagetable[pi] & 1) || (!(pagetable[pi] & PAGE_USER)))
             return false;
 
         uint32_t* page = (uint32_t*) getPageLocation(pagetable[pi]);

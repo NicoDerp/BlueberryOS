@@ -227,7 +227,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                if (!resolveZeroProcessAddress(process, pathname, false)) {
+                if (!resolveZeroProcessAddress(process, pathname)) {
                     ERROR("SYS_open: Invalid address 0x%x passed to kernel from %d:%s\n", pathname, process->id, process->name);
                     process->regs.ecx = EFAULT;
                 }
@@ -421,7 +421,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers incase overwriteArgs fails
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                if (!resolveZeroProcessAddress(process, argv, false)) {
+                if (!resolveZeroProcessAddress(process, argv)) {
                     ERROR("SYS_execvp: Invalid address 0x%x passed to kernel from %d:%s\n", argv, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
@@ -475,9 +475,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     process->regs.ecx = EINVAL;
                 }
 
-                char* rbuf = resolveProcessAddress(process, (void*) buf);
-                if (!rbuf) {
-
+                if (!resolveProcessAddress(process, buf, size, true)) {
                     ERROR("SYS_getcwd: Invalid address 0x%x passed to kernel from %d:%s\n", buf, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
@@ -490,7 +488,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     process->regs.ecx = ERANGE;
 
                 } else {
-                    memcpy(rbuf, process->cwdir->fullpath, len);
+                    memcpy(buf, process->cwdir->fullpath, len);
 
                     // Indicate sucess
                     process->regs.eax = (uint32_t) buf;
@@ -511,17 +509,15 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                char* rpath = resolveProcessAddress(process, (void*) path);
-                if (!rpath) {
-
-                    ERROR("SYS_chdir: Invalid address 0x%x passed to kernel from %d:%s\n", rpath, process->id, process->name);
+                if (!resolveZeroProcessAddress(process, path)) {
+                    ERROR("SYS_chdir: Invalid address 0x%x passed to kernel from %d:%s\n", path, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                VERBOSE("SYS_chdir: Finding directory '%s'\n", rpath);
+                VERBOSE("SYS_chdir: Finding directory '%s'\n", path);
 
-                directory_t* dir = getDirectoryFrom(process->cwdir, rpath, true);
+                directory_t* dir = getDirectoryFrom(process->cwdir, path, true);
                 if (dir) {
 
                     if (!directoryAccessAllowed(process, dir, P_EXECUTE)) {
@@ -574,29 +570,25 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                char* rbuf = resolveProcessAddress(process, (void*) buf);
-                if (!rbuf) {
-
+                if (!resolveZeroProcessAddress(process, buf)) {
                     ERROR("SYS_getenv: Invalid address 0x%x passed to kernel from %d:%s\n", buf, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                char* renv = resolveProcessAddress(process, (void*) env);
-                if (!renv) {
-
+                if (!resolveZeroProcessAddress(process, env)) {
                     ERROR("SYS_getenv: Invalid address 0x%x passed to kernel from %d:%s\n", env, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                env_variable_t* var = getEnvVariable(process, renv);
+                env_variable_t* var = getEnvVariable(process, env);
                 if (var) {
 
                     size_t len = strlen(var->value);
                     if (size > len) {
 
-                        memcpy(rbuf, var->value, len+1);
+                        memcpy(buf, var->value, len+1);
 
                         // Signal sucess
                         process->regs.eax = 0;
@@ -629,8 +621,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                char* rkey = resolveProcessAddress(process, (void*) key);
-                if (!rkey) {
+                if (!resolveZeroProcessAddress(process, key)) {
 
                     ERROR("SYS_setenv: Invalid address 0x%x passed to kernel from %d:%s\n", key, process->id, process->name);
                     process->regs.ecx = EFAULT;
@@ -642,20 +633,18 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // No value means unset
                 if (value) {
 
-                    char* rvalue = resolveProcessAddress(process, (void*) value);
-                    if (!rvalue) {
-
+                    if (!resolveZeroProcessAddress(process, value)) {
                         ERROR("SYS_setenv: Invalid address 0x%x passed to kernel from %d:%s\n", value, process->id, process->name);
                         process->regs.ecx = EFAULT;
                         runCurrentProcess();
                     }
 
-                    status = setEnvVariable(process, rkey, rvalue, overwrite);
-                    VERBOSE("SYS_setenv: setting %s=%s\n", rkey, rvalue);
+                    status = setEnvVariable(process, key, value, overwrite);
+                    VERBOSE("SYS_setenv: setting %s=%s\n", key, value);
                 }
                 else {
-                    status = unsetEnvVariable(process, rkey);
-                    VERBOSE("SYS_setenv: unsetting %s\n", rkey);
+                    status = unsetEnvVariable(process, key);
+                    VERBOSE("SYS_setenv: unsetting %s\n", key);
                 }
 
                 // Set status (sucess or error)
@@ -679,23 +668,19 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                char* rbuf = resolveProcessAddress(process, (void*) buf);
-                if (!rbuf) {
-
+                if (!resolveProcessAddress(process, buf, nbytes, true)) {
                     ERROR("SYS_getdirentries: Invalid address 0x%x passed to kernel from %d:%s\n", buf, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                uint32_t* rbasep = resolveProcessAddress(process, (void*) basep);
-                if (!rbasep) {
-
+                if (!resolveProcessAddress(process, basep, sizeof(uint32_t), true)) {
                     ERROR("SYS_getdirentries: Invalid address 0x%x passed to kernel from %d:%s\n", basep, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                int status = getDirectoryEntries(process, fd, rbuf, nbytes, rbasep);
+                int status = getDirectoryEntries(process, fd, buf, nbytes, basep);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
@@ -716,24 +701,20 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                char* rpath = resolveProcessAddress(process, (void*) path);
-                if (!rpath) {
-
+                if (!resolveZeroProcessAddress(process, path)) {
                     ERROR("SYS_stat: Invalid address 0x%x passed to kernel from %d:%s\n", path, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                struct stat* rbuf = resolveProcessAddress(process, (void*) buf);
-                if (!rbuf) {
-
+                if (!resolveProcessAddress(process, buf, sizeof(struct stat), true)) {
                     ERROR("SYS_stat: Invalid address 0x%x passed to kernel from %d:%s\n", buf, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
                 int errnum = 0;
-                int status = statPath(process, rpath, rbuf, true, &errnum);
+                int status = statPath(process, path, buf, true, &errnum);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
@@ -754,17 +735,13 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                char* rpath = resolveProcessAddress(process, (void*) path);
-                if (!rpath) {
-
+                if (!resolveZeroProcessAddress(process, path)) {
                     ERROR("SYS_lstat: Invalid address 0x%x passed to kernel from %d:%s\n", path, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                struct stat* rbuf = resolveProcessAddress(process, (void*) buf);
-                if (!rbuf) {
-
+                if (!resolveProcessAddress(process, buf, sizeof(struct stat), true)) {
                     ERROR("SYS_lstat: Invalid address 0x%x passed to kernel from %d:%s\n", buf, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
@@ -849,32 +826,25 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                struct passwd* rpwd = resolveProcessAddress(process, (void*) pwd);
-                if (!pwd) {
-
+                if (!resolveProcessAddress(process, pwd, sizeof(struct passwd), true)) {
                     ERROR("SYS_getpwuidr: Invalid address 0x%x passed to kernel from %d:%s\n", pwd, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                char* rbuffer = resolveProcessAddress(process, (void*) buffer);
-                if (!buffer) {
-
+                if (!resolveProcessAddress(process, buffer, bufsize, true)) {
                     ERROR("SYS_getpwuidr: Invalid address 0x%x passed to kernel from %d:%s\n", buffer, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                struct passwd** rresult = resolveProcessAddress(process, (void*) result);
-                if (!result) {
-
+                if (!resolveProcessAddress(process, result, sizeof(struct passwd*), true)) {
                     ERROR("SYS_getpwuidr: Invalid address 0x%x passed to kernel from %d:%s\n", result, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-
-                int status = getPasswdStructR(uid, rpwd, rbuffer, bufsize, rresult);
+                int status = getPasswdStructR(uid, pwd, buffer, bufsize, result);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
@@ -899,32 +869,26 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                 // Save registers since we change them
                 saveRegisters(process, &stack_state, &frame, esp);
 
-                struct group* rgrp = resolveProcessAddress(process, (void*) grp);
-                if (!grp) {
-
+                if (!resolveProcessAddress(process, grp, sizeof(struct group), true)) {
                     ERROR("SYS_getgrgidr: Invalid address 0x%x passed to kernel from %d:%s\n", grp, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                char* rbuffer = resolveProcessAddress(process, (void*) buffer);
-                if (!buffer) {
-
+                if (!resolveProcessAddress(process, buffer, bufsize, true)) {
                     ERROR("SYS_getgrgidr: Invalid address 0x%x passed to kernel from %d:%s\n", buffer, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
-                struct group** rresult = resolveProcessAddress(process, (void*) result);
-                if (!result) {
-
+                if (!resolveProcessAddress(process, result, sizeof(struct group*), true)) {
                     ERROR("SYS_getgrgidr: Invalid address 0x%x passed to kernel from %d:%s\n", result, process->id, process->name);
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
 
-                int status = getGroupStructR(gid, rgrp, rbuffer, bufsize, rresult);
+                int status = getGroupStructR(gid, grp, buffer, bufsize, result);
 
                 // Set status (sucess or error)
                 process->regs.eax = status;
