@@ -64,6 +64,7 @@ struct {
     state_t state;
 
     char* filename;
+    bool saved;
 } E;
 
 
@@ -166,12 +167,22 @@ void readFile(char* filename) {
     E.filename = malloc(fnlen + 1);
     memcpy(E.filename, filename, fnlen + 1);
 
-    int fd = open(filename, O_RDONLY | O_CREAT, 0664);
+    int fd = open(filename, O_RDONLY, 0664);
     if (fd == -1) {
         int backup = errno;
+
+        // Don't exit because file didn't exist
+        if (backup == ENOENT) {
+            E.saved = false;
+            return;
+        }
+
         printf("open error: %s\n", strerror(backup));
+        endwin();
         exit(1);
     }
+
+    E.saved = true;
 
     FILE* fp = fdopen(fd, "r");
 
@@ -205,14 +216,14 @@ char* stateToString(state_t st) {
 
 void updateTopBar(void) {
 
-    //attron(COLOR_PAIR(2));
-    if (E.filename)
-        mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), E.filename);
-    else
-        mvwprintw(topBar, 0, 0, "%s  %s", stateToString(E.state), "[No Name]");
+    mvwprintw(topBar, 0, 0, "%s\t%s%s\t%d/%d",
+              stateToString(E.state),
+              E.filename ? E.filename : "[Empty]",
+              E.saved ? "" : " [*]",
+              E.cury+1,
+              E.numrows);
 
     wclrtoeol(topBar);
-    //attroff(COLOR_PAIR(2));
 }
 
 void parseCommand(char* buf) {
@@ -230,7 +241,6 @@ void parseCommand(char* buf) {
 void displayScreen(void) {
 
     move(0, 0);
-    //attron(COLOR_PAIR(1));
 
     char* buf = NULL;
     size_t i = 0;
@@ -556,6 +566,7 @@ void main(int argc, char* argv[]) {
     E.cury = 0;
 
     E.filename = NULL;
+    E.saved = false;
 
     if (argc > 1)
         readFile(argv[1]);

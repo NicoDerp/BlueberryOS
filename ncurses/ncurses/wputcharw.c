@@ -32,10 +32,19 @@ bool wputcharw(WINDOW* win, char c) {
 
         unsigned int index = win->cury * win->width + win->curx;
 
-        win->buf[index] = c;
-        win->colors[index] = win->curColor;
+        if (c == '\t') {
+            unsigned int size = 4 - (win->curx % 4);
+            memset(&win->buf[index], ' ', size);
+            memset(&win->colors[index], win->curColor, size);
+            win->curx += size;
+        }
+        else {
+            win->buf[index] = c;
+            win->colors[index] = win->curColor;
+            win->curx++;
+        }
+
         win->lineschanged[win->cury] = 1;
-        win->curx++;
     }
 
     return true;
