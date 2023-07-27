@@ -22,6 +22,13 @@ This is very in-development and just a hobby-project.
 
 I want BlueberryOS to be simple, small and efficient.
 
+## Features
+
+- [x] Preemptive OS
+- [x] C standard-library
+- [x] Built-in standard applications (with similar use to GNU) made specifically for BlueberryOS
+- [x] Built-in terminal-emulator
+
 ## Milestones
 
 - [x] Libc with syscalls
@@ -34,14 +41,15 @@ I want BlueberryOS to be simple, small and efficient.
 - [x] Fancier terminal
 - [x] Shell
 - [x] Memory allocator
-- [ ] Ncurses + text editor
+- [x] Ncurses
+- [ ] Text editor
 - [ ] Dynamic libraries
 - [ ] Graphics manager
+- [ ] Kernel modules
+- [ ] Multiple CPU cores
 - [ ] Package manager (bpm (Blueberryos Package Manager))
 - [ ] Sound
 - [ ] USB?
-- [ ] Kernel modules
-- [ ] Multiple CPU cores
 - [ ] NVMe
 - [ ] Fully adapted Cross-compiler
 - [ ] 64-bit
