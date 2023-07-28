@@ -14,6 +14,7 @@
 
 #define TAB_RENDER   "    "
 #define TAB_AS_SPACE 0
+#define TOP_MARGIN   3
 
 
 
@@ -143,10 +144,19 @@ void renderRow(row_t* row) {
     row->rchars[row->rlen] = '\0';
 }
 
+void insertCharacter(row_t* row, unsigned int at, int ch) {
+
+    row->chars = (char*) realloc(row->chars, row->len+2);
+    memmove(&row->chars[at+1], &row->chars[at], row->len - at + 1);
+    row->chars[at] = (char) ch;
+    row->len++;
+    renderRow(row);
+}
+
 void appendRow(char* s, unsigned int linelen) {
 
     // If maxrows is NULL then realloc will call malloc for us
-    E.rows = realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+    E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
     row_t* row = &E.rows[E.numrows];
     row->len = linelen;
@@ -223,25 +233,18 @@ void updateTopBar(void) {
     mvwprintw(topBar, 0, 0, "%s\t%s%s\t%d/%d",
               stateToString(E.state),
               E.filename ? E.filename : "[Empty]",
-              E.saved ? "" : " [*]",
+              E.saved ? "" : " (*)",
               E.cury+1,
               E.numrows);
 
     wclrtoeol(topBar);
 }
 
-void saveFile(char* filename) {
+unsigned int saveFile(char* filename) {
 
     int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0664);
     if (fd == -1) {
         int backup = errno;
-
-        // Don't exit because file didn't exist
-        if (backup == ENOENT) {
-            E.saved = false;
-            return;
-        }
-
         printf("open error: %s\n", strerror(backup));
 
         delwin(topBar);
@@ -252,9 +255,10 @@ void saveFile(char* filename) {
 
     E.saved = true;
 
+    unsigned int bytesWritten = 0;
     for (unsigned int i = 0; i < E.numrows; i++) {
-        write(fd, E.rows[i].chars, E.rows[i].len);
-        write(fd, "\n", 1);
+        bytesWritten += write(fd, E.rows[i].chars, E.rows[i].len);
+        bytesWritten += write(fd, "\n", 1);
     }
 
     if (close(fd) == -1) {
@@ -262,11 +266,26 @@ void saveFile(char* filename) {
         printf("close error: %s\n", strerror(backup));
         exit(1);
     }
+
+    return bytesWritten;
 }
 
 void parseCommand(char* buf) {
 
     if (strcmp(buf, "q") == 0) {
+
+        if (!E.saved) {
+            mvwprintw(cmdBar, 0, 0, "No write since last change");
+            wclrtoeol(cmdBar);
+            return;
+        }
+
+        delwin(topBar);
+        delwin(cmdBar);
+        endwin();
+        exit(0);
+    }
+    if (strcmp(buf, "q!") == 0) {
 
         delwin(topBar);
         delwin(cmdBar);
@@ -281,8 +300,8 @@ void parseCommand(char* buf) {
             return;
         }
 
-        saveFile(E.filename);
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL written", E.filename, E.numrows);
+        unsigned int bytesWritten = saveFile(E.filename);
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", E.filename, E.numrows, bytesWritten);
         wclrtoeol(cmdBar);
     }
     else if (strncmp(buf, "w ", 2) == 0) {
@@ -301,8 +320,8 @@ void parseCommand(char* buf) {
             memcpy(E.filename, filename, fnlen + 1);
         }
 
-        saveFile(filename);
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL written", filename, E.numrows);
+        unsigned int bytesWritten = saveFile(filename);
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", filename, E.numrows, bytesWritten);
         wclrtoeol(cmdBar);
     }
     else if (strcmp(buf, "wq") == 0) {
@@ -312,10 +331,8 @@ void parseCommand(char* buf) {
             return;
         }
 
-        saveFile(E.filename);
-
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL written", E.filename, E.numrows);
-        wclrtoeol(cmdBar);
+        unsigned int bytesWritten = saveFile(E.filename);
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", E.filename, E.numrows, bytesWritten);
 
         delwin(topBar);
         delwin(cmdBar);
@@ -459,7 +476,7 @@ void leftArrow(void) {
 
 void rightArrow(void) {
 
-    if ((E.numrows == 0) || ((E.rcurx == maxcols-1) && ((E.cury == E.numrows-1))))
+    if ((E.numrows == 0) || ((E.cury >= E.numrows-1)))
         return;
 
     if (E.rcurx >= currentRow()->rlen) {
@@ -597,6 +614,97 @@ void gotoEndOfFile(void) {
     E.coloff = 0;
 }
 
+void splitCurrentRow(void) {
+
+    E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+    memmove(&E.rows[E.cury+1], &E.rows[E.cury], sizeof(row_t) * (E.numrows - E.cury));
+    row_t* frow = &E.rows[E.cury];
+    row_t* trow = &E.rows[E.cury + 1];
+
+    trow->len = frow->len - E.curx;
+    trow->chars = (char*) malloc(frow->len - E.curx + 1);
+    trow->rchars = NULL;
+
+    memmove(trow->chars, &frow->chars[E.curx], frow->len - E.curx);
+    trow->chars[frow->len - E.curx] = '\0';
+
+    frow->chars = realloc(frow->chars, E.curx + 1);
+    frow->chars[E.curx] = '\0';
+    frow->len = E.curx;
+
+    renderRow(frow);
+    renderRow(trow);
+
+    E.numrows++;
+    E.cury++;
+    E.rscurx = 0;
+    E.scurx = 0;
+    E.rcurx = 0;
+    E.curx = 0;
+    E.coloff = 0;
+}
+
+void deleteCurrentChar(void) {
+
+    if (E.curx == 0) {
+        if (E.cury == 0)
+            return;
+
+        row_t* trow = &E.rows[E.cury-1];
+        row_t* frow = &E.rows[E.cury];
+
+        if (E.coloff > 0)
+            scrollLeft();
+
+        E.rscurx = trow->rlen;
+        E.scurx = trow->len;
+        E.rcurx = trow->rlen;
+        E.curx = trow->len;
+        if (E.rcurx > maxcols) {
+            E.coloff = E.rcurx - maxcols + maxcols/2;
+        }
+
+        trow->chars = (char*) realloc(trow->chars, trow->len + frow->len + 1);
+        memcpy(&trow->chars[trow->len], frow->chars, frow->len+1);
+        trow->len += frow->len;
+
+        renderRow(trow);
+        memmove(&E.rows[E.cury], &E.rows[E.cury+1], E.numrows - E.cury - 1);
+        E.rows = (row_t*) realloc(E.rows, sizeof(row_t*) * (E.numrows-1));
+
+        E.numrows--;
+
+        if (E.cury - E.rowoff < TOP_MARGIN)
+            E.rowoff--;
+
+        E.cury--;
+
+        return;
+    }
+
+    row_t* row = &E.rows[E.cury];
+    row->chars = (char*) realloc(row->chars, row->len);
+    memmove(&row->chars[E.curx-1], &row->chars[E.curx], row->len - E.curx);
+    row->chars[--row->len] = '\0';
+
+    renderRow(row);
+
+    E.curx--;
+    if (E.coloff > 0)
+        scrollLeft();
+
+    if (row->chars[E.curx] == '\t')
+        E.rcurx = curxToRCurx(E.curx);
+    else if (row->chars[E.curx] == '\e')
+        E.rcurx -= 2;
+    else
+        E.rcurx--;
+
+    E.rscurx = E.rcurx;
+    E.scurx = E.curx;
+}
+
+
 bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
 
     for (unsigned int i = 0; i < size/sizeof(mapping_t); i++) {
@@ -620,6 +728,9 @@ mapping_t insertMapping[] = {
     {KEY_RIGHT, rightArrow},
     {KEY_UP, upArrow},
     {KEY_DOWN, downArrow},
+    {'\n', splitCurrentRow},
+    {'\b', deleteCurrentChar}
+    //{127, deletePreviousChar}
 };
 
 mapping_t normalMapping[] = {
@@ -703,38 +814,12 @@ void main(int argc, char* argv[]) {
         ch = getch();
         if (E.state == INSERT) {
 
-            if (ch == '\n') {
-                E.rcurx = 0;
-                E.cury++;
-            }
-            else if ((ch == KEY_BACKSPACE) || (ch == '\b')) {
-                if (E.rcurx == 0) {
+            if (executeMapping(insertMapping, sizeof(insertMapping), ch))
+                continue;
 
-                    if (E.cury == 0)
-                        continue;
-
-                    //E.rcurx = line.linelen;
-                    E.cury--;
-
-                } else {
-
-                    E.rcurx--;
-                }
-            }
-            else {
-
-                if (executeMapping(insertMapping, sizeof(insertMapping), ch))
-                    continue;
-
-                moveCursor();
-                printw("%c", ch);
-
-                E.rcurx++;
-                if (E.rcurx >= maxcols) {
-                    E.rcurx = 0;
-                    E.cury++;
-                }
-            }
+            insertCharacter(&E.rows[E.cury], E.curx, ch);
+            E.saved = false;
+            rightArrow();
         }
         else if (E.state == NORMAL) {
 
