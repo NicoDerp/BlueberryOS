@@ -669,8 +669,10 @@ void deleteCurrentChar(void) {
         trow->len += frow->len;
 
         renderRow(trow);
-        memmove(&E.rows[E.cury], &E.rows[E.cury+1], E.numrows - E.cury - 1);
-        E.rows = (row_t*) realloc(E.rows, sizeof(row_t*) * (E.numrows-1));
+
+        if (E.cury < E.numrows-1)
+            memmove(&E.rows[E.cury], &E.rows[E.cury+1], sizeof(row_t) * (E.numrows - E.cury - 1));
+        E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows-1));
 
         E.numrows--;
 
@@ -702,6 +704,20 @@ void deleteCurrentChar(void) {
 
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
+}
+
+void deleteCurrentLine(void) {
+
+    if (E.numrows == 0)
+        return;
+
+    if (E.cury < E.numrows-1)
+        memmove(&E.rows[E.cury], &E.rows[E.cury+1], sizeof(row_t) * (E.numrows - E.cury - 1));
+
+    E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows-1));
+    E.numrows--;
+
+    snapCursor();
 }
 
 
@@ -747,6 +763,7 @@ mapping_t normalMapping[] = {
     {'$', gotoEndOfLine},
     {'g', gotoStartOfFile},
     {'G', gotoEndOfFile},
+    {'d', deleteCurrentLine},
 };
 
 
