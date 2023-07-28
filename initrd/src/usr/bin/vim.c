@@ -963,6 +963,10 @@ void main(int argc, char* argv[]) {
                 E.vcurx = E.curx;
                 E.vcury = E.cury;
             }
+            else if (ch == 'V') {
+                E.mode = VISUAL_LINE;
+                E.vcury = E.cury;
+            }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
             }
