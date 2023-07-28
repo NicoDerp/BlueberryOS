@@ -61,35 +61,34 @@ int wrefresh(WINDOW* win) {
             if (pair == prevColor)
                 continue;
 
-            unsigned int size = x - startx;
-            if (size == 0)
+            int size = x - startx;
+            size = (win->starty + y + 1 == stdscr->height) && (win->startx + x + 1 == stdscr->width) ? size-1 : size;
+            if (size == 0) {
+                int args[] = {color_pairs[pair].fg + 30, color_pairs[pair].bg + 46};
+                ttycmd(TTY_CHANGE_COLOR, args, NULL);
+                prevColor = pair;
                 continue;
-
-            memcpy(buf, &win->buf[index + startx], size);
-            if (win->starty + y == stdscr->height-1)
-                buf[size - 1] = '\0';
-            else
-                buf[size] = '\0';
+            }
 
             move(win->starty + y, win->startx + startx);
+            memcpy(buf, &win->buf[index + startx], size);
+            buf[size] = '\0';
             printf("%s", buf);
 
             int args[] = {color_pairs[pair].fg + 30, color_pairs[pair].bg + 46};
             ttycmd(TTY_CHANGE_COLOR, args, NULL);
-
             prevColor = pair;
+
             startx = x;
         }
 
-        unsigned int size = x - startx;
+        int size = x - startx;
+        size = (win->starty + y + 1 == stdscr->height) && (win->startx + x + 1 == stdscr->width) ? size-1 : size;
         if (size > 0) {
-            memcpy(buf, &win->buf[index + startx], size);
-            if (win->starty + y == stdscr->height-1)
-                buf[size - 1] = '\0';
-            else
-                buf[size] = '\0';
 
             move(win->starty + y, win->startx + startx);
+            memcpy(buf, &win->buf[index + startx], size);
+            buf[size] = '\0';
             printf("%s", buf);
         }
     }
