@@ -179,6 +179,9 @@ void readFile(char* filename) {
         }
 
         printf("open error: %s\n", strerror(backup));
+
+        delwin(topBar);
+        delwin(cmdBar);
         endwin();
         exit(1);
     }
@@ -227,9 +230,9 @@ void updateTopBar(void) {
     wclrtoeol(topBar);
 }
 
-void saveFile(void) {
+void saveFile(char* filename) {
 
-    int fd = open(E.filename, O_WRONLY | O_TRUNC | O_CREAT, 0664);
+    int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0664);
     if (fd == -1) {
         int backup = errno;
 
@@ -240,6 +243,9 @@ void saveFile(void) {
         }
 
         printf("open error: %s\n", strerror(backup));
+
+        delwin(topBar);
+        delwin(cmdBar);
         endwin();
         exit(1);
     }
@@ -261,6 +267,9 @@ void saveFile(void) {
 void parseCommand(char* buf) {
 
     if (strcmp(buf, "q") == 0) {
+
+        delwin(topBar);
+        delwin(cmdBar);
         endwin();
         exit(0);
     }
@@ -272,24 +281,28 @@ void parseCommand(char* buf) {
             return;
         }
 
-        saveFile();
-
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %d written", E.filename, E.numrows);
+        saveFile(E.filename);
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL written", E.filename, E.numrows);
         wclrtoeol(cmdBar);
     }
-    else if (strncmp(buf, "w ") == 0) {
+    else if (strncmp(buf, "w ", 2) == 0) {
 
-        char* fn = buf + 2;
-        if (!E.filename || *fn == '\0') {
+        char* filename = buf + 2;
+        if (*filename == '\0') {
             mvwprintw(cmdBar, 0, 0, "No filename");
             wclrtoeol(cmdBar);
             return;
         }
-        E.filename = fn;
 
-        saveFile();
+        if (!E.filename) {
+            //free(E.filename);
+            unsigned int fnlen = strlen(filename);
+            E.filename = malloc(fnlen + 1);
+            memcpy(E.filename, filename, fnlen + 1);
+        }
 
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %d written", E.filename, E.numrows);
+        saveFile(filename);
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL written", filename, E.numrows);
         wclrtoeol(cmdBar);
     }
     else if (strcmp(buf, "wq") == 0) {
@@ -299,11 +312,28 @@ void parseCommand(char* buf) {
             return;
         }
 
-        saveFile();
+        saveFile(E.filename);
 
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %d written", E.filename, E.numrows);
+        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL written", E.filename, E.numrows);
         wclrtoeol(cmdBar);
 
+        delwin(topBar);
+        delwin(cmdBar);
+        endwin();
+        exit(0);
+    }
+    else if (strncmp(buf, "wq ", 3) == 0) {
+
+        char* filename = buf + 3;
+        if (*filename == '\0') {
+            mvwprintw(cmdBar, 0, 0, "No filename");
+            wclrtoeol(cmdBar);
+            return;
+        }
+
+        saveFile(filename);
+        delwin(topBar);
+        delwin(cmdBar);
         endwin();
         exit(0);
     }
