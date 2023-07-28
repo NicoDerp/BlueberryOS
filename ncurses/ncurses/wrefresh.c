@@ -61,20 +61,21 @@ int wrefresh(WINDOW* win) {
             if (pair == prevColor)
                 continue;
 
+            unsigned int size = x - startx;
+            if (size == 0)
+                continue;
+
+            memcpy(buf, &win->buf[index + startx], size);
+            if (win->starty + y == stdscr->height-1)
+                buf[size - 1] = '\0';
+            else
+                buf[size] = '\0';
+
+            move(win->starty + y, win->startx + startx);
+            printf("%s", buf);
+
             int args[] = {color_pairs[pair].fg + 30, color_pairs[pair].bg + 46};
             ttycmd(TTY_CHANGE_COLOR, args, NULL);
-
-            if (x > 0) {
-                unsigned int size = x - startx;
-                memcpy(buf, &win->buf[index + startx], size);
-                if (win->starty + y == stdscr->height-1)
-                    buf[size - 1] = '\0';
-                else
-                    buf[size] = '\0';
-
-                move(win->starty + y, win->startx + startx);
-                printf("%s", buf);
-            }
 
             prevColor = pair;
             startx = x;

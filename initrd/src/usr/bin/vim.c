@@ -28,7 +28,9 @@ typedef enum {
     NORMAL,
     COMMAND,
     INSERT,
-} state_t;
+    VISUAL,
+    VISUAL_LINE
+} mode_t;
 
 WINDOW* topBar;
 WINDOW* cmdBar;
@@ -61,8 +63,12 @@ struct {
     unsigned int scurx;
     unsigned int curx;
 
+    unsigned int rvcurx;
+    unsigned int vcurx;
+    unsigned int vcury;
+
     unsigned int cury;
-    state_t state;
+    mode_t mode;
 
     char* filename;
     bool saved;
@@ -221,17 +227,19 @@ void readFile(char* filename) {
     }
 }
 
-char* stateToString(state_t st) {
-    if      (st == NORMAL)  return "-- NORMAL --";
-    else if (st == COMMAND) return "-- COMMAND --";
-    else if (st == INSERT)  return "-- INSERT --";
-    else                    return "-- UNKNOWN --";
+char* stateToString(mode_t st) {
+    if      (st == NORMAL)       return "-- NORMAL --";
+    else if (st == COMMAND)      return "-- COMMAND --";
+    else if (st == INSERT)       return "-- INSERT --";
+    else if (st == VISUAL)       return "-- VISUAL --";
+    else if (st == VISUAL_LINE)  return "-- V-LINE --";
+    else                         return "-- UNKNOWN --";
 }
 
 void updateTopBar(void) {
 
     mvwprintw(topBar, 0, 0, "%s\t%s%s\t%d/%d",
-              stateToString(E.state),
+              stateToString(E.mode),
               E.filename ? E.filename : "[Empty]",
               E.saved ? "" : " (*)",
               E.cury+1,
@@ -365,7 +373,7 @@ void displayScreen(void) {
     move(0, 0);
 
     char* buf = NULL;
-    size_t i = 0;
+    size_t i;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
         unsigned int len = E.rows[i + E.rowoff].rlen;
@@ -378,11 +386,44 @@ void displayScreen(void) {
         len -= E.coloff;
         len = len > maxcols ? maxcols : len;
 
-        buf = realloc(buf, len+1);
-        memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
-        buf[len] = '\0';
+        // If we are in visual mode and this row is where selection starts
+        if (((E.mode == VISUAL) || (E.mode == VISUAL_LINE)) && (i == (E.vcury - E.rowoff))) {
 
-        printw("%s", buf);
+            attron(COLOR_PAIR(4));
+            buf = realloc(buf, len+1);
+            memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
+            buf[len] = '\0';
+            printw("%s", buf);
+
+            attroff(COLOR_PAIR(4));
+        }
+        // If we are in visual mode and this row is in selection
+        if (((E.mode == VISUAL) || (E.mode == VISUAL_LINE)) && (i > (E.vcury - E.rowoff)) && (i < (E.cury - E.rowoff))) {
+
+            attron(COLOR_PAIR(4));
+
+            buf = realloc(buf, len+1);
+            memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
+            buf[len] = '\0';
+            printw("%s", buf);
+
+            attroff(COLOR_PAIR(4));
+        }
+        // If we are in visual mode and this row is where selection ends
+        else if (((E.mode == VISUAL) || (E.mode == VISUAL_LINE)) && (i == (E.cury - E.rowoff))) {
+        }
+        else {
+
+            attron(COLOR_PAIR(4));
+
+            buf = realloc(buf, len+1);
+            memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
+            buf[len] = '\0';
+            printw("%s", buf);
+
+            attroff(COLOR_PAIR(4));
+        }
+
         clrtoeol();
         printw("\n");
     }
@@ -396,8 +437,6 @@ void displayScreen(void) {
         if (i != maxrows-1)
             printw("\n");
     }
-
-    //attroff(COLOR_PAIR(1));
 }
 
 void scrollUp(void) {
@@ -567,7 +606,7 @@ void downArrow(void) {
 
 void escapeKey(void) {
 
-    E.state = NORMAL;
+    E.mode = NORMAL;
 }
 
 void startOfLine(void) {
@@ -765,6 +804,22 @@ mapping_t normalMapping[] = {
     {'d', deleteCurrentLine},
 };
 
+mapping_t visualMapping[] = {
+    {'\e', escapeKey},
+    {'v', escapeKey},
+    {KEY_LEFT, leftArrow},
+    {KEY_RIGHT, rightArrow},
+    {KEY_UP, upArrow},
+    {KEY_DOWN, downArrow},
+    {'h', leftArrow},
+    {'l', rightArrow},
+    {'k', upArrow},
+    {'j', downArrow},
+    {'0', startOfLine},
+    {'$', gotoEndOfLine},
+    {'g', gotoStartOfFile},
+    {'G', gotoEndOfFile},
+};
 
 
 
@@ -790,8 +845,17 @@ void main(int argc, char* argv[]) {
     E.saved = false;
 
 
+    // Main color
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
+
+    // Top-bar color
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
+
+    // Cmd-bar color
+    init_pair(3, COLOR_WHITE, COLOR_BLACK);
+
+    // Visual-select color
+    init_pair(4, COLOR_BLACK, COLOR_WHITE);
 
     maxcols = getmaxx(stdscr);
     maxrows = getmaxy(stdscr);
@@ -813,13 +877,13 @@ void main(int argc, char* argv[]) {
     unsigned int cmdSize = 0;
     int ch;
 
-    E.state = NORMAL;
+    E.mode = NORMAL;
 
     //clear();
     //refresh();
     attron(COLOR_PAIR(1));
     wattron(topBar, COLOR_PAIR(2));
-    wattron(cmdBar, COLOR_PAIR(1));
+    wattron(cmdBar, COLOR_PAIR(3));
     while (true) {
 
         displayScreen();
@@ -831,7 +895,7 @@ void main(int argc, char* argv[]) {
         moveCursor();
 
         ch = getch();
-        if (E.state == INSERT) {
+        if (E.mode == INSERT) {
 
             if (executeMapping(insertMapping, sizeof(insertMapping), ch))
                 continue;
@@ -840,22 +904,32 @@ void main(int argc, char* argv[]) {
             E.saved = false;
             rightArrow();
         }
-        else if (E.state == NORMAL) {
+        else if (E.mode == NORMAL) {
 
             if (ch == ':') {
-                E.state = COMMAND;
+                E.mode = COMMAND;
                 cmdCursor = 0;
                 mvwprintw(cmdBar, 0, 0, ":");
                 wclrtoeol(cmdBar);
             }
             else if (ch == 'i') {
-                E.state = INSERT;
+                E.mode = INSERT;
+            }
+            else if (ch == 'v') {
+                E.mode = VISUAL;
+                E.rvcurx = E.rcurx;
+                E.vcurx = E.curx;
+                E.vcury = E.cury;
             }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
             }
         }
-        else if (E.state == COMMAND) {
+        else if (E.mode == VISUAL) {
+
+            executeMapping(visualMapping, sizeof(visualMapping), ch);
+        }
+        else if (E.mode == COMMAND) {
 
             if (cmdCursor > MAX_CMD_BUFFER) {
                 wprintw(cmdBar, "Max command buffer size reached\n");
@@ -863,11 +937,11 @@ void main(int argc, char* argv[]) {
             }
 
             if (ch == '\e') {
-                E.state = NORMAL;
+                E.mode = NORMAL;
                 werase(cmdBar);
             }
             else if (ch == '\n') {
-                E.state = NORMAL;
+                E.mode = NORMAL;
                 cmdBuffer[cmdSize] = '\0';
                 parseCommand(cmdBuffer);
                 cmdSize = 0;
