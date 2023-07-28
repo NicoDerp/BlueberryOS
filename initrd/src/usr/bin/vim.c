@@ -673,10 +673,9 @@ void deleteCurrentChar(void) {
         if (E.cury < E.numrows-1)
             memmove(&E.rows[E.cury], &E.rows[E.cury+1], sizeof(row_t) * (E.numrows - E.cury - 1));
         E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows-1));
-
         E.numrows--;
 
-        if (E.cury - E.rowoff < TOP_MARGIN)
+        if ((E.rowoff > 0) && (E.cury - E.rowoff < TOP_MARGIN))
             E.rowoff--;
 
         E.cury--;
@@ -805,6 +804,9 @@ void main(int argc, char* argv[]) {
 
     if (argc > 1)
         readFile(argv[1]);
+
+    if (E.numrows == 0)
+        appendRow("", 0);
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
