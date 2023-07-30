@@ -372,6 +372,9 @@ void displayScreen(void) {
 
     move(0, 0);
 
+    unsigned int starty = MIN(E.cury, E.vcury);
+    unsigned int endy = MAX(E.cury, E.vcury);
+
     char* buf = NULL;
     size_t i;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
@@ -386,83 +389,94 @@ void displayScreen(void) {
         len -= E.coloff;
         len = len > maxcols ? maxcols : len;
 
-        // If we are in visual mode and this row is where selection starts
-        if (((E.mode == VISUAL) || (E.mode == VISUAL_LINE)) && (i == (E.vcury - E.rowoff))) {
+        buf = realloc(buf, len+1);
+        if ((E.mode == VISUAL) && (starty - E.rowoff <= i) && (i <= endy - E.rowoff)) {
 
-            attron(COLOR_PAIR(1));
-            if (E.vcurx > 0) {
-                buf = realloc(buf, E.vcurx+1);
-                memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.vcurx);
-                buf[E.vcurx] = '\0';
-                printw("%s", buf);
-            }
-            attroff(COLOR_PAIR(1));
+            // If the selection is on a single line
+            if ((i == starty - E.rowoff) && (i == endy - E.rowoff)) {
 
-            if (E.cury == i) {
+                attron(COLOR_PAIR(1));
+                if (E.vcurx > 0) {
+                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.vcurx);
+                    buf[E.vcurx] = '\0';
+                    printw("%s", buf);
+                }
+                attroff(COLOR_PAIR(1));
+
                 attron(COLOR_PAIR(4));
-                buf = realloc(buf, E.curx-E.vcurx+1);
                 memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.vcurx, E.curx-E.vcurx);
                 buf[E.curx-E.vcurx] = '\0';
                 printw("%s", buf);
                 attroff(COLOR_PAIR(4));
 
-                if (len-E.curx-E.vcurx+1 > 0) {
+                if (len + 1 > E.curx + E.vcurx) {
                     attron(COLOR_PAIR(1));
-                    buf = realloc(buf, len-E.curx+1);
                     memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.curx, len-E.curx);
                     buf[len-E.curx] = '\0';
                     printw("%s", buf);
                     attroff(COLOR_PAIR(1));
                 }
             }
-            else {
+            // If this row is where the cursor is
+            else if (i == E.cury - E.rowoff) {
+
+                short c1 = E.cury < E.vcury ? 1 : 4;
+                short c2 = E.cury < E.vcury ? 4 : 1;
+                if (E.curx <= len) {
+                    attron(COLOR_PAIR(c1));
+                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.curx);
+                    buf[E.curx] = '\0';
+                    printw("%s", buf);
+                    attroff(COLOR_PAIR(c1));
+                }
+
+                attron(COLOR_PAIR(c2));
+                memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.curx, len-E.curx);
+                buf[len-E.curx] = '\0';
+                printw("%s", buf);
+                attroff(COLOR_PAIR(c2));
+            }
+            // If this is the row where selection starts
+            else if (i == starty - E.rowoff) {
+                attron(COLOR_PAIR(1));
+                if (E.vcurx > 0) {
+                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.vcurx);
+                    buf[E.vcurx] = '\0';
+                    printw("%s", buf);
+                }
+                attroff(COLOR_PAIR(1));
+
                 attron(COLOR_PAIR(4));
-                buf = realloc(buf, len-E.vcurx+1);
                 memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.vcurx, len-E.vcurx);
                 buf[len-E.vcurx] = '\0';
                 printw("%s", buf);
                 attroff(COLOR_PAIR(4));
             }
+            // If this row is in the middle of the selection
+            else {
+                attron(COLOR_PAIR(4));
+                memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
+                buf[len] = '\0';
+                printw("%s", buf);
+
+                attroff(COLOR_PAIR(4));
+            }
         }
-        // If we are in visual mode and this row is in selection
-        else if (((E.mode == VISUAL) || (E.mode == VISUAL_LINE)) && (i > (E.vcury - E.rowoff)) && (i < (E.cury - E.rowoff))) {
+        else if ((E.mode == VISUAL_LINE) && (starty - E.rowoff <= i) && (i <= endy - E.rowoff)) {
 
             attron(COLOR_PAIR(4));
-            buf = realloc(buf, len+1);
             memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
             buf[len] = '\0';
             printw("%s", buf);
 
             attroff(COLOR_PAIR(4));
-        }
-        // If we are in visual mode and this row is where selection ends
-        else if (((E.mode == VISUAL) || (E.mode == VISUAL_LINE)) && (i == (E.cury - E.rowoff))) {
-
-            attron(COLOR_PAIR(4));
-            if (E.curx <= len) {
-                buf = realloc(buf, E.curx+1);
-                memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.curx);
-                buf[E.curx] = '\0';
-                printw("%s", buf);
-            }
-            attroff(COLOR_PAIR(4));
-
-            attron(COLOR_PAIR(1));
-            buf = realloc(buf, len-E.curx+1);
-            memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.curx, len-E.curx);
-            buf[len-E.curx] = '\0';
-            printw("%s", buf);
-            attroff(COLOR_PAIR(1));
         }
         else {
 
             attron(COLOR_PAIR(1));
-
-            buf = realloc(buf, len+1);
             memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
             buf[len] = '\0';
             printw("%s", buf);
-
             attroff(COLOR_PAIR(1));
         }
 
@@ -925,15 +939,15 @@ void main(int argc, char* argv[]) {
     //refresh();
     attron(COLOR_PAIR(1));
     wattron(topBar, COLOR_PAIR(2));
-    wattron(cmdBar, COLOR_PAIR(3));
+    wattron(cmdBar, COLOR_PAIR(1));
     while (true) {
 
         displayScreen();
         updateTopBar();
 
-        wrefresh(cmdBar);
-        wrefresh(topBar);
         refresh();
+        wrefresh(topBar);
+        wrefresh(cmdBar);
         moveCursor();
 
         ch = getch();
@@ -975,7 +989,15 @@ void main(int argc, char* argv[]) {
 
             executeMapping(visualMapping, sizeof(visualMapping), ch);
         }
+        else if (E.mode == VISUAL_LINE) {
+
+            executeMapping(visualMapping, sizeof(visualMapping), ch);
+        }
         else if (E.mode == COMMAND) {
+
+            mvwprintw(cmdBar, 0, 0, ":abc");
+            wclrtoeol(cmdBar);
+            continue;
 
             if (cmdCursor > MAX_CMD_BUFFER) {
                 wprintw(cmdBar, "Max command buffer size reached\n");
@@ -1029,8 +1051,8 @@ void main(int argc, char* argv[]) {
                     memmove(&cmdBuffer[cmdCursor+1], &cmdBuffer[cmdCursor], cmdSize-cmdCursor);
                     cmdBuffer[cmdCursor++] = ch;
                     cmdBuffer[++cmdSize] = '\0';
-                    werase(cmdBar);
                     mvwprintw(cmdBar, 0, 0, ":%s", cmdBuffer);
+                    wclrtoeol(cmdBar);
                     wmove(cmdBar, 0, cmdCursor+1);
                 }
 
