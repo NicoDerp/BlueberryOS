@@ -897,7 +897,10 @@ void pasteClipboard(void) {
 
             row_t* r = &E.rows[E.cury];
             r->chars = NULL;
+            r->rchars = NULL;
             r->len = 0;
+            r->rlen = 0;
+            renderRow(r);
         }
 
         i = end;
