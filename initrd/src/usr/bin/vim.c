@@ -819,7 +819,7 @@ void deleteCurrentLine(void) {
     snapCursor();
 }
 
-void saveSelection(void) {
+void copySelection(void) {
 
     unsigned int starty = MIN(E.cury, E.vcury);
     unsigned int endy = MAX(E.cury, E.vcury);
@@ -846,7 +846,25 @@ void saveSelection(void) {
         }
         else {
 
-            for (unsigned int y = starty; y <= endy; y++) {
+            unsigned int startx;
+            unsigned int endx;
+
+            if (E.vcury > E.cury) {
+                startx = E.vcurx;
+                endx = E.curx;
+            } else {
+                startx = E.curx;
+                endx = E.vcurx;
+            }
+
+            int startlen = E.rows[starty].len - startx;
+            E.clipboard = (char*) realloc(E.clipboard, startlen + 1);
+            memcpy(E.clipboard, E.rows[starty].chars, startlen);
+            E.clipboard[startlen] = '\n';
+            E.clipSize = startlen + 1;
+
+            /*
+            for (unsigned int y = starty+1; y <= endy-1; y++) {
 
                 E.clipboard = (char*) realloc(E.clipboard, E.clipSize + E.rows[y].len + 1);
 
@@ -854,6 +872,7 @@ void saveSelection(void) {
                 memcpy(&E.clipboard[E.clipSize + 1], E.rows[y].chars, E.rows[y].len);
                 E.clipSize += E.rows[y].len + 1;
             }
+            */
 
             E.clipboard = (char*) realloc(E.clipboard, E.clipSize + 1);
             E.clipboard[E.clipSize] = '\0';
@@ -1045,7 +1064,7 @@ mapping_t visualMapping[] = {
     {'$', gotoEndOfLine},
     {'g', gotoStartOfFile},
     {'G', gotoEndOfFile},
-    {'y', saveSelection},
+    {'y', copySelection},
     {'p', pasteClipboard},
 };
 
