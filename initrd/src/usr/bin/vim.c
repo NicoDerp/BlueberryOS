@@ -395,24 +395,27 @@ void displayScreen(void) {
             // If the selection is on a single line
             if ((i == starty - E.rowoff) && (i == endy - E.rowoff)) {
 
+                unsigned int startx = MIN(E.curx, E.vcurx);
+                unsigned int endx = MAX(E.curx, E.vcurx);
+
                 attron(COLOR_PAIR(1));
-                if (E.vcurx > 0) {
-                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.vcurx);
-                    buf[E.vcurx] = '\0';
+                if (startx > 0) {
+                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, startx);
+                    buf[startx] = '\0';
                     printw("%s", buf);
                 }
                 attroff(COLOR_PAIR(1));
 
                 attron(COLOR_PAIR(4));
-                memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.vcurx, E.curx-E.vcurx);
-                buf[E.curx-E.vcurx] = '\0';
+                memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + startx, endx - startx);
+                buf[endx - startx] = '\0';
                 printw("%s", buf);
                 attroff(COLOR_PAIR(4));
 
-                if (len + 1 > E.curx + E.vcurx) {
+                if (len + 1 > endx) {
                     attron(COLOR_PAIR(1));
-                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.curx, len-E.curx);
-                    buf[len-E.curx] = '\0';
+                    memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + endx, len-endx);
+                    buf[len-endx] = '\0';
                     printw("%s", buf);
                     attroff(COLOR_PAIR(1));
                 }
@@ -420,8 +423,8 @@ void displayScreen(void) {
             // If this row is where the cursor is
             else if (i == E.cury - E.rowoff) {
 
-                short c1 = E.cury < E.vcury ? 1 : 4;
-                short c2 = E.cury < E.vcury ? 4 : 1;
+                short c1 = E.cury <= E.vcury ? 1 : 4;
+                short c2 = E.cury <= E.vcury ? 4 : 1;
                 if (E.curx <= len) {
                     attron(COLOR_PAIR(c1));
                     memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.curx);
