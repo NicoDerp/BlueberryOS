@@ -896,7 +896,8 @@ void pasteClipboard(void) {
             E.numrows++;
 
             row_t* r = &E.rows[E.cury];
-            r->chars = NULL;
+            r->chars = malloc(1);
+            r->chars[0] = '\0';
             r->rchars = NULL;
             r->len = 0;
             r->rlen = 0;
