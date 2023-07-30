@@ -824,12 +824,43 @@ void saveSelection(void) {
     unsigned int starty = MIN(E.cury, E.vcury);
     unsigned int endy = MAX(E.cury, E.vcury);
 
+    E.clipSize = 0;
     if (E.mode == VISUAL) {
 
-    }
-    else if (E.mode == VISUAL_LINE) {
+        // If the selection is on the same line
+        if (starty == endy) {
 
-        E.clipSize = 0;
+            unsigned int startx = MIN(E.curx, E.vcurx);
+            unsigned int endx = MAX(E.curx, E.vcurx);
+
+            unsigned int len = endx - startx;
+            if (len == 0) {
+                E.mode = NORMAL;
+                return;
+            }
+
+            E.clipboard = (char*) realloc(E.clipboard, len + 1);
+            memcpy(E.clipboard, &E.rows[starty].chars[startx], len);
+            E.clipboard[len] = '\0';
+            E.clipSize = len;
+        }
+        else {
+
+            for (unsigned int y = starty; y <= endy; y++) {
+
+                E.clipboard = (char*) realloc(E.clipboard, E.clipSize + E.rows[y].len + 1);
+
+                E.clipboard[E.clipSize] = '\n';
+                memcpy(&E.clipboard[E.clipSize + 1], E.rows[y].chars, E.rows[y].len);
+                E.clipSize += E.rows[y].len + 1;
+            }
+
+            E.clipboard = (char*) realloc(E.clipboard, E.clipSize + 1);
+            E.clipboard[E.clipSize] = '\0';
+        }
+    }
+    //else if (E.mode == VISUAL_LINE) {
+    else {
 
         for (unsigned int y = starty; y <= endy; y++) {
 
@@ -877,8 +908,13 @@ void pasteClipboard(void) {
         unsigned int len = end - i;
         if (len > 0) {
             row->chars = (char*) realloc(row->chars, row->len + len);
-            memcpy(&row->chars[row->len], &E.clipboard[i], len);
+
+            if (row->len > 0)
+                memmove(&row->chars[E.curx + len], &row->chars[E.curx], row->len - E.curx);
+
+            memcpy(&row->chars[E.curx], &E.clipboard[i], len);
             row->len += len;
+            E.curx += len;
         }
 
         if (foundNewline) {
@@ -913,7 +949,37 @@ void pasteClipboard(void) {
     row->chars = (char*) realloc(row->chars, row->len + 1);
     row->chars[row->len] = '\0';
 
+    E.rcurx = curxToRCurx(E.curx);
+    E.rscurx = E.rcurx;
+    E.scurx = E.curx;
+
     renderRow(row);
+}
+
+void newLineAndInsert(void) {
+
+    // TODO auto-indent
+    E.rscurx = 0;
+    E.scurx = 0;
+    E.rcurx = 0;
+    E.curx = 0;
+    E.cury++;
+    if (E.cury - E.rowoff > maxrows)
+        E.rowoff++;
+
+    E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+    memmove(&E.rows[E.cury+1], &E.rows[E.cury], sizeof(row_t) * (E.numrows - E.cury));
+    E.numrows++;
+
+    row_t* r = &E.rows[E.cury];
+    r->chars = malloc(1);
+    r->chars[0] = '\0';
+    r->rchars = NULL;
+    r->len = 0;
+    r->rlen = 0;
+    renderRow(r);
+
+    E.mode = INSERT;
 }
 
 
@@ -961,6 +1027,7 @@ mapping_t normalMapping[] = {
     {'G', gotoEndOfFile},
     {'d', deleteCurrentLine},
     {'p', pasteClipboard},
+    {'o', newLineAndInsert},
 };
 
 mapping_t visualMapping[] = {
