@@ -62,8 +62,8 @@ int wrefresh(WINDOW* win) {
                 continue;
 
             int size = x - startx;
-            size = (win->starty + y + 1 == stdscr->height) && (win->startx + x + 1 == stdscr->width) ? size-1 : size;
-            if (size == 0) {
+            size = (win->starty + y >= stdscr->height - 1) && (win->startx + x >= stdscr->width - 1) ? size-1 : size;
+            if (size <= 0) {
                 int args[] = {color_pairs[pair].fg + 30, color_pairs[pair].bg + 46};
                 ttycmd(TTY_CHANGE_COLOR, args, NULL);
                 prevColor = pair;
@@ -83,7 +83,7 @@ int wrefresh(WINDOW* win) {
         }
 
         int size = x - startx;
-        size = (win->starty + y + 1 == stdscr->height) && (win->startx + x + 1 == stdscr->width) ? size-1 : size;
+        size = (win->starty + y >= stdscr->height - 1) && (win->startx + x >= stdscr->width - 1) ? size-1 : size;
         if (size > 0) {
 
             move(win->starty + y, win->startx + startx);

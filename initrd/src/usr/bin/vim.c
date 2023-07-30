@@ -998,13 +998,11 @@ void main(int argc, char* argv[]) {
         }
         else if (E.mode == COMMAND) {
 
-            mvwprintw(cmdBar, 0, 0, ":abc");
-            wclrtoeol(cmdBar);
-            continue;
-
             if (cmdCursor > MAX_CMD_BUFFER) {
-                wprintw(cmdBar, "Max command buffer size reached\n");
-                break;
+                mvwprintw(cmdBar, 0, 0, "Max command buffer size reached");
+                wclrtoeol(cmdBar);
+                E.mode = NORMAL;
+                continue;
             }
 
             if (ch == '\e') {
