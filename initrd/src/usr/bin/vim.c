@@ -70,6 +70,8 @@ struct {
     unsigned int cury;
     mode_t mode;
 
+    unsigned int clipSize;
+    char* clipboard;
     char* filename;
     bool saved;
 } E;
@@ -817,6 +819,99 @@ void deleteCurrentLine(void) {
     snapCursor();
 }
 
+void saveSelection(void) {
+
+    unsigned int starty = MIN(E.cury, E.vcury);
+    unsigned int endy = MAX(E.cury, E.vcury);
+
+    if (E.mode == VISUAL) {
+
+    }
+    else if (E.mode == VISUAL_LINE) {
+
+        E.clipSize = 0;
+
+        for (unsigned int y = starty; y <= endy; y++) {
+
+            E.clipboard = (char*) realloc(E.clipboard, E.clipSize + E.rows[y].len + 1);
+
+            E.clipboard[E.clipSize] = '\n';
+            memcpy(&E.clipboard[E.clipSize + 1], E.rows[y].chars, E.rows[y].len);
+            E.clipSize += E.rows[y].len + 1;
+        }
+
+        E.clipboard = (char*) realloc(E.clipboard, E.clipSize + 1);
+        E.clipboard[E.clipSize] = '\0';
+    }
+
+    E.mode = NORMAL;
+}
+
+void pasteClipboard(void) {
+
+    /*
+    move(0, 0);
+    clear();
+    printf("%s", E.clipboard);
+    for (;;) {}
+    */
+
+    if ((E.clipboard == NULL) || (E.clipSize == 0))
+        return;
+
+    char c;
+    row_t* row = NULL;
+    for (unsigned int i = 0; (c = E.clipboard[i]) && i < E.clipSize; i++) {
+
+        bool foundNewline = true;
+        unsigned int end;
+        for (end = i; E.clipboard[end] != '\n'; end++) {
+            if (end == E.clipSize) {
+                foundNewline = false;
+                break;
+            }
+        }
+
+        row = &E.rows[E.cury];
+
+        unsigned int len = end - i;
+        if (len > 0) {
+            row->chars = (char*) realloc(row->chars, row->len + len);
+            memcpy(&row->chars[row->len], &E.clipboard[i], len);
+            row->len += len;
+        }
+
+        if (foundNewline) {
+
+            row->chars = (char*) realloc(row->chars, row->len + 1);
+            row->chars[row->len] = '\0';
+            renderRow(row);
+
+            E.cury++;
+            if (E.cury - E.rowoff > maxrows)
+                E.rowoff++;
+
+            E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
+            memmove(&E.rows[E.cury+1], &E.rows[E.cury], sizeof(row_t) * (E.numrows - E.cury));
+            E.numrows++;
+
+            row_t* r = &E.rows[E.cury];
+            r->chars = NULL;
+            r->len = 0;
+        }
+
+        i = end;
+    }
+
+    if (row == NULL)
+        return;
+
+    row->chars = (char*) realloc(row->chars, row->len + 1);
+    row->chars[row->len] = '\0';
+
+    renderRow(row);
+}
+
 
 bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
 
@@ -861,6 +956,7 @@ mapping_t normalMapping[] = {
     {'g', gotoStartOfFile},
     {'G', gotoEndOfFile},
     {'d', deleteCurrentLine},
+    {'p', pasteClipboard},
 };
 
 mapping_t visualMapping[] = {
@@ -878,6 +974,8 @@ mapping_t visualMapping[] = {
     {'$', gotoEndOfLine},
     {'g', gotoStartOfFile},
     {'G', gotoEndOfFile},
+    {'y', saveSelection},
+    {'p', pasteClipboard},
 };
 
 
@@ -900,6 +998,8 @@ void main(int argc, char* argv[]) {
     E.curx = 0;
     E.cury = 0;
 
+    E.clipSize = 0;
+    E.clipboard = NULL;
     E.filename = NULL;
     E.saved = false;
 
