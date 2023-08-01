@@ -108,9 +108,6 @@ pageframe_t kalloc_frames(unsigned int count) {
 
     VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
 
-    if (loggingEnabled)
-        printf("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
-
     return frame;
 }
 
@@ -183,8 +180,13 @@ void kalloc_cache(void) {
             }
         }
 
+        uint32_t pf = index * FRAME_SIZE + framestart;
         frame_map[index >> 3] |= (1 << (index & 0x7));
-        cached_frame_map[c] = (pageframe_t) (index*FRAME_SIZE + framestart);
+        cached_frame_map[c] = (pageframe_t) pf;
+
+        uint32_t page = getPage(pf);
+        if (!(page & 1))
+            map_page(v_to_p(pf), pf, true, true);
     }
 
     framesUsed += FRAME_CACHE_SIZE;
