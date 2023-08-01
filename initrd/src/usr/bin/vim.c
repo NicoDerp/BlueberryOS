@@ -72,10 +72,18 @@ struct {
     unsigned int cury;
     mode_t mode;
 
+    unsigned int searchSize;
+    unsigned int searchx;
+    unsigned int searchy;
+
     unsigned int clipSize;
     char* clipboard;
     char* filename;
+
+    bool searchFound;
     bool saved;
+
+    char searchBuffer[MAX_SEARCH_BUFFER+1];
 } E;
 
 
@@ -123,17 +131,21 @@ extern inline unsigned int curxToRCurx(row_t* row, unsigned int curx) {
     return rcurx;
 }
 
-void searchFor(char* buf, bool final) {
+void searchFor(bool final) {
 
     char* pos;
-    for (unsigned int i = 0; i < E.numrows; i++) {
+    for (unsigned int i = E.cury; i < E.numrows; i++) {
 
         row_t* row = &E.rows[i];
-        if ((pos = strstr(row->chars, buf)) != NULL) {
+        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
             E.curx = pos - row->chars;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
             E.rscurx = E.rcurx;
+
+            E.searchFound = true;
+            E.searchx = E.curx;
+            E.searchy = i;
 
             if (E.curx > E.coloff + maxcols)
                 E.coloff = E.curx - maxcols;
@@ -153,7 +165,8 @@ void searchFor(char* buf, bool final) {
     if (!final)
         return;
 
-    mvwprintw(cmdBar, 0, 0, "Pattern not found: %s", buf);
+    E.searchFound = false;
+    mvwprintw(cmdBar, 0, 0, "Pattern not found: %s", E.searchBuffer);
     wclrtoeol(cmdBar);
 }
 
@@ -1048,6 +1061,54 @@ void newLineAndInsert(void) {
     E.mode = INSERT;
 }
 
+void searchNext(void) {
+
+    if ((E.searchSize == 0) || !E.searchFound)
+        return;
+
+    unsigned int searchy;
+    if (E.cury == E.searchy)
+        searchy = E.searchy + 1;
+    else
+        searchy = E.cury;
+
+    char* pos;
+    bool lapped = false;
+    unsigned int i = searchy;
+    while (i < E.numrows) {
+
+        row_t* row = &E.rows[i];
+        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
+            E.curx = pos - row->chars;
+            E.rcurx = curxToRCurx(row, E.curx);
+            E.scurx = E.curx;
+            E.rscurx = E.rcurx;
+
+            E.searchx = E.curx;
+            E.searchy = i;
+
+            if (E.curx > E.coloff + maxcols)
+                E.coloff = E.curx - maxcols;
+            else if (E.curx < E.coloff)
+                E.coloff = E.curx;
+
+            E.cury = i;
+            if (E.cury > E.rowoff + maxrows)
+                E.rowoff = E.cury - maxrows;
+            else if (E.cury < E.rowoff)
+                E.rowoff = E.cury;
+
+            return;
+        }
+
+        i++;
+        if ((i == E.numrows - 1) && !lapped) {
+            lapped = true;
+            i = 0;
+        }
+    }
+
+}
 
 bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
 
@@ -1094,6 +1155,7 @@ mapping_t normalMapping[] = {
     {'d', deleteCurrentLine},
     {'p', pasteClipboard},
     {'o', newLineAndInsert},
+    {'n', searchNext},
 };
 
 mapping_t visualMapping[] = {
@@ -1135,6 +1197,10 @@ void main(int argc, char* argv[]) {
     E.curx = 0;
     E.cury = 0;
 
+    E.searchFound = false;
+    E.searchx = 0;
+    E.searchy = 0;
+
     E.clipSize = 0;
     E.clipboard = NULL;
     E.filename = NULL;
@@ -1172,9 +1238,7 @@ void main(int argc, char* argv[]) {
     unsigned int cmdCursor = 0;
     unsigned int cmdSize = 0;
 
-    char searchBuffer[MAX_SEARCH_BUFFER+1];
     unsigned int searchCursor = 0;
-    unsigned int searchSize = 0;
     int ch;
 
     E.mode = NORMAL;
@@ -1228,7 +1292,7 @@ void main(int argc, char* argv[]) {
             }
             else if (ch == '/') {
                 E.mode = SEARCH;
-                searchSize = 0;
+                E.searchSize = 0;
                 searchCursor = 0;
                 mvwprintw(cmdBar, 0, 0, "/");
                 wclrtoeol(cmdBar);
@@ -1260,8 +1324,8 @@ void main(int argc, char* argv[]) {
             }
             else if (ch == '\n') {
                 E.mode = NORMAL;
-                searchBuffer[searchSize] = '\0';
-                searchFor(searchBuffer, true);
+                E.searchBuffer[E.searchSize] = '\0';
+                searchFor(true);
             }
             else if (ch == KEY_LEFT) {
                 if (searchCursor == 0)
@@ -1270,7 +1334,7 @@ void main(int argc, char* argv[]) {
                 wmove(cmdBar, 0, --searchCursor+1);
             }
             else if (ch == KEY_RIGHT) {
-                if (searchCursor == searchSize)
+                if (searchCursor == E.searchSize)
                     continue;
 
                 wmove(cmdBar, 0, ++searchCursor+1);
@@ -1280,33 +1344,33 @@ void main(int argc, char* argv[]) {
                     continue;
 
                 mvwprintw(cmdBar, 0, searchCursor, " ");
-                searchBuffer[searchCursor] = ' ';
+                E.searchBuffer[searchCursor] = ' ';
                 wmove(cmdBar, 0, searchCursor--);
-                searchSize--;
+                E.searchSize--;
             }
             else if (ch == 127) {
                 wdelch(cmdBar);
-                searchSize--;
+                E.searchSize--;
             }
             else {
 
-                if (searchCursor == searchSize) {
-                    searchBuffer[searchCursor++] = ch;
-                    searchSize++;
+                if (searchCursor == E.searchSize) {
+                    E.searchBuffer[searchCursor++] = ch;
+                    E.searchSize++;
                     wprintw(cmdBar, "%c", ch);
                     wclrtoeol(cmdBar);
                 }
                 else {
-                    memmove(&searchBuffer[searchCursor+1], &searchBuffer[searchCursor], searchSize-searchCursor);
-                    searchBuffer[searchCursor++] = ch;
-                    searchBuffer[++searchSize] = '\0';
-                    mvwprintw(cmdBar, 0, 0, "/%s", searchBuffer);
+                    memmove(&E.searchBuffer[searchCursor+1], &E.searchBuffer[searchCursor], E.searchSize-searchCursor);
+                    E.searchBuffer[searchCursor++] = ch;
+                    E.searchBuffer[++E.searchSize] = '\0';
+                    mvwprintw(cmdBar, 0, 0, "/%s", E.searchBuffer);
                     wclrtoeol(cmdBar);
                     wmove(cmdBar, 0, searchCursor+1);
                 }
 
-                searchBuffer[searchSize] = '\0';
-                searchFor(searchBuffer, false);
+                E.searchBuffer[E.searchSize] = '\0';
+                searchFor(false);
             }
         }
         else if (E.mode == COMMAND) {
