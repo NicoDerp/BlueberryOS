@@ -157,15 +157,15 @@ void searchFor(bool final) {
             E.rscurx = E.rcurx;
 
             E.searchFound = true;
-            E.searchx = E.curx;
+            E.searchx = E.curx + 1;
             E.searchy = i;
+            E.cury = i;
 
             if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
                 E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
             else if (E.rcurx < E.coloff)
                 E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
-            E.cury = i;
             if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
                 E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
@@ -1097,21 +1097,21 @@ void searchNext(void) {
     while (i < E.numrows) {
 
         row_t* row = &E.rows[i];
-        if ((pos = strstr(&row->chars[E.searchx + 1], E.searchBuffer)) != NULL) {
+        if ((pos = strstr(&row->chars[E.searchx], E.searchBuffer)) != NULL) {
             E.curx = pos - row->chars;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
             E.rscurx = E.rcurx;
 
-            E.searchx = E.curx;
+            E.searchx = E.curx + 1;
             E.searchy = i;
+            E.cury = i;
 
             if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
                 E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
             else if (E.rcurx < E.coloff)
                 E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
-            E.cury = i;
             if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
                 E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
@@ -1119,6 +1119,7 @@ void searchNext(void) {
 
             return;
         }
+        E.searchx = 0;
 
         i++;
         if ((i == E.numrows) && !lapped) {
@@ -1138,7 +1139,7 @@ void searchPrevious(void) {
         if (E.searchy == 0)
             searchy = E.numrows - 1;
         else
-            searchy = E.searchy - 1;
+            searchy = E.searchy;
     else
         searchy = E.cury;
 
@@ -1148,21 +1149,30 @@ void searchPrevious(void) {
     while (i >= 0) {
 
         row_t* row = &E.rows[i];
-        if ((pos = strstr(&row->chars[E.searchx + 1], E.searchBuffer)) != NULL) {
+        if ((pos = strrstr(&row->chars[E.searchx], E.searchBuffer)) != NULL) {
             E.curx = pos - row->chars;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
             E.rscurx = E.rcurx;
 
-            E.searchx = E.curx;
-            E.searchy = i;
+            if (E.curx == 0) {
+                if (i == 0)
+                    E.searchy = i - 1;
+                else
+                    E.searchy = E.numrows-1;
+                E.searchx = E.rows[i].len;
+            }
+            else {
+                E.searchx = E.curx - 1;
+                E.searchy = i;
+            }
+            E.cury = i;
 
             if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
                 E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
             else if (E.rcurx < E.coloff)
                 E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
-            E.cury = i;
             if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
                 E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
@@ -1170,6 +1180,7 @@ void searchPrevious(void) {
 
             return;
         }
+        E.searchx = row->len;
 
         if ((i == 0) && !lapped) {
             lapped = true;
