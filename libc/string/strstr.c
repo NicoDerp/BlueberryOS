@@ -11,9 +11,6 @@ char* strstr(const char* str, const char* sub) {
     unsigned int j = 0;
     while ((str[i] != '\0') && (sub[j] != '\0')) {
 
-        if (j == sublen-1)
-            return &str[start];
-
         if (str[i] == sub[j]) {
             if (!set) {
                 set = 1;
@@ -25,6 +22,9 @@ char* strstr(const char* str, const char* sub) {
             set = 0;
         }
         i++;
+
+        if (j == sublen)
+            return &str[start];
     }
 
     return NULL;

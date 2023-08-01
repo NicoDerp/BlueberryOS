@@ -123,12 +123,38 @@ extern inline unsigned int curxToRCurx(unsigned int curx) {
     return rcurx;
 }
 
-void searchFor(char* buf, unsigned int size) {
+void searchFor(char* buf, bool final) {
 
+    char* pos;
     for (unsigned int i = 0; i < E.numrows; i++) {
 
         row_t* row = &E.rows[i];
+        if ((pos = strstr(row->chars, buf)) != NULL) {
+            E.curx = pos - row->chars;
+            E.rcurx = curxToRCurx(E.curx);
+            E.scurx = E.curx;
+            E.rscurx = E.rcurx;
+
+            if (E.curx > E.coloff + maxcols)
+                E.coloff = E.curx - maxcols;
+            else if (E.curx < E.coloff)
+                E.coloff = E.curx;
+
+            E.cury = i;
+            if (E.cury > E.rowoff + maxrows)
+                E.rowoff = E.cury - maxrows;
+            else if (E.cury < E.rowoff)
+                E.rowoff = E.cury;
+
+            return;
+        }
     }
+
+    if (!final)
+        return;
+
+    mvwprintw(cmdBar, 0, 0, "Pattern not found: %s", buf);
+    wclrtoeol(cmdBar);
 }
 
 void renderRow(row_t* row) {
@@ -1183,6 +1209,7 @@ void main(int argc, char* argv[]) {
 
             if (ch == ':') {
                 E.mode = COMMAND;
+                cmdSize = 0;
                 cmdCursor = 0;
                 mvwprintw(cmdBar, 0, 0, ":");
                 wclrtoeol(cmdBar);
@@ -1202,7 +1229,8 @@ void main(int argc, char* argv[]) {
             }
             else if (ch == '/') {
                 E.mode = SEARCH;
-                cmdCursor = 0;
+                searchSize = 0;
+                searchCursor = 0;
                 mvwprintw(cmdBar, 0, 0, "/");
                 wclrtoeol(cmdBar);
             }
@@ -1234,8 +1262,7 @@ void main(int argc, char* argv[]) {
             else if (ch == '\n') {
                 E.mode = NORMAL;
                 searchBuffer[searchSize] = '\0';
-                parseCommand(searchBuffer);
-                searchSize = 0;
+                searchFor(searchBuffer, true);
             }
             else if (ch == KEY_LEFT) {
                 if (searchCursor == 0)
@@ -1280,7 +1307,7 @@ void main(int argc, char* argv[]) {
                 }
 
                 searchBuffer[searchSize] = '\0';
-                searchFor(searchBuffer, searchSize);
+                searchFor(searchBuffer, false);
             }
         }
         else if (E.mode == COMMAND) {
@@ -1300,7 +1327,6 @@ void main(int argc, char* argv[]) {
                 E.mode = NORMAL;
                 cmdBuffer[cmdSize] = '\0';
                 parseCommand(cmdBuffer);
-                cmdSize = 0;
             }
             else if (ch == KEY_LEFT) {
                 if (cmdCursor == 0)
