@@ -746,6 +746,9 @@ void splitCurrentRow(void) {
     renderRow(frow);
     renderRow(trow);
 
+    if (E.cury - E.rowoff > maxrows)
+        E.rowoff++;
+
     E.numrows++;
     E.cury++;
     E.rscurx = 0;
