@@ -11,11 +11,21 @@
 
 
 
+/* What you wan't tabs to render as (default is 4 spaces) */
+#define TAB_RENDER        "    "
 
-#define TAB_RENDER     "    "
-#define TAB_AS_SPACE   0
-#define TOP_MARGIN     2
-#define SEARCH_MARGIN  4
+/* 0 then tabs are tabs, 1 for tabs are spaces (bit buggy) */
+#define TAB_AS_SPACE      0
+
+/* Lines of margin top and bottom normally */
+#define TOP_MARGIN        2
+
+/* Characters of margin left and right when searching */
+#define SEARCH_MARGIN_S   8
+
+/* Lines of margin top and bottom when searching */
+#define SEARCH_MARGIN_TB  4
+
 
 
 
@@ -150,16 +160,16 @@ void searchFor(bool final) {
             E.searchx = E.curx;
             E.searchy = i;
 
-            if (E.curx > E.coloff + maxcols)
-                E.coloff = E.curx - maxcols;
-            else if (E.curx < E.coloff)
-                E.coloff = E.curx;
+            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            else if (E.rcurx < E.coloff)
+                E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
             E.cury = i;
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN + 1;
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
-                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN, 0);
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
             return;
         }
@@ -1077,7 +1087,7 @@ void searchNext(void) {
 
     unsigned int searchy;
     if (E.cury == E.searchy)
-        searchy = E.searchy + 1;
+        searchy = E.searchy;
     else
         searchy = E.cury;
 
@@ -1087,7 +1097,7 @@ void searchNext(void) {
     while (i < E.numrows) {
 
         row_t* row = &E.rows[i];
-        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
+        if ((pos = strstr(&row->chars[E.searchx + 1], E.searchBuffer)) != NULL) {
             E.curx = pos - row->chars;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
@@ -1096,16 +1106,16 @@ void searchNext(void) {
             E.searchx = E.curx;
             E.searchy = i;
 
-            if (E.curx > E.coloff + maxcols)
-                E.coloff = E.curx - maxcols;
-            else if (E.curx < E.coloff)
-                E.coloff = E.curx;
+            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            else if (E.rcurx < E.coloff)
+                E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
             E.cury = i;
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN + 1;
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
-                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN, 0);
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
             return;
         }
@@ -1138,7 +1148,7 @@ void searchPrevious(void) {
     while (i >= 0) {
 
         row_t* row = &E.rows[i];
-        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
+        if ((pos = strstr(&row->chars[E.searchx + 1], E.searchBuffer)) != NULL) {
             E.curx = pos - row->chars;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
@@ -1147,16 +1157,16 @@ void searchPrevious(void) {
             E.searchx = E.curx;
             E.searchy = i;
 
-            if (E.curx > E.coloff + maxcols)
-                E.coloff = E.curx - maxcols;
-            else if (E.curx < E.coloff)
-                E.coloff = E.curx;
+            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            else if (E.rcurx < E.coloff)
+                E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
             E.cury = i;
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN + 1;
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
-                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN, 0);
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
             return;
         }
