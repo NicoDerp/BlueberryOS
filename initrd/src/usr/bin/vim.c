@@ -853,30 +853,32 @@ void copySelection(void) {
             unsigned int endx;
 
             if (E.vcury > E.cury) {
-                startx = E.vcurx;
-                endx = E.curx;
-            } else {
                 startx = E.curx;
                 endx = E.vcurx;
+            } else {
+                startx = E.vcurx;
+                endx = E.curx;
             }
 
             int startlen = E.rows[starty].len - startx;
-            E.clipboard = (char*) realloc(E.clipboard, startlen + 1);
-            memcpy(E.clipboard, E.rows[starty].chars, startlen);
+            E.clipboard = (char*) malloc(startlen + 1);
+            memcpy(E.clipboard, &E.rows[starty].chars[startx], startlen);
             E.clipboard[startlen] = '\n';
             E.clipSize = startlen + 1;
 
             for (unsigned int y = starty+1; y <= endy-1; y++) {
 
                 E.clipboard = (char*) realloc(E.clipboard, E.clipSize + E.rows[y].len + 1);
-
                 memcpy(&E.clipboard[E.clipSize], E.rows[y].chars, E.rows[y].len);
                 E.clipboard[E.clipSize + E.rows[y].len] = '\n';
                 E.clipSize += E.rows[y].len + 1;
             }
 
-            E.clipboard = (char*) realloc(E.clipboard, E.clipSize + 1);
-            E.clipboard[E.clipSize] = '\0';
+            E.clipboard = (char*) realloc(E.clipboard, E.clipSize + endx + 2);
+            memcpy(&E.clipboard[E.clipSize], E.rows[endy].chars, endx);
+            E.clipboard[E.clipSize + endx] = '\n';
+            E.clipboard[E.clipSize + endx + 1] = '\0';
+            E.clipSize += endx + 2;
         }
     }
     //else if (E.mode == VISUAL_LINE) {
