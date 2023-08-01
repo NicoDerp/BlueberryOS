@@ -929,11 +929,6 @@ void pasteClipboard(void) {
         if (len > 0) {
             row->chars = (char*) realloc(row->chars, row->len + len);
 
-            clear();
-            move(0,0);
-            printf("hei");
-            for(;;){}
-
             if (row->len > 0)
                 memmove(&row->chars[E.curx + len], &row->chars[E.curx], row->len - E.curx);
 
@@ -943,6 +938,8 @@ void pasteClipboard(void) {
         }
 
         if (foundNewline) {
+
+            E.curx = 0;
 
             row->chars = (char*) realloc(row->chars, row->len + 1);
             row->chars[row->len] = '\0';
