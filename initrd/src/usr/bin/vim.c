@@ -821,6 +821,9 @@ void deleteCurrentLine(void) {
 
 void copySelection(void) {
 
+    free(E.clipboard);
+    E.clipboard = NULL;
+
     unsigned int starty = MIN(E.cury, E.vcury);
     unsigned int endy = MAX(E.cury, E.vcury);
 
@@ -863,16 +866,14 @@ void copySelection(void) {
             E.clipboard[startlen] = '\n';
             E.clipSize = startlen + 1;
 
-            /*
             for (unsigned int y = starty+1; y <= endy-1; y++) {
 
                 E.clipboard = (char*) realloc(E.clipboard, E.clipSize + E.rows[y].len + 1);
 
-                E.clipboard[E.clipSize] = '\n';
-                memcpy(&E.clipboard[E.clipSize + 1], E.rows[y].chars, E.rows[y].len);
+                memcpy(&E.clipboard[E.clipSize], E.rows[y].chars, E.rows[y].len);
+                E.clipboard[E.clipSize + E.rows[y].len] = '\n';
                 E.clipSize += E.rows[y].len + 1;
             }
-            */
 
             E.clipboard = (char*) realloc(E.clipboard, E.clipSize + 1);
             E.clipboard[E.clipSize] = '\0';
@@ -902,7 +903,7 @@ void pasteClipboard(void) {
     /*
     move(0, 0);
     clear();
-    printf("%s", E.clipboard);
+    printf("%d\n'%s'", E.clipSize, E.clipboard);
     for (;;) {}
     */
 
@@ -927,6 +928,11 @@ void pasteClipboard(void) {
         unsigned int len = end - i;
         if (len > 0) {
             row->chars = (char*) realloc(row->chars, row->len + len);
+
+            clear();
+            move(0,0);
+            printf("hei");
+            for(;;){}
 
             if (row->len > 0)
                 memmove(&row->chars[E.curx + len], &row->chars[E.curx], row->len - E.curx);
@@ -971,6 +977,9 @@ void pasteClipboard(void) {
     E.rcurx = curxToRCurx(E.curx);
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
+
+    if (E.rcurx > maxcols)
+        E.coloff = E.rcurx - maxcols + maxcols/2;
 
     renderRow(row);
 }

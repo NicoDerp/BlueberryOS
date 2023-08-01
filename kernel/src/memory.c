@@ -1,6 +1,7 @@
 
 #include <kernel/logging.h>
 #include <kernel/memory.h>
+#include <kernel/paging.h>
 #include <kernel/errors.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -95,12 +96,20 @@ pageframe_t kalloc_frames(unsigned int count) {
 
     for (size_t i = startindex; i < startindex + count; i++) {
         frame_map[i >> 3] |= (1 << (i & 0x7));
+
+        uint32_t pf = i * FRAME_SIZE + framestart;
+        uint32_t page = getPage(pf);
+        if (!(page & 1))
+            map_page(v_to_p(pf), pf, true, true);
     }
 
     pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + framestart);
     framesUsed += count;
 
     VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
+
+    if (loggingEnabled)
+        printf("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
 
     return frame;
 }

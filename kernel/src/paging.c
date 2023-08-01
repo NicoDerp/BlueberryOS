@@ -81,6 +81,20 @@ uint32_t getPageLocation(uint32_t entry) {
     return (uint32_t) p_to_v(entry & 0xFFFFF000);
 }
 
+uint32_t getPage(uint32_t virtualAddr) {
+
+    uint32_t virtualPTI = virtualAddr / FRAME_4MB;
+    uint32_t virtualPI = (virtualAddr / FRAME_4KB) & 0x03FF;
+
+    // Check if page-table is present
+    if (!(page_directory[virtualPTI] & 1)) {
+        return 0;
+    }
+
+    pagetable_t pagetable = (pagetable_t) p_to_v(page_directory[virtualPTI] & 0xFFFFF000);
+    return pagetable[virtualPI];
+}
+
 void map_pagetable(size_t physicalIndex, size_t virtualIndex, bool writable, bool kernel) {
 
     map_pagetable_pd(page_directory, physicalIndex, virtualIndex, writable, kernel);
