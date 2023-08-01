@@ -107,11 +107,11 @@ extern inline void snapCursor(void) {
 #endif
 }
 
-extern inline unsigned int curxToRCurx(unsigned int curx) {
+extern inline unsigned int curxToRCurx(row_t* row, unsigned int curx) {
 
     unsigned int rcurx = 0;
     for (unsigned int i = 0; i < curx; i++) {
-        char c = currentRow()->chars[i];
+        char c = row->chars[i];
         if (c == '\t')
             rcurx += TAB_SIZE - (rcurx % TAB_SIZE);
         else if (c == '\e')
@@ -131,7 +131,7 @@ void searchFor(char* buf, bool final) {
         row_t* row = &E.rows[i];
         if ((pos = strstr(row->chars, buf)) != NULL) {
             E.curx = pos - row->chars;
-            E.rcurx = curxToRCurx(E.curx);
+            E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
             E.rscurx = E.rcurx;
 
@@ -598,12 +598,7 @@ void leftArrow(void) {
 #if TAB_AS_SPACE
         E.rcurx--;
 #else
-        if (currentRow()->chars[E.curx] == '\t')
-            E.rcurx = curxToRCurx(E.curx);
-        else if (currentRow()->chars[E.curx] == '\e')
-            E.rcurx -= 2;
-        else
-            E.rcurx--;
+        E.rcurx = curxToRCurx(currentRow(), E.curx);
 #endif
 
     }
@@ -834,12 +829,16 @@ void deleteCurrentChar(void) {
     if (E.coloff > 0)
         scrollLeft();
 
+    /*
     if (row->chars[E.curx] == '\t')
         E.rcurx = curxToRCurx(E.curx);
     else if (row->chars[E.curx] == '\e')
         E.rcurx -= 2;
     else
         E.rcurx--;
+    */
+
+    E.rcurx = curxToRCurx(currentRow(), E.curx);
 
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
@@ -1013,7 +1012,7 @@ void pasteClipboard(void) {
     row->chars = (char*) realloc(row->chars, row->len + 1);
     row->chars[row->len] = '\0';
 
-    E.rcurx = curxToRCurx(E.curx);
+    E.rcurx = curxToRCurx(row, E.curx);
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
 
