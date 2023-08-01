@@ -42,7 +42,7 @@ I want BlueberryOS to be simple, small and efficient.
 - [x] Shell
 - [x] Memory allocator
 - [x] Ncurses
-- [ ] Text editor
+- [x] Text editor
 - [ ] Dynamic libraries
 - [ ] Graphics manager
 - [ ] Kernel modules

@@ -20,6 +20,7 @@
 
 #define TAB_SIZE   (sizeof(TAB_RENDER)-1)
 #define MAX_CMD_BUFFER 32
+#define MAX_SEARCH_BUFFER 64
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -29,7 +30,8 @@ typedef enum {
     COMMAND,
     INSERT,
     VISUAL,
-    VISUAL_LINE
+    VISUAL_LINE,
+    SEARCH
 } mode_t;
 
 WINDOW* topBar;
@@ -119,6 +121,14 @@ extern inline unsigned int curxToRCurx(unsigned int curx) {
     }
 
     return rcurx;
+}
+
+void searchFor(char* buf, unsigned int size) {
+
+    for (unsigned int i = 0; i < E.numrows; i++) {
+
+        row_t* row = &E.rows[i];
+    }
 }
 
 void renderRow(row_t* row) {
@@ -235,6 +245,7 @@ char* stateToString(mode_t st) {
     else if (st == INSERT)       return "-- INSERT --";
     else if (st == VISUAL)       return "-- VISUAL --";
     else if (st == VISUAL_LINE)  return "-- V-LINE --";
+    else if (st == SEARCH)       return "-- SEARCH --";
     else                         return "-- UNKNOWN --";
 }
 
@@ -1132,6 +1143,10 @@ void main(int argc, char* argv[]) {
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
     unsigned int cmdSize = 0;
+
+    char searchBuffer[MAX_SEARCH_BUFFER+1];
+    unsigned int searchCursor = 0;
+    unsigned int searchSize = 0;
     int ch;
 
     E.mode = NORMAL;
@@ -1182,6 +1197,12 @@ void main(int argc, char* argv[]) {
                 E.mode = VISUAL_LINE;
                 E.vcury = E.cury;
             }
+            else if (ch == '/') {
+                E.mode = SEARCH;
+                cmdCursor = 0;
+                mvwprintw(cmdBar, 0, 0, "/");
+                wclrtoeol(cmdBar);
+            }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
             }
@@ -1193,6 +1214,71 @@ void main(int argc, char* argv[]) {
         else if (E.mode == VISUAL_LINE) {
 
             executeMapping(visualMapping, sizeof(visualMapping), ch);
+        }
+        else if (E.mode == SEARCH) {
+
+            if (searchCursor > MAX_SEARCH_BUFFER) {
+                mvwprintw(cmdBar, 0, 0, "Max command buffer size reached");
+                wclrtoeol(cmdBar);
+                E.mode = NORMAL;
+                continue;
+            }
+
+            if (ch == '\e') {
+                E.mode = NORMAL;
+                werase(cmdBar);
+            }
+            else if (ch == '\n') {
+                E.mode = NORMAL;
+                searchBuffer[searchSize] = '\0';
+                parseCommand(searchBuffer);
+                searchSize = 0;
+            }
+            else if (ch == KEY_LEFT) {
+                if (searchCursor == 0)
+                    continue;
+
+                wmove(cmdBar, 0, --searchCursor+1);
+            }
+            else if (ch == KEY_RIGHT) {
+                if (searchCursor == searchSize)
+                    continue;
+
+                wmove(cmdBar, 0, ++searchCursor+1);
+            }
+            else if (ch == '\b' || ch == KEY_BACKSPACE) {
+                if (searchCursor == 0)
+                    continue;
+
+                mvwprintw(cmdBar, 0, searchCursor, " ");
+                searchBuffer[searchCursor] = ' ';
+                wmove(cmdBar, 0, searchCursor--);
+                searchSize--;
+            }
+            else if (ch == 127) {
+                wdelch(cmdBar);
+                searchSize--;
+            }
+            else {
+
+                if (searchCursor == searchSize) {
+                    searchBuffer[searchCursor++] = ch;
+                    searchSize++;
+                    wprintw(cmdBar, "%c", ch);
+                    wclrtoeol(cmdBar);
+                }
+                else {
+                    memmove(&searchBuffer[searchCursor+1], &searchBuffer[searchCursor], searchSize-searchCursor);
+                    searchBuffer[searchCursor++] = ch;
+                    searchBuffer[++searchSize] = '\0';
+                    mvwprintw(cmdBar, 0, 0, "/%s", searchBuffer);
+                    wclrtoeol(cmdBar);
+                    wmove(cmdBar, 0, searchCursor+1);
+                }
+
+                searchBuffer[searchSize] = '\0';
+                searchFor(searchBuffer, searchSize);
+            }
         }
         else if (E.mode == COMMAND) {
 
