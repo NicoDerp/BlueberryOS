@@ -12,9 +12,10 @@
 
 
 
-#define TAB_RENDER   "    "
-#define TAB_AS_SPACE 0
-#define TOP_MARGIN   3
+#define TAB_RENDER     "    "
+#define TAB_AS_SPACE   0
+#define TOP_MARGIN     2
+#define SEARCH_MARGIN  4
 
 
 
@@ -134,7 +135,9 @@ extern inline unsigned int curxToRCurx(row_t* row, unsigned int curx) {
 void searchFor(bool final) {
 
     char* pos;
-    for (unsigned int i = E.cury; i < E.numrows; i++) {
+    bool lapped = false;
+    unsigned int i = E.cury;
+    while (i < E.numrows) {
 
         row_t* row = &E.rows[i];
         if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
@@ -153,12 +156,18 @@ void searchFor(bool final) {
                 E.coloff = E.curx;
 
             E.cury = i;
-            if (E.cury > E.rowoff + maxrows)
-                E.rowoff = E.cury - maxrows;
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN + 1;
             else if (E.cury < E.rowoff)
-                E.rowoff = E.cury;
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN, 0);
 
             return;
+        }
+
+        i++;
+        if ((i == E.numrows) && !lapped) {
+            lapped = true;
+            i = 0;
         }
     }
 
@@ -1093,21 +1102,71 @@ void searchNext(void) {
                 E.coloff = E.curx;
 
             E.cury = i;
-            if (E.cury > E.rowoff + maxrows)
-                E.rowoff = E.cury - maxrows;
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN + 1;
             else if (E.cury < E.rowoff)
-                E.rowoff = E.cury;
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN, 0);
 
             return;
         }
 
         i++;
-        if ((i == E.numrows - 1) && !lapped) {
+        if ((i == E.numrows) && !lapped) {
             lapped = true;
             i = 0;
         }
     }
+}
 
+void searchPrevious(void) {
+
+    if ((E.searchSize == 0) || !E.searchFound)
+        return;
+
+    unsigned int searchy;
+    if (E.cury == E.searchy)
+        if (E.searchy == 0)
+            searchy = E.numrows - 1;
+        else
+            searchy = E.searchy - 1;
+    else
+        searchy = E.cury;
+
+    char* pos;
+    bool lapped = false;
+    int i = searchy;
+    while (i >= 0) {
+
+        row_t* row = &E.rows[i];
+        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
+            E.curx = pos - row->chars;
+            E.rcurx = curxToRCurx(row, E.curx);
+            E.scurx = E.curx;
+            E.rscurx = E.rcurx;
+
+            E.searchx = E.curx;
+            E.searchy = i;
+
+            if (E.curx > E.coloff + maxcols)
+                E.coloff = E.curx - maxcols;
+            else if (E.curx < E.coloff)
+                E.coloff = E.curx;
+
+            E.cury = i;
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN + 1;
+            else if (E.cury < E.rowoff)
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN, 0);
+
+            return;
+        }
+
+        if ((i == 0) && !lapped) {
+            lapped = true;
+            i = E.numrows;
+        }
+        i--;
+    }
 }
 
 bool executeMapping(mapping_t* mapping, unsigned int size, int c) {
@@ -1156,6 +1215,7 @@ mapping_t normalMapping[] = {
     {'p', pasteClipboard},
     {'o', newLineAndInsert},
     {'n', searchNext},
+    {'m', searchPrevious},
 };
 
 mapping_t visualMapping[] = {
