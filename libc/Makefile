@@ -63,6 +63,7 @@ FREEOBJS =\
 	string/strncpy.o \
 	string/strtok.o \
 	string/strchr.o \
+	string/strstr.o \
 	string/strerror.o \
 	unistd/syscall.o \
 	unistd/syscall_asm.o \
