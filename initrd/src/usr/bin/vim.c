@@ -239,9 +239,11 @@ void renderRow(row_t* row) {
 
     row->rlen = 0;
     row->rchars = NULL;
+    row->colors = NULL;
 
     for (unsigned int i = 0; i < row->len; i++) {
         char c = row->chars[i];
+        char nc = row->chars[i + 1];
 
         unsigned int size;
         if (c == '\t') {
@@ -264,7 +266,7 @@ void renderRow(row_t* row) {
         }
 
         unsigned char color;
-        if (isdigit(c))
+        if (isdigit(c) || (c == '-' && isdigit(nc)))
             color = SPAIR_NUMBER;
         else
             color = SPAIR_DEFAULT;
@@ -273,6 +275,7 @@ void renderRow(row_t* row) {
         memset(&row->colors[row->rlen], color, size);
         row->rlen += size;
     }
+
     row->rchars = realloc(row->rchars, row->rlen + 1);
     row->rchars[row->rlen] = '\0';
 }
