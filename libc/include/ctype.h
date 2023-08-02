@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 int isdigit(int);
+int isspace(int);
 
 #ifdef __cplusplus
 }

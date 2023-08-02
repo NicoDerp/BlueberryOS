@@ -94,6 +94,7 @@ FREEOBJS =\
 	errno/__errno_location.o \
 	shadow/getspnam_r.o \
 	ctype/isdigit.o \
+	ctype/isspace.o \
 
 HOSTEDOBJS =
 

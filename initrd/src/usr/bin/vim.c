@@ -47,14 +47,16 @@
 #define SPAIR_MATCH       4
 
 /* Colors that syntax highlight uses (BlueberryOS specific ncurses colors) */
-#define SCOLOR_NUMBER    COLOR_LIGHT_RED
+#define SCOLOR_NUMBER    COLOR_LIGHT_BROWN
 #define SCOLOR_STRING    COLOR_LIGHT_GREEN
 #define SCOLOR_COMMENT   COLOR_DARK_GRAY
+#define SCOLOR_SEPERATOR COLOR_LIGHT_RED
 
 /* Syntax highlighting color pairs */
 #define SPAIR_NUMBER      6
 #define SPAIR_STRING      8
 #define SPAIR_COMMENT     10
+#define SPAIR_SEPERATOR   12
 
 
 
@@ -198,6 +200,10 @@ extern inline unsigned int rcurxToCurx(row_t* row, unsigned int curx, unsigned i
 }
 */
 
+inline bool is_seperator(int c) {
+    return isspace(c) || (strchr(",.()+-/*=~%<>[];", c) != NULL);
+}
+
 void updateSyntax(row_t* row) {
 
 #if SYNTAX_HIGHLIGHT
@@ -206,11 +212,14 @@ void updateSyntax(row_t* row) {
 
     bool string = false;
     bool comment = false;
-    unsigned char color;
+    bool psep = true;
+    unsigned char pcolor = 0;
+    unsigned char color = 0;
     unsigned int i = 0;
     while (i < row->rlen) {
         char c = row->rchars[i];
 
+        pcolor = color;
         if (c == '"')
             string = !string;
         else if (c == '/' && row->rchars[i + 1] == '/') {
@@ -218,8 +227,11 @@ void updateSyntax(row_t* row) {
             i++;
         }
 
-        if (isdigit(c) || (c == '-' && isdigit(row->rchars[i + 1])))
+        bool sep = is_seperator(c);
+        if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
             color = SPAIR_NUMBER;
+        else if (sep)
+            color = SPAIR_SEPERATOR;
         else if (comment)
             color = SPAIR_COMMENT;
         else if (string || c == '"')
@@ -227,6 +239,7 @@ void updateSyntax(row_t* row) {
         else
             color = SPAIR_DEFAULT;
 
+        psep = sep;
         row->colors[i] = color;
         i++;
     }
@@ -1497,6 +1510,9 @@ void main(int argc, char* argv[]) {
 
     init_pair(SPAIR_COMMENT,   SCOLOR_COMMENT, COLOR_BLACK);
     init_pair(SPAIR_COMMENT+1, SCOLOR_COMMENT, SCOLOR_VISUAL);
+
+    init_pair(SPAIR_SEPERATOR,   SCOLOR_SEPERATOR, COLOR_BLACK);
+    init_pair(SPAIR_SEPERATOR+1, SCOLOR_SEPERATOR, SCOLOR_VISUAL);
 #endif
 
     maxcols = getmaxx(stdscr);
