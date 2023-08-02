@@ -126,6 +126,7 @@ struct {
     char* filename;
 
     bool searchFound;
+    bool searchPrev;
     bool saved;
 
     char searchBuffer[MAX_SEARCH_BUFFER+1];
@@ -269,6 +270,8 @@ void renderRow(row_t* row) {
 }
 
 void searchFor(bool final) {
+
+    E.searchPrev = false;
 
     updateSyntax(&E.rows[E.searchy]);
 
@@ -1248,6 +1251,16 @@ void searchNext(void) {
     char* pos;
     bool lapped = false;
     unsigned int i = searchy;
+
+    if (E.searchPrev) {
+        E.searchPrev = false;
+        pos = strstr(&E.rows[i].chars[E.searchx], E.searchBuffer);
+        if (pos == NULL)
+            i++;
+        else
+            E.searchx = pos - E.rows[i].chars + 1;
+    }
+
     while (i < E.numrows) {
 
         row_t* row = &E.rows[i];
@@ -1289,6 +1302,8 @@ void searchPrevious(void) {
 
     if ((E.searchSize == 0) || !E.searchFound)
         return;
+
+    E.searchPrev = true;
 
     unsigned int searchy;
     if (E.cury == E.searchy)
@@ -1439,6 +1454,8 @@ void main(int argc, char* argv[]) {
     E.rowoff = 0;
     E.coloff = 0;
 
+    E.mode = NORMAL;
+
     E.rscurx = 0;
     E.rcurx = 0;
     E.scurx = 0;
@@ -1446,6 +1463,7 @@ void main(int argc, char* argv[]) {
     E.cury = 0;
 
     E.searchFound = false;
+    E.searchPrev = false;
     E.searchx = 0;
     E.searchy = 0;
 
@@ -1499,8 +1517,6 @@ void main(int argc, char* argv[]) {
 
     unsigned int searchCursor = 0;
     int ch;
-
-    E.mode = NORMAL;
 
     //clear();
     //refresh();
