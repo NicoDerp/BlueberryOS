@@ -262,7 +262,6 @@ void updateSyntax(row_t* row) {
             while (!(sep = is_seperator((c = row->rchars[i])))) {
                 row->colors[i++] = SPAIR_SPECIAL;
             }
-            i++;
         }
         else
             i++;
