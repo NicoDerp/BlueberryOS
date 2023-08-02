@@ -28,17 +28,21 @@
 #define SEARCH_MARGIN_TB  4
 
 /* 1 for syntax highlighting */
-#define SYNTAX_HIGHLIGHT  1
+#define SYNTAX_HIGHLIGHT  0
+
+/* Default text color with and without syntax highlighting (ncurses defined) */
+#define SCOLOR_DEFAULT   COLOR_WHITE
 
 /* Colors that syntax highlight uses (ncurses defined) */
-#define SCOLOR_DEFAULT   COLOR_WHITE
 #define SCOLOR_NUMBER    COLOR_RED
 #define SCOLOR_STRING    COLOR_GREEN
 
 /* Color pairs for ncurses */
-#define PAIR_DEFAULT     4
-#define PAIR_NUMBER      6
-#define PAIR_STRING      8
+#define PAIR_TOPBAR      1
+#define PAIR_CMDBAR      2
+#define PAIR_DEFAULT     3
+#define PAIR_NUMBER      5
+#define PAIR_STRING      7
 
 
 
@@ -497,7 +501,6 @@ void displayScreen(void) {
     unsigned int starty = MIN(E.cury, E.vcury);
     unsigned int endy = MAX(E.cury, E.vcury);
 
-    char* buf = NULL;
     size_t i;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
@@ -511,7 +514,10 @@ void displayScreen(void) {
         len -= E.coloff;
         len = len > maxcols ? maxcols : len;
 
-        buf = realloc(buf, len+1);
+#if SYNTAX_HIGHLIGHT
+        //for ()
+#else
+        char* buf = malloc(len+1);
         if ((E.mode == VISUAL) && (starty - E.rowoff <= i) && (i <= endy - E.rowoff)) {
 
             // If the selection is on a single line
@@ -520,33 +526,33 @@ void displayScreen(void) {
                 unsigned int startx = MIN(E.curx, E.vcurx);
                 unsigned int endx = MAX(E.curx, E.vcurx);
 
-                attron(COLOR_PAIR(1));
+                attron(COLOR_PAIR(PAIR_DEFAULT));
                 if (startx > 0) {
                     memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, startx);
                     buf[startx] = '\0';
                     printw("%s", buf);
                 }
-                attroff(COLOR_PAIR(1));
+                attroff(COLOR_PAIR(PAIR_DEFAULT));
 
-                attron(COLOR_PAIR(4));
+                attron(COLOR_PAIR(PAIR_DEFAULT+1));
                 memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + startx, endx - startx);
                 buf[endx - startx] = '\0';
                 printw("%s", buf);
-                attroff(COLOR_PAIR(4));
+                attroff(COLOR_PAIR(PAIR_DEFAULT+1));
 
                 if (len + 1 > endx) {
-                    attron(COLOR_PAIR(1));
+                    attron(COLOR_PAIR(PAIR_DEFAULT));
                     memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + endx, len-endx);
                     buf[len-endx] = '\0';
                     printw("%s", buf);
-                    attroff(COLOR_PAIR(1));
+                    attroff(COLOR_PAIR(PAIR_DEFAULT));
                 }
             }
             // If this row is where the cursor is
             else if (i == E.cury - E.rowoff) {
 
-                short c1 = E.cury <= E.vcury ? 1 : 4;
-                short c2 = E.cury <= E.vcury ? 4 : 1;
+                short c1 = E.cury <= E.vcury ? PAIR_DEFAULT   : PAIR_DEFAULT+1;
+                short c2 = E.cury <= E.vcury ? PAIR_DEFAULT+1 : PAIR_DEFAULT;
                 if (E.curx <= len) {
                     attron(COLOR_PAIR(c1));
                     memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.curx);
@@ -563,52 +569,54 @@ void displayScreen(void) {
             }
             // If this is the row where selection starts
             else if (i == starty - E.rowoff) {
-                attron(COLOR_PAIR(1));
+                attron(COLOR_PAIR(PAIR_DEFAULT));
                 if (E.vcurx > 0) {
                     memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, E.vcurx);
                     buf[E.vcurx] = '\0';
                     printw("%s", buf);
                 }
-                attroff(COLOR_PAIR(1));
+                attroff(COLOR_PAIR(PAIR_DEFAULT));
 
-                attron(COLOR_PAIR(4));
+                attron(COLOR_PAIR(PAIR_DEFAULT+1));
                 memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff + E.vcurx, len-E.vcurx);
                 buf[len-E.vcurx] = '\0';
                 printw("%s", buf);
-                attroff(COLOR_PAIR(4));
+                attroff(COLOR_PAIR(PAIR_DEFAULT+1));
             }
             // If this row is in the middle of the selection
             else {
-                attron(COLOR_PAIR(4));
+                attron(COLOR_PAIR(PAIR_DEFAULT+1));
                 memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
                 buf[len] = '\0';
                 printw("%s", buf);
 
-                attroff(COLOR_PAIR(4));
+                attroff(COLOR_PAIR(PAIR_DEFAULT+1));
             }
         }
         else if ((E.mode == VISUAL_LINE) && (starty - E.rowoff <= i) && (i <= endy - E.rowoff)) {
 
-            attron(COLOR_PAIR(4));
+            attron(COLOR_PAIR(PAIR_DEFAULT+1));
             memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
             buf[len] = '\0';
             printw("%s", buf);
 
-            attroff(COLOR_PAIR(4));
+            attroff(COLOR_PAIR(PAIR_DEFAULT+1));
         }
         else {
 
-            attron(COLOR_PAIR(1));
+            attron(COLOR_PAIR(PAIR_DEFAULT));
             memcpy(buf, E.rows[i + E.rowoff].rchars + E.coloff, len);
             buf[len] = '\0';
             printw("%s", buf);
-            attroff(COLOR_PAIR(1));
+            attroff(COLOR_PAIR(PAIR_DEFAULT));
         }
+
+        free(buf);
+#endif
 
         clrtoeol();
         printw("\n");
     }
-    free(buf);
 
     // Draw '~' for empty lines
     for (; i < maxrows; i++) {
@@ -1358,25 +1366,22 @@ void main(int argc, char* argv[]) {
     E.saved = false;
 
 
-    // Main color
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
-
     // Top-bar color
-    init_pair(2, COLOR_BLACK, COLOR_WHITE);
+    init_pair(PAIR_TOPBAR, COLOR_BLACK, COLOR_WHITE);
 
     // Cmd-bar color
-    init_pair(3, COLOR_WHITE, COLOR_BLACK);
+    init_pair(PAIR_CMDBAR, COLOR_WHITE, COLOR_BLACK);
 
     // Syntax highlighting colors
+    init_pair(PAIR_DEFAULT,   SCOLOR_DEFAULT,  COLOR_BLACK);
+    init_pair(PAIR_DEFAULT+1, COLOR_DARK_GRAY, SCOLOR_DEFAULT);
+
 #if SYNTAX_HIGHLIGHT
-    init_pair(PAIR_DEFAULT,   COLOR_WHITE,    SCOLOR_DEFAULT);
-    init_pair(PAIR_DEFAULT+1, SCOLOR_DEFAULT, COLOR_DARK_GRAY);
+    init_pair(PAIR_NUMBER,   SCOLOR_NUMBER,   COLOR_BLACK);
+    init_pair(PAIR_NUMBER+1, COLOR_DARK_GRAY, SCOLOR_NUMBER);
 
-    init_pair(PAIR_NUMBER,   COLOR_WHITE,   SCOLOR_NUMBER);
-    init_pair(PAIR_NUMBER+1, SCOLOR_NUMBER, COLOR_DARK_GRAY);
-
-    init_pair(PAIR_STRING,   COLOR_WHITE,   SCOLOR_STRING);
-    init_pair(PAIR_STRING+1, SCOLOR_STRING, COLOR_DARK_GRAY);
+    init_pair(PAIR_STRING,   SCOLOR_STRING,   COLOR_BLACK);
+    init_pair(PAIR_STRING+1, COLOR_DARK_GRAY, SCOLOR_STRING);
 #endif
 
     maxcols = getmaxx(stdscr);
@@ -1405,9 +1410,8 @@ void main(int argc, char* argv[]) {
 
     //clear();
     //refresh();
-    attron(COLOR_PAIR(1));
-    wattron(topBar, COLOR_PAIR(2));
-    wattron(cmdBar, COLOR_PAIR(1));
+    wattron(topBar, COLOR_PAIR(PAIR_TOPBAR));
+    wattron(cmdBar, COLOR_PAIR(PAIR_CMDBAR));
     while (true) {
 
         displayScreen();
