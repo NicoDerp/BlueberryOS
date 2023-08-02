@@ -211,9 +211,10 @@ void updateSyntax(row_t* row) {
 #if SYNTAX_HIGHLIGHT
 
     free(row->colors);
-    row->colors = malloc(row->rlen);
+    row->colors = (unsigned char*) malloc(row->rlen);
     memset(row->colors, SPAIR_DEFAULT, row->rlen);
 
+    /*
     char strchar = 0;
     bool string = false;
     bool comment = false;
@@ -253,6 +254,7 @@ void updateSyntax(row_t* row) {
 
         psep = sep;
     }
+    */
 #else
     (void) row;
 #endif
@@ -974,9 +976,6 @@ void splitCurrentRow(void) {
     renderRow(frow);
     renderRow(trow);
 
-    if (E.cury - E.rowoff > maxrows)
-        E.rowoff++;
-
     E.numrows++;
     E.cury++;
     E.rscurx = 0;
@@ -984,6 +983,9 @@ void splitCurrentRow(void) {
     E.rcurx = 0;
     E.curx = 0;
     E.coloff = 0;
+
+    if (E.cury - E.rowoff >= maxrows)
+        E.rowoff++;
 }
 
 void deleteCurrentChar(void) {
@@ -1199,7 +1201,7 @@ void pasteClipboard(void) {
             renderRow(row);
 
             E.cury++;
-            if (E.cury - E.rowoff > maxrows)
+            if (E.cury - E.rowoff >= maxrows)
                 E.rowoff++;
 
             E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
@@ -1208,11 +1210,11 @@ void pasteClipboard(void) {
 
             row_t* r = &E.rows[E.cury];
             r->chars = (char*) malloc(1);
+            r->chars[0] = '\0';
+            r->rchars = NULL;
 #if SYNTAX_HIGHLIGHT
             r->colors = NULL;
 #endif
-            r->chars[0] = '\0';
-            r->rchars = NULL;
             r->len = 0;
             r->rlen = 0;
             renderRow(r);
@@ -1247,7 +1249,7 @@ void newLineAndInsert(void) {
     E.rcurx = 0;
     E.curx = 0;
     E.cury++;
-    if (E.cury - E.rowoff > maxrows)
+    if (E.cury - E.rowoff >= maxrows)
         E.rowoff++;
 
     E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
