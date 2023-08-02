@@ -91,6 +91,7 @@ initrd: $(BINS)
 	chmod 4750 initrd/bin/sudo
 	mkdir -p initrd/home/nico
 	cp file initrd/home/nico/file
+	cp vim.c initrd/home/nico/vim.c
 
 initrd.tar.gz: initrd
 	tar U --gzip -cvf initrd.tar.gz initrd

@@ -51,12 +51,14 @@
 #define SCOLOR_STRING    COLOR_LIGHT_GREEN
 #define SCOLOR_COMMENT   COLOR_DARK_GRAY
 #define SCOLOR_SEPERATOR COLOR_LIGHT_RED
+#define SCOLOR_SPECIAL   COLOR_LIGHT_MAGENTA
 
 /* Syntax highlighting color pairs */
 #define SPAIR_NUMBER      6
 #define SPAIR_STRING      8
 #define SPAIR_COMMENT     10
 #define SPAIR_SEPERATOR   12
+#define SPAIR_SPECIAL     14
 
 
 
@@ -206,20 +208,23 @@ inline bool is_seperator(int c) {
 
 void updateSyntax(row_t* row) {
 
-#if SYNTAX_HIGHLIGHT
     free(row->colors);
     row->colors = malloc(row->rlen);
+    memset(row->colors, SPAIR_DEFAULT, row->rlen);
+
+#if SYNTAX_HIGHLIGHT
 
     bool string = false;
     bool comment = false;
     bool psep = true;
     unsigned char pcolor = 0;
-    unsigned char color = 0;
     unsigned int i = 0;
     while (i < row->rlen) {
         char c = row->rchars[i];
 
-        pcolor = color;
+        if (i > 0)
+            pcolor = row->colors[i-1];
+
         if (c == '"')
             string = !string;
         else if (c == '/' && row->rchars[i + 1] == '/') {
@@ -229,22 +234,18 @@ void updateSyntax(row_t* row) {
 
         bool sep = is_seperator(c);
         if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
-            color = SPAIR_NUMBER;
+            row->colors[i++] = SPAIR_NUMBER;
         else if (sep)
-            color = SPAIR_SEPERATOR;
+            row->colors[i++] = SPAIR_SEPERATOR;
         else if (comment)
-            color = SPAIR_COMMENT;
+            row->colors[i++] = SPAIR_COMMENT;
         else if (string || c == '"')
-            color = SPAIR_STRING;
+            row->colors[i++] = SPAIR_STRING;
         else
-            color = SPAIR_DEFAULT;
+            i++;
 
         psep = sep;
-        row->colors[i] = color;
-        i++;
     }
-#else
-    (void) row;
 #endif
 }
 
@@ -1513,6 +1514,9 @@ void main(int argc, char* argv[]) {
 
     init_pair(SPAIR_SEPERATOR,   SCOLOR_SEPERATOR, COLOR_BLACK);
     init_pair(SPAIR_SEPERATOR+1, SCOLOR_SEPERATOR, SCOLOR_VISUAL);
+
+    init_pair(SPAIR_SPECIAL,   SCOLOR_SPECIAL, COLOR_BLACK);
+    init_pair(SPAIR_SPECIAL+1, SCOLOR_SPECIAL, SCOLOR_VISUAL);
 #endif
 
     maxcols = getmaxx(stdscr);
