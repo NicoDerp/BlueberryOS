@@ -197,54 +197,6 @@ extern inline unsigned int rcurxToCurx(row_t* row, unsigned int curx, unsigned i
 }
 */
 
-void searchFor(bool final) {
-
-    char* pos;
-    bool lapped = false;
-    unsigned int i = E.cury;
-    while (i < E.numrows) {
-
-        row_t* row = &E.rows[i];
-        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
-            E.curx = pos - row->chars;
-            E.rcurx = curxToRCurx(row, E.curx);
-            E.scurx = E.curx;
-            E.rscurx = E.rcurx;
-
-            E.searchFound = true;
-            E.searchx = E.curx + 1;
-            E.searchy = i;
-            E.cury = i;
-
-            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
-                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
-            else if (E.rcurx < E.coloff)
-                E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
-
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
-            else if (E.cury < E.rowoff)
-                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
-
-            memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
-            return;
-        }
-
-        i++;
-        if ((i == E.numrows) && !lapped) {
-            lapped = true;
-            i = 0;
-        }
-    }
-
-    if (!final)
-        return;
-
-    E.searchFound = false;
-    mvwprintw(cmdBar, 0, 0, "Pattern not found: %s", E.searchBuffer);
-    wclrtoeol(cmdBar);
-}
-
 void updateSyntax(row_t* row) {
 
 #if SYNTAX_HIGHLIGHT
@@ -314,6 +266,57 @@ void renderRow(row_t* row) {
     row->rchars[row->rlen] = '\0';
 
     updateSyntax(row);
+}
+
+void searchFor(bool final) {
+
+    updateSyntax(&E.rows[E.searchy]);
+
+    char* pos;
+    bool lapped = false;
+    unsigned int i = E.cury;
+    while (i < E.numrows) {
+
+        row_t* row = &E.rows[i];
+        if ((pos = strstr(row->chars, E.searchBuffer)) != NULL) {
+
+            E.curx = pos - row->chars;
+            E.rcurx = curxToRCurx(row, E.curx);
+            E.scurx = E.curx;
+            E.rscurx = E.rcurx;
+
+            E.searchFound = true;
+            E.searchx = E.curx + 1;
+            E.searchy = i;
+            E.cury = i;
+
+            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            else if (E.rcurx < E.coloff)
+                E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
+
+            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
+            else if (E.cury < E.rowoff)
+                E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
+
+            memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
+            return;
+        }
+
+        i++;
+        if ((i == E.numrows) && !lapped) {
+            lapped = true;
+            i = 0;
+        }
+    }
+
+    if (!final)
+        return;
+
+    E.searchFound = false;
+    mvwprintw(cmdBar, 0, 0, "Pattern not found: %s", E.searchBuffer);
+    wclrtoeol(cmdBar);
 }
 
 void insertCharacter(row_t* row, unsigned int at, int ch) {
@@ -871,6 +874,7 @@ void escapeKey(void) {
 
     E.mode = NORMAL;
     werase(cmdBar);
+    updateSyntax(&E.rows[E.searchy]);
 }
 
 void startOfLine(void) {
@@ -1239,6 +1243,8 @@ void searchNext(void) {
     else
         searchy = E.cury;
 
+    updateSyntax(&E.rows[E.searchy]);
+
     char* pos;
     bool lapped = false;
     unsigned int i = searchy;
@@ -1246,6 +1252,7 @@ void searchNext(void) {
 
         row_t* row = &E.rows[i];
         if ((pos = strstr(&row->chars[E.searchx], E.searchBuffer)) != NULL) {
+
             E.curx = pos - row->chars;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
@@ -1291,6 +1298,8 @@ void searchPrevious(void) {
             searchy = E.searchy;
     else
         searchy = E.cury;
+
+    updateSyntax(&E.rows[E.searchy]);
 
     char* pos;
     bool lapped = false;
