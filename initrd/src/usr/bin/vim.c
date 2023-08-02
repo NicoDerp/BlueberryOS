@@ -36,16 +36,20 @@
 /* Background text color for selection (BlueberryOS specific ncurses color) */
 #define SCOLOR_VISUAL    COLOR_DARK_GRAY
 
-/* Colors that syntax highlight uses (ncurses defined) */
-#define SCOLOR_NUMBER    COLOR_LIGHT_RED
-#define SCOLOR_STRING    COLOR_LIGHT_GREEN
-
 /* Color pairs for ncurses */
 #define SPAIR_TOPBAR      1
 #define SPAIR_CMDBAR      2
 #define SPAIR_DEFAULT     3
+
+/* Colors that syntax highlight uses (ncurses defined) */
+#define SCOLOR_NUMBER    COLOR_LIGHT_RED
+#define SCOLOR_STRING    COLOR_LIGHT_GREEN
+#define SCOLOR_COMMENT   COLOR_DARK_GRAY
+
+/* Syntax highlighting color pairs */
 #define SPAIR_NUMBER      5
 #define SPAIR_STRING      7
+#define SPAIR_COMMENT     9
 
 
 
@@ -243,7 +247,6 @@ void renderRow(row_t* row) {
 
     bool string = false;
     bool comment = false;
-    (void) comment;
     for (unsigned int i = 0; i < row->len; i++) {
         char c = row->chars[i];
         char nc = row->chars[i + 1];
@@ -270,10 +273,14 @@ void renderRow(row_t* row) {
 
         if (c == '"')
             string = !string;
+        else if (c == '/' && nc == '/')
+            comment = true;
 
         unsigned char color;
         if (isdigit(c) || (c == '-' && isdigit(nc)))
             color = SPAIR_NUMBER;
+        else if (comment)
+            color = SPAIR_COMMENT;
         else if (string || c == '"')
             color = SPAIR_STRING;
         else
@@ -1428,6 +1435,9 @@ void main(int argc, char* argv[]) {
 
     init_pair(SPAIR_STRING,   SCOLOR_STRING,   COLOR_BLACK);
     init_pair(SPAIR_STRING+1, SCOLOR_STRING,   COLOR_DARK_GRAY);
+
+    init_pair(SPAIR_COMMENT,   SCOLOR_COMMENT, COLOR_BLACK);
+    init_pair(SPAIR_COMMENT+1, SCOLOR_COMMENT, COLOR_DARK_GRAY);
 #endif
 
     maxcols = getmaxx(stdscr);
