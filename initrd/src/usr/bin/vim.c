@@ -12,20 +12,29 @@
 
 
 
+
 /* What you wan't tabs to render as (default is 4 spaces) */
 #define TAB_RENDER        "    "
 
 /* 0 then tabs are tabs, 1 for tabs are spaces (bit buggy) */
 #define TAB_AS_SPACE      0
 
-/* Lines of margin top and bottom normally */
-#define TOP_MARGIN        2
+
+
+/* Characters of margin left and right when scrolling */
+#define SCROLL_MARGIN_S   8
+
+/* Lines of margin top and bottom when scrolling */
+#define SCROLL_MARGIN_TB  2
+
 
 /* Characters of margin left and right when searching */
 #define SEARCH_MARGIN_S   8
 
 /* Lines of margin top and bottom when searching */
 #define SEARCH_MARGIN_TB  4
+
+
 
 /* 1 for syntax highlighting */
 #define SYNTAX_HIGHLIGHT  1
@@ -214,7 +223,6 @@ void updateSyntax(row_t* row) {
     row->colors = (unsigned char*) malloc(row->rlen);
     memset(row->colors, SPAIR_DEFAULT, row->rlen);
 
-    /*
     char strchar = 0;
     bool string = false;
     bool comment = false;
@@ -254,7 +262,6 @@ void updateSyntax(row_t* row) {
 
         psep = sep;
     }
-    */
 #else
     (void) row;
 #endif
@@ -280,7 +287,7 @@ void renderRow(row_t* row) {
         }
         else if (c == '\e') {
 
-            row->rchars = realloc(row->rchars, row->rlen + 1);
+            row->rchars = realloc(row->rchars, row->rlen + 2);
             memcpy(row->rchars + row->rlen, "^[", 2);
             row->rlen += 2;
         }
@@ -374,10 +381,9 @@ void appendRow(char* s, unsigned int linelen) {
 #if SYNTAX_HIGHLIGHT
     row->colors = NULL;
 #endif
+    E.numrows++;
 
     renderRow(row);
-
-    E.numrows++;
 }
 
 void readFile(char* filename) {
@@ -777,12 +783,20 @@ void leftArrow(void) {
     if ((E.rcurx - E.coloff == 0) && (E.cury - E.rowoff == 0))
         return;
 
-    if (E.rcurx - E.coloff == 0) {
+    if (E.rcurx - E.coloff <= SCROLL_MARGIN_S) {
 
         if (E.coloff > 0) {
             scrollLeft();
-        } else {
-            if (E.cury - E.rowoff == 0)
+
+            E.curx--;
+#if TAB_AS_SPACE
+            E.rcurx--;
+            //E.curx = rcurxToCurx(currentRow(), E.curx, E.rcurx);
+#else
+            E.rcurx = curxToRCurx(currentRow(), E.curx);
+#endif
+        } else if (E.rcurx == 0) {
+            if (E.cury - E.rowoff <= SCROLL_MARGIN_TB)
                 scrollUp();
             else
                 E.cury--;
@@ -792,12 +806,19 @@ void leftArrow(void) {
             if (E.rcurx > maxcols) {
                 E.coloff = E.rcurx - maxcols + maxcols/2;
             }
-        }
+        } else {
 
+            E.curx--;
+#if TAB_AS_SPACE
+            E.rcurx--;
+            //E.curx = rcurxToCurx(currentRow(), E.curx, E.rcurx);
+#else
+            E.rcurx = curxToRCurx(currentRow(), E.curx);
+#endif
+        }
     } else {
 
         E.curx--;
-
 #if TAB_AS_SPACE
         E.rcurx--;
         //E.curx = rcurxToCurx(currentRow(), E.curx, E.rcurx);
@@ -806,6 +827,7 @@ void leftArrow(void) {
 #endif
 
     }
+
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
 }
@@ -817,7 +839,7 @@ void rightArrow(void) {
 
     if (E.rcurx >= currentRow()->rlen) {
 
-        if (E.cury - E.rowoff == maxrows-1)
+        if (E.cury - E.rowoff >= maxrows - SCROLL_MARGIN_TB - 1)
             scrollDown();
 
         E.cury++;
@@ -828,7 +850,7 @@ void rightArrow(void) {
             E.coloff = 0;
         }
 
-    } else if (E.rcurx - E.coloff == maxcols-1) {
+    } else if (E.rcurx - E.coloff >= maxcols - SCROLL_MARGIN_S - 1) {
 
         scrollRight();
 
@@ -870,7 +892,7 @@ void upArrow(void) {
     if (E.cury == 0)
         return;
 
-    if (E.cury - E.rowoff == 0)
+    if (E.cury - E.rowoff <= SCROLL_MARGIN_TB)
         scrollUp();
 
     E.cury--;
@@ -888,7 +910,7 @@ void downArrow(void) {
     if ((E.numrows == 0) || (E.cury == E.numrows-1))
         return;
 
-    if (E.cury - E.rowoff == maxrows-1)
+    if (E.cury - E.rowoff >= maxrows - SCROLL_MARGIN_TB - 1)
         scrollDown();
 
     E.cury++;
@@ -1019,7 +1041,7 @@ void deleteCurrentChar(void) {
         E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows-1));
         E.numrows--;
 
-        if ((E.rowoff > 0) && (E.cury - E.rowoff < TOP_MARGIN))
+        if ((E.rowoff > 0) && (E.cury - E.rowoff < SCROLL_MARGIN_TB))
             E.rowoff--;
 
         E.cury--;
