@@ -208,12 +208,13 @@ inline bool is_seperator(int c) {
 
 void updateSyntax(row_t* row) {
 
+#if SYNTAX_HIGHLIGHT
+
     free(row->colors);
     row->colors = malloc(row->rlen);
     memset(row->colors, SPAIR_DEFAULT, row->rlen);
 
-#if SYNTAX_HIGHLIGHT
-
+    char strchar = 0;
     bool string = false;
     bool comment = false;
     bool psep = true;
@@ -225,27 +226,35 @@ void updateSyntax(row_t* row) {
         if (i > 0)
             pcolor = row->colors[i-1];
 
-        if (c == '"')
-            string = !string;
+        if (string && c == strchar)
+            string = false;
+        else if (!string && (c == '"' || c == '\'')) {
+            string = true;
+            strchar = c;
+        }
         else if (c == '/' && row->rchars[i + 1] == '/') {
             comment = true;
-            i++;
         }
 
         bool sep = is_seperator(c);
-        if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
+        if (comment)
+            row->colors[i++] = SPAIR_COMMENT;
+        else if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
             row->colors[i++] = SPAIR_NUMBER;
         else if (sep)
             row->colors[i++] = SPAIR_SEPERATOR;
-        else if (comment)
-            row->colors[i++] = SPAIR_COMMENT;
-        else if (string || c == '"')
+        else if (string || c == '"' || c == '\'')
             row->colors[i++] = SPAIR_STRING;
+        else if (c == '#') {
+            i++;
+        }
         else
             i++;
 
         psep = sep;
     }
+#else
+    (void) row;
 #endif
 }
 
@@ -951,6 +960,9 @@ void splitCurrentRow(void) {
     trow->len = frow->len - E.curx;
     trow->chars = (char*) malloc(frow->len - E.curx + 1);
     trow->rchars = NULL;
+#if SYNTAX_HIGHLIGHT
+    trow->colors = NULL;
+#endif
 
     memmove(trow->chars, &frow->chars[E.curx], frow->len - E.curx);
     trow->chars[frow->len - E.curx] = '\0';
@@ -1195,7 +1207,10 @@ void pasteClipboard(void) {
             E.numrows++;
 
             row_t* r = &E.rows[E.cury];
-            r->chars = malloc(1);
+            r->chars = (char*) malloc(1);
+#if SYNTAX_HIGHLIGHT
+            r->colors = NULL;
+#endif
             r->chars[0] = '\0';
             r->rchars = NULL;
             r->len = 0;
@@ -1241,6 +1256,9 @@ void newLineAndInsert(void) {
 
     row_t* r = &E.rows[E.cury];
     r->chars = malloc(1);
+#if SYNTAX_HIGHLIGHT
+    r->colors = NULL;
+#endif
     r->chars[0] = '\0';
     r->rchars = NULL;
     r->len = 0;
