@@ -108,6 +108,9 @@ int vmvwprintw(WINDOW* win, int y, int x, const char*, va_list args);
 
 bool wputcharw(WINDOW* win, char c);
 
+inline int addch(char c) { wputcharw(stdscr, c); return OK; }
+inline int waddch(WINDOW* win, char c) { wputcharw(win, c); return OK; }
+
 int refresh(void);
 int wrefresh(WINDOW* win);
 

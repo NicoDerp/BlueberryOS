@@ -28,7 +28,7 @@
 #define SEARCH_MARGIN_TB  4
 
 /* 1 for syntax highlighting */
-#define SYNTAX_HIGHLIGHT  0
+#define SYNTAX_HIGHLIGHT  1
 
 /* Default text color with and without syntax highlighting (ncurses defined) */
 #define SCOLOR_DEFAULT   COLOR_WHITE
@@ -37,8 +37,8 @@
 #define SCOLOR_VISUAL    COLOR_DARK_GRAY
 
 /* Colors that syntax highlight uses (ncurses defined) */
-#define SCOLOR_NUMBER    COLOR_RED
-#define SCOLOR_STRING    COLOR_GREEN
+#define SCOLOR_NUMBER    COLOR_LIGHT_RED
+#define SCOLOR_STRING    COLOR_LIGHT_GREEN
 
 /* Color pairs for ncurses */
 #define SPAIR_TOPBAR      1
@@ -504,6 +504,16 @@ void displayScreen(void) {
     unsigned int starty = MIN(E.cury, E.vcury);
     unsigned int endy = MAX(E.cury, E.vcury);
 
+    unsigned int startx;
+    unsigned int endx;
+    if (E.vcury > E.cury) {
+        startx = E.curx;
+        endx = E.vcurx;
+    } else {
+        startx = E.vcurx;
+        endx = E.curx;
+    }
+
     size_t i;
     for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
 
@@ -518,16 +528,38 @@ void displayScreen(void) {
         len = len > maxcols ? maxcols : len;
 
 #if SYNTAX_HIGHLIGHT
-        //for ()
+        for (unsigned int j = 0; j < len; j++) {
+
+            unsigned int absi = i + E.rowoff;
+            unsigned int absj = j + E.coloff;
+
+            char c = E.rows[absi].rchars[absj];
+            unsigned char color = E.rows[absi].colors[absj];
+
+            // Get the selected version of that color pair
+            if (((E.mode == VISUAL) && (
+                    ((absi == starty) && (absi == endy) && (startx <= absj) && (absj < endx))
+                    ||
+                    ((absi == starty) && (absi != endy) && (absj >= startx))
+                    ||
+                    ((starty < absi) && (absi < endy))
+                    ||
+                    ((absi == endy) && (absi != starty) && (absj < endx))
+                    ))
+                ||
+                    ((E.mode == VISUAL_LINE) && (starty <= i + E.rowoff) && (i + E.rowoff <= endy)))
+                color++;
+
+            attron(COLOR_PAIR(color));
+            addch(c);
+            attroff(COLOR_PAIR(color));
+        }
 #else
         char* buf = malloc(len+1);
         if ((E.mode == VISUAL) && (starty - E.rowoff <= i) && (i <= endy - E.rowoff)) {
 
             // If the selection is on a single line
             if ((i == starty - E.rowoff) && (i == endy - E.rowoff)) {
-
-                unsigned int startx = MIN(E.curx, E.vcurx);
-                unsigned int endx = MAX(E.curx, E.vcurx);
 
                 attron(COLOR_PAIR(SPAIR_DEFAULT));
                 if (startx > 0) {
@@ -1377,14 +1409,14 @@ void main(int argc, char* argv[]) {
 
     // Syntax highlighting colors
     init_pair(SPAIR_DEFAULT,   SCOLOR_DEFAULT,  COLOR_BLACK);
-    init_pair(SPAIR_DEFAULT+1, COLOR_DARK_GRAY, SCOLOR_DEFAULT);
+    init_pair(SPAIR_DEFAULT+1, SCOLOR_DEFAULT,  COLOR_DARK_GRAY);
 
 #if SYNTAX_HIGHLIGHT
     init_pair(SPAIR_NUMBER,   SCOLOR_NUMBER,   COLOR_BLACK);
-    init_pair(SPAIR_NUMBER+1, COLOR_DARK_GRAY, SCOLOR_NUMBER);
+    init_pair(SPAIR_NUMBER+1, SCOLOR_NUMBER,   COLOR_DARK_GRAY);
 
     init_pair(SPAIR_STRING,   SCOLOR_STRING,   COLOR_BLACK);
-    init_pair(SPAIR_STRING+1, COLOR_DARK_GRAY, SCOLOR_STRING);
+    init_pair(SPAIR_STRING+1, SCOLOR_STRING,   COLOR_DARK_GRAY);
 #endif
 
     maxcols = getmaxx(stdscr);
