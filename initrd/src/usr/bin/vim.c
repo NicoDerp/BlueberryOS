@@ -732,6 +732,7 @@ void downArrow(void) {
 void escapeKey(void) {
 
     E.mode = NORMAL;
+    werase(cmdBar);
 }
 
 void startOfLine(void) {
@@ -1385,6 +1386,10 @@ void main(int argc, char* argv[]) {
                 searchCursor = 0;
                 mvwprintw(cmdBar, 0, 0, "/");
                 wclrtoeol(cmdBar);
+            }
+            else if (ch == 'A') {
+                E.mode = INSERT;
+                gotoEndOfLine();
             }
             else {
                 executeMapping(normalMapping, sizeof(normalMapping), ch);
