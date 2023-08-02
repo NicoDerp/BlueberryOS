@@ -207,16 +207,18 @@ void updateSyntax(row_t* row) {
     bool string = false;
     bool comment = false;
     unsigned char color;
-    for (unsigned int i = 0; i < row->rlen; i++) {
+    unsigned int i = 0;
+    while (i < row->rlen) {
         char c = row->rchars[i];
-        char nc = row->rchars[i + 1];
 
         if (c == '"')
             string = !string;
-        else if (c == '/' && nc == '/')
+        else if (c == '/' && row->rchars[i + 1] == '/') {
             comment = true;
+            i++;
+        }
 
-        if (isdigit(c) || (c == '-' && isdigit(nc)))
+        if (isdigit(c) || (c == '-' && isdigit(row->rchars[i + 1])))
             color = SPAIR_NUMBER;
         else if (comment)
             color = SPAIR_COMMENT;
@@ -226,6 +228,7 @@ void updateSyntax(row_t* row) {
             color = SPAIR_DEFAULT;
 
         row->colors[i] = color;
+        i++;
     }
 #else
     (void) row;
