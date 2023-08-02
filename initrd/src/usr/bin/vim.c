@@ -211,8 +211,12 @@ extern inline unsigned int rcurxToCurx(row_t* row, unsigned int curx, unsigned i
 }
 */
 
+inline bool is_rseperator(int c) {
+    return strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
+
 inline bool is_seperator(int c) {
-    return isspace(c) || (strchr(",.()+-/*=~%<>[];", c) != NULL);
+    return c == '\0' || isspace(c) || is_rseperator(c);
 }
 
 void updateSyntax(row_t* row) {
@@ -250,11 +254,14 @@ void updateSyntax(row_t* row) {
             row->colors[i++] = SPAIR_COMMENT;
         else if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
             row->colors[i++] = SPAIR_NUMBER;
-        else if (sep)
+        else if (is_rseperator(c))
             row->colors[i++] = SPAIR_SEPERATOR;
         else if (string || c == '"' || c == '\'')
             row->colors[i++] = SPAIR_STRING;
         else if (c == '#') {
+            while (!(sep = is_seperator((c = row->rchars[i])))) {
+                row->colors[i++] = SPAIR_SPECIAL;
+            }
             i++;
         }
         else
