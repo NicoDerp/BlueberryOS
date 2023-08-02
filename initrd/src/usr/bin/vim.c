@@ -142,6 +142,27 @@ extern inline unsigned int curxToRCurx(row_t* row, unsigned int curx) {
     return rcurx;
 }
 
+/*
+extern inline unsigned int rcurxToCurx(row_t* row, unsigned int curx, unsigned int rcurx) {
+
+    unsigned int rx = 0;
+    for (int i = 0; i < (int) curx - 1; i++) {
+        char c = row->chars[i];
+        if (c == '\t')
+            rx += TAB_SIZE - (rx % TAB_SIZE);
+        else if (c == '\e')
+            rx += 2;
+        else
+            rx++;
+    }
+
+    if (rx < rcurx)
+        return curx;
+
+    return curx+1;
+}
+*/
+
 void searchFor(bool final) {
 
     char* pos;
@@ -629,6 +650,7 @@ void leftArrow(void) {
 
 #if TAB_AS_SPACE
         E.rcurx--;
+        //E.curx = rcurxToCurx(currentRow(), E.curx, E.rcurx);
 #else
         E.rcurx = curxToRCurx(currentRow(), E.curx);
 #endif
