@@ -20,9 +20,9 @@ void main ()
     }
     */
 
-    const char* str = "Hello this is cool";
-    const char* sub = "He";
-    char* s = strstr(str, sub);
+    const char* str = "Hello test this is a cool test :)";
+    const char* sub = "test";
+    char* s = strrstr(str, sub);
     if (s == NULL)
         printf("S not found\n");
     else

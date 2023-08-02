@@ -1149,17 +1149,20 @@ void searchPrevious(void) {
     while (i >= 0) {
 
         row_t* row = &E.rows[i];
-        if ((pos = strrstr(&row->chars[E.searchx], E.searchBuffer)) != NULL) {
-            E.curx = pos - row->chars;
+        char* buf = malloc(E.searchx + 1);
+        memcpy(buf, row->chars, E.searchx);
+        buf[E.searchx] = '\0';
+        if ((pos = strrstr(buf, E.searchBuffer)) != NULL) {
+            E.curx = pos - buf;
             E.rcurx = curxToRCurx(row, E.curx);
             E.scurx = E.curx;
             E.rscurx = E.rcurx;
 
             if (E.curx == 0) {
                 if (i == 0)
-                    E.searchy = i - 1;
-                else
                     E.searchy = E.numrows-1;
+                else
+                    E.searchy = i - 1;
                 E.searchx = E.rows[i].len;
             }
             else {
@@ -1180,12 +1183,17 @@ void searchPrevious(void) {
 
             return;
         }
-        E.searchx = row->len;
+        free(buf);
 
-        if ((i == 0) && !lapped) {
+        if (i == 0) {
+            if (lapped)
+                return;
+
             lapped = true;
             i = E.numrows;
         }
+
+        E.searchx = E.rows[i-1].len;
         i--;
     }
 }

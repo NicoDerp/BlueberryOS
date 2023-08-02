@@ -27,6 +27,7 @@ char* strtok(char*, const char*);
 char* strchr(const char*, int);
 
 char* strstr(const char*, const char*);
+char* strrstr(const char*, const char*);
 
 char* strerror(int errnum);
 
