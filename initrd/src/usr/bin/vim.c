@@ -36,20 +36,25 @@
 /* Background text color for selection (BlueberryOS specific ncurses color) */
 #define SCOLOR_VISUAL    COLOR_DARK_GRAY
 
-/* Color pairs for ncurses */
+/* Color for search matches */
+#define SCOLOR_MATCH     COLOR_LIGHT_BLUE
+
+
+/* Color pairs */
 #define SPAIR_TOPBAR      1
 #define SPAIR_CMDBAR      2
 #define SPAIR_DEFAULT     3
+#define SPAIR_MATCH       4
 
-/* Colors that syntax highlight uses (ncurses defined) */
+/* Colors that syntax highlight uses (BlueberryOS specific ncurses colors) */
 #define SCOLOR_NUMBER    COLOR_LIGHT_RED
 #define SCOLOR_STRING    COLOR_LIGHT_GREEN
 #define SCOLOR_COMMENT   COLOR_DARK_GRAY
 
 /* Syntax highlighting color pairs */
-#define SPAIR_NUMBER      5
-#define SPAIR_STRING      7
-#define SPAIR_COMMENT     9
+#define SPAIR_NUMBER      6
+#define SPAIR_STRING      8
+#define SPAIR_COMMENT     10
 
 
 
@@ -221,6 +226,7 @@ void searchFor(bool final) {
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
+            memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
             return;
         }
 
@@ -1259,6 +1265,7 @@ void searchNext(void) {
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
+            memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
             return;
         }
         E.searchx = 0;
@@ -1323,6 +1330,7 @@ void searchPrevious(void) {
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
+            memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
             return;
         }
         free(buf);
@@ -1438,25 +1446,27 @@ void main(int argc, char* argv[]) {
     E.saved = false;
 
 
-    // Top-bar color
+    /* Top-bar color */
     init_pair(SPAIR_TOPBAR, COLOR_BLACK, COLOR_WHITE);
 
-    // Cmd-bar color
+    /* Cmd-bar color */
     init_pair(SPAIR_CMDBAR, COLOR_WHITE, COLOR_BLACK);
 
-    // Syntax highlighting colors
     init_pair(SPAIR_DEFAULT,   SCOLOR_DEFAULT,  COLOR_BLACK);
-    init_pair(SPAIR_DEFAULT+1, SCOLOR_DEFAULT,  COLOR_DARK_GRAY);
+    init_pair(SPAIR_DEFAULT+1, SCOLOR_DEFAULT,  SCOLOR_VISUAL);
 
+    init_pair(SPAIR_MATCH,     SCOLOR_DEFAULT,  SCOLOR_MATCH);
+
+    /* Syntax highlighting colors */
 #if SYNTAX_HIGHLIGHT
     init_pair(SPAIR_NUMBER,   SCOLOR_NUMBER,   COLOR_BLACK);
-    init_pair(SPAIR_NUMBER+1, SCOLOR_NUMBER,   COLOR_DARK_GRAY);
+    init_pair(SPAIR_NUMBER+1, SCOLOR_NUMBER,   SCOLOR_VISUAL);
 
     init_pair(SPAIR_STRING,   SCOLOR_STRING,   COLOR_BLACK);
-    init_pair(SPAIR_STRING+1, SCOLOR_STRING,   COLOR_DARK_GRAY);
+    init_pair(SPAIR_STRING+1, SCOLOR_STRING,   SCOLOR_VISUAL);
 
     init_pair(SPAIR_COMMENT,   SCOLOR_COMMENT, COLOR_BLACK);
-    init_pair(SPAIR_COMMENT+1, SCOLOR_COMMENT, COLOR_DARK_GRAY);
+    init_pair(SPAIR_COMMENT+1, SCOLOR_COMMENT, SCOLOR_VISUAL);
 #endif
 
     maxcols = getmaxx(stdscr);
