@@ -85,7 +85,11 @@ typedef struct {
 typedef struct {
     unsigned int len;
     unsigned int rlen;
+
+#if SYNTAX_HIGHLIGHT
     unsigned char* colors;
+#endif
+
     char* chars;
     char* rchars;
 } row_t;
@@ -264,6 +268,8 @@ void updateSyntax(row_t* row) {
 
         row->colors[i] = color;
     }
+#else
+    (void) row;
 #endif
 }
 
@@ -324,7 +330,11 @@ void appendRow(char* s, unsigned int linelen) {
     memcpy(row->chars, s, linelen+1);
 
     row->rchars = NULL;
+
+#if SYNTAX_HIGHLIGHT
     row->colors = NULL;
+#endif
+
     renderRow(row);
 
     E.numrows++;
