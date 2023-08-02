@@ -235,48 +235,24 @@ void searchFor(bool final) {
     wclrtoeol(cmdBar);
 }
 
-void renderRow(row_t* row) {
+void updateSyntax(row_t* row) {
 
-    // Incase there is something there
-    free(row->rchars);
+#if SYNTAX_HIGHLIGHT
     free(row->colors);
-
-    row->rlen = 0;
-    row->rchars = NULL;
-    row->colors = NULL;
+    row->colors = malloc(row->rlen);
 
     bool string = false;
     bool comment = false;
-    for (unsigned int i = 0; i < row->len; i++) {
-        char c = row->chars[i];
-        char nc = row->chars[i + 1];
-
-        unsigned int size;
-        if (c == '\t') {
-
-            size = TAB_SIZE - (row->rlen % TAB_SIZE);
-            row->rchars = realloc(row->rchars, row->rlen + size);
-            memcpy(row->rchars + row->rlen, TAB_RENDER, size);
-        }
-        else if (c == '\e') {
-
-            size = 2;
-            row->rchars = realloc(row->rchars, row->rlen + 1);
-            memcpy(row->rchars + row->rlen, "^[", 2);
-        }
-        else {
-
-            size = 1;
-            row->rchars = realloc(row->rchars, row->rlen + 1);
-            row->rchars[row->rlen] = c;
-        }
+    unsigned char color;
+    for (unsigned int i = 0; i < row->rlen; i++) {
+        char c = row->rchars[i];
+        char nc = row->rchars[i + 1];
 
         if (c == '"')
             string = !string;
         else if (c == '/' && nc == '/')
             comment = true;
 
-        unsigned char color;
         if (isdigit(c) || (c == '-' && isdigit(nc)))
             color = SPAIR_NUMBER;
         else if (comment)
@@ -286,13 +262,46 @@ void renderRow(row_t* row) {
         else
             color = SPAIR_DEFAULT;
 
-        row->colors = realloc(row->colors, row->rlen + size);
-        memset(&row->colors[row->rlen], color, size);
-        row->rlen += size;
+        row->colors[i] = color;
+    }
+#endif
+}
+
+void renderRow(row_t* row) {
+
+    // Incase there is something there
+    free(row->rchars);
+
+    row->rlen = 0;
+    row->rchars = NULL;
+
+    for (unsigned int i = 0; i < row->len; i++) {
+        char c = row->chars[i];
+
+        if (c == '\t') {
+
+            unsigned int size = TAB_SIZE - (row->rlen % TAB_SIZE);
+            row->rchars = realloc(row->rchars, row->rlen + size);
+            memcpy(row->rchars + row->rlen, TAB_RENDER, size);
+            row->rlen += size;
+        }
+        else if (c == '\e') {
+
+            row->rchars = realloc(row->rchars, row->rlen + 1);
+            memcpy(row->rchars + row->rlen, "^[", 2);
+            row->rlen += 2;
+        }
+        else {
+
+            row->rchars = realloc(row->rchars, row->rlen + 1);
+            row->rchars[row->rlen++] = c;
+        }
     }
 
     row->rchars = realloc(row->rchars, row->rlen + 1);
     row->rchars[row->rlen] = '\0';
+
+    updateSyntax(row);
 }
 
 void insertCharacter(row_t* row, unsigned int at, int ch) {
