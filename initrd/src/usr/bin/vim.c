@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 
 
@@ -26,6 +27,18 @@
 /* Lines of margin top and bottom when searching */
 #define SEARCH_MARGIN_TB  4
 
+/* 1 for syntax highlighting */
+#define SYNTAX_HIGHLIGHT  1
+
+/* Colors that syntax highlight uses (ncurses defined) */
+#define SCOLOR_DEFAULT   COLOR_WHITE
+#define SCOLOR_NUMBER    COLOR_RED
+#define SCOLOR_STRING    COLOR_GREEN
+
+/* Color pairs for ncurses */
+#define PAIR_DEFAULT     4
+#define PAIR_NUMBER      6
+#define PAIR_STRING      8
 
 
 
@@ -61,6 +74,7 @@ typedef struct {
 typedef struct {
     unsigned int len;
     unsigned int rlen;
+    unsigned char* colors;
     char* chars;
     char* rchars;
 } row_t;
@@ -214,28 +228,43 @@ void renderRow(row_t* row) {
 
     // Incase there is something there
     free(row->rchars);
+    free(row->colors);
 
     row->rlen = 0;
     row->rchars = NULL;
+
     for (unsigned int i = 0; i < row->len; i++) {
         char c = row->chars[i];
+
+        unsigned int size;
         if (c == '\t') {
 
-            unsigned int size = TAB_SIZE - (row->rlen % TAB_SIZE);
-
+            size = TAB_SIZE - (row->rlen % TAB_SIZE);
             row->rchars = realloc(row->rchars, row->rlen + size);
             memcpy(row->rchars + row->rlen, TAB_RENDER, size);
-            row->rlen += size;
         }
         else if (c == '\e') {
+
+            size = 2;
             row->rchars = realloc(row->rchars, row->rlen + 1);
             memcpy(row->rchars + row->rlen, "^[", 2);
-            row->rlen += 2;
         }
         else {
+
+            size = 1;
             row->rchars = realloc(row->rchars, row->rlen + 1);
-            row->rchars[row->rlen++] = c;
+            row->rchars[row->rlen] = c;
         }
+
+        unsigned char color;
+        if (isdigit(c))
+            color = PAIR_NUMBER;
+        else
+            color = PAIR_DEFAULT;
+
+        row->colors = realloc(row->colors, row->rlen + size);
+        memset(&row->colors[row->rlen], color, size);
+        row->rlen += size;
     }
     row->rchars = realloc(row->rchars, row->rlen + 1);
     row->rchars[row->rlen] = '\0';
@@ -261,6 +290,7 @@ void appendRow(char* s, unsigned int linelen) {
     memcpy(row->chars, s, linelen+1);
 
     row->rchars = NULL;
+    row->colors = NULL;
     renderRow(row);
 
     E.numrows++;
@@ -1337,8 +1367,17 @@ void main(int argc, char* argv[]) {
     // Cmd-bar color
     init_pair(3, COLOR_WHITE, COLOR_BLACK);
 
-    // Visual-select color
-    init_pair(4, COLOR_BLACK, COLOR_WHITE);
+    // Syntax highlighting colors
+#if SYNTAX_HIGHLIGHT
+    init_pair(PAIR_DEFAULT,   COLOR_WHITE,    SCOLOR_DEFAULT);
+    init_pair(PAIR_DEFAULT+1, SCOLOR_DEFAULT, COLOR_DARK_GRAY);
+
+    init_pair(PAIR_NUMBER,   COLOR_WHITE,   SCOLOR_NUMBER);
+    init_pair(PAIR_NUMBER+1, SCOLOR_NUMBER, COLOR_DARK_GRAY);
+
+    init_pair(PAIR_STRING,   COLOR_WHITE,   SCOLOR_STRING);
+    init_pair(PAIR_STRING+1, SCOLOR_STRING, COLOR_DARK_GRAY);
+#endif
 
     maxcols = getmaxx(stdscr);
     maxrows = getmaxy(stdscr);

@@ -93,6 +93,7 @@ FREEOBJS =\
 	grp/getgrgid_r.o \
 	errno/__errno_location.o \
 	shadow/getspnam_r.o \
+	ctype/isdigit.o \
 
 HOSTEDOBJS =
 
