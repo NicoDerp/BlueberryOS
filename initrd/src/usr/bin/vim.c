@@ -241,6 +241,9 @@ void renderRow(row_t* row) {
     row->rchars = NULL;
     row->colors = NULL;
 
+    bool string = false;
+    bool comment = false;
+    (void) comment;
     for (unsigned int i = 0; i < row->len; i++) {
         char c = row->chars[i];
         char nc = row->chars[i + 1];
@@ -265,9 +268,14 @@ void renderRow(row_t* row) {
             row->rchars[row->rlen] = c;
         }
 
+        if (c == '"')
+            string = !string;
+
         unsigned char color;
         if (isdigit(c) || (c == '-' && isdigit(nc)))
             color = SPAIR_NUMBER;
+        else if (string || c == '"')
+            color = SPAIR_STRING;
         else
             color = SPAIR_DEFAULT;
 
