@@ -848,6 +848,7 @@ void deleteCurrentChar(void) {
 
         E.cury--;
 
+        E.saved = false;
         return;
     }
 
@@ -875,6 +876,8 @@ void deleteCurrentChar(void) {
 
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
+
+    E.saved = false;
 }
 
 void deleteCurrentLine(void) {
@@ -889,6 +892,8 @@ void deleteCurrentLine(void) {
     E.numrows--;
 
     snapCursor();
+
+    E.saved = false;
 }
 
 void copySelection(void) {
@@ -1053,6 +1058,8 @@ void pasteClipboard(void) {
         E.coloff = E.rcurx - maxcols + maxcols/2;
 
     renderRow(row);
+
+    E.saved = false;
 }
 
 void newLineAndInsert(void) {
@@ -1079,6 +1086,8 @@ void newLineAndInsert(void) {
     renderRow(r);
 
     E.mode = INSERT;
+
+    E.saved = false;
 }
 
 void searchNext(void) {
@@ -1355,8 +1364,8 @@ void main(int argc, char* argv[]) {
                 continue;
 
             insertCharacter(&E.rows[E.cury], E.curx, ch);
-            E.saved = false;
             rightArrow();
+            E.saved = false;
         }
         else if (E.mode == NORMAL) {
 
