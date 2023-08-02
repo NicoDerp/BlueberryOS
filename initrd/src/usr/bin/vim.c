@@ -254,12 +254,17 @@ void updateSyntax(row_t* row) {
             row->colors[i++] = SPAIR_COMMENT;
         else if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
             row->colors[i++] = SPAIR_NUMBER;
+        else if (c == '<') {
+            while (i < row->rlen && row->rchars[i] != '>') {
+                row->colors[i++] = SPAIR_SEPERATOR;
+            }
+        }
         else if (is_rseperator(c))
             row->colors[i++] = SPAIR_SEPERATOR;
         else if (string || c == '"' || c == '\'')
             row->colors[i++] = SPAIR_STRING;
         else if (c == '#') {
-            while (!(sep = is_seperator((c = row->rchars[i])))) {
+            while (i < row->rlen && !(sep = is_seperator(row->rchars[i]))) {
                 row->colors[i++] = SPAIR_SPECIAL;
             }
         }
