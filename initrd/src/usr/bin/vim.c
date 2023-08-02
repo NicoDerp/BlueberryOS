@@ -52,8 +52,8 @@
 /* Color pairs */
 #define SPAIR_TOPBAR      1
 #define SPAIR_CMDBAR      2
-#define SPAIR_DEFAULT     3
-#define SPAIR_MATCH       4
+#define SPAIR_MATCH       3
+#define SPAIR_DEFAULT     4
 
 /* Colors that syntax highlight uses (BlueberryOS specific ncurses colors) */
 #define SCOLOR_NUMBER    COLOR_LIGHT_BROWN
@@ -1538,10 +1538,12 @@ void main(int argc, char* argv[]) {
     /* Cmd-bar color */
     init_pair(SPAIR_CMDBAR, COLOR_WHITE, COLOR_BLACK);
 
+    /* Color for search matches */
+    init_pair(SPAIR_MATCH,     SCOLOR_DEFAULT,  SCOLOR_MATCH);
+
+    /* Default text color */
     init_pair(SPAIR_DEFAULT,   SCOLOR_DEFAULT,  COLOR_BLACK);
     init_pair(SPAIR_DEFAULT+1, SCOLOR_DEFAULT,  SCOLOR_VISUAL);
-
-    init_pair(SPAIR_MATCH,     SCOLOR_DEFAULT,  SCOLOR_MATCH);
 
     /* Syntax highlighting colors */
 #if SYNTAX_HIGHLIGHT
