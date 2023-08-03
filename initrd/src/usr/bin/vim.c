@@ -61,6 +61,7 @@
 #define SCOLOR_COMMENT   COLOR_DARK_GRAY
 #define SCOLOR_SEPERATOR COLOR_LIGHT_RED
 #define SCOLOR_SPECIAL   COLOR_LIGHT_MAGENTA
+#define SCOLOR_INCLUDE   COLOR_LIGHT_RED
 
 /* Syntax highlighting color pairs */
 #define SPAIR_NUMBER      6
@@ -68,6 +69,7 @@
 #define SPAIR_COMMENT     10
 #define SPAIR_SEPERATOR   12
 #define SPAIR_SPECIAL     14
+#define SPAIR_INCLUDE     16
 
 
 /* Filetype syntax highlighting config */
@@ -76,23 +78,33 @@
 #define HIGHLIGHT_C_COMMENTS (1 << 2)
 #define HIGHLIGHT_SEPERATORS (1 << 3)
 #define HIGHLIGHT_C_SPECIAL  (1 << 4)
+#define HIGHLIGHT_C_INCLUDE  (1 << 5)
 
 
 
 
 #if SYNTAX_HIGHLIGHT
 
-typedef unsigned int hl_t;
-
+typedef unsigned int sh_t;
 typedef struct {
-    char** fts;
-    hl_t hl;
-} highlight_t;
+    char** filetypes;
+    char** keywords;
+    char* scomment;
+    sh_t sh;
+} highlight_table_t;
 
-highlight_t highlightTable[] = {
+highlight_table_t highlightTable[] = {
     {
         (char*[]) {"c", "cpp", "h", NULL},
-        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS
+        (char*[]) {
+            "auto", "break", "case", "char", "const", "continue", "default", "do",
+            "double", "else", "enum", "extern", "float", "for", "goto", "if",
+            "inline", "int", "long", "register", "restrict", "return", "short",
+            "signed", "sizeof", "static", "struct", "switch", "typedef", "union",
+            "unsigned", "void", "volatile", "while", NULL
+        },
+        "//",
+        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_C_COMMENTS | HIGHLIGHT_SEPERATORS | HIGHLIGHT_C_SPECIAL | HIGHLIGHT_C_INCLUDE
     },
 };
 
@@ -165,8 +177,8 @@ struct {
     unsigned int searchy;
 
 #if SYNTAX_HIGHLIGHT
-    hl_t phl;
-    hl_t hl;
+    highlight_table_t* pht;
+    highlight_table_t* ht;
 #endif
 
     unsigned int clipSize;
@@ -261,6 +273,9 @@ void updateSyntax(row_t* row) {
     row->colors = (unsigned char*) malloc(row->rlen);
     memset(row->colors, SPAIR_DEFAULT, row->rlen);
 
+    if (E.ht == NULL)
+        return;
+
     char strchar = 0;
     bool string = false;
     bool comment = false;
@@ -279,25 +294,25 @@ void updateSyntax(row_t* row) {
             string = true;
             strchar = c;
         }
-        else if (c == '/' && row->rchars[i + 1] == '/') {
+        else if (strncmp(&row->rchars[i], E.ht->scomment, strlen(E.ht->scomment)) == 0) {
             comment = true;
         }
 
         bool sep = is_seperator(c);
-        if (comment)
+        if ((E.ht->sh & HIGHLIGHT_C_COMMENTS) && comment)
             row->colors[i++] = SPAIR_COMMENT;
-        else if ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER))
+        else if ((E.ht->sh & HIGHLIGHT_NUMBERS) && ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER)))
             row->colors[i++] = SPAIR_NUMBER;
-        else if (c == '<') {
+        else if ((E.ht->sh & HIGHLIGHT_C_INCLUDE) && (c == '<')) {
             while (i < row->rlen && row->rchars[i] != '>') {
                 row->colors[i++] = SPAIR_SEPERATOR;
             }
         }
-        else if (is_rseperator(c))
+        else if ((E.ht->sh & HIGHLIGHT_SEPERATORS) && is_rseperator(c))
             row->colors[i++] = SPAIR_SEPERATOR;
-        else if (string || c == '"' || c == '\'')
+        else if ((E.ht->sh & HIGHLIGHT_STRINGS) && (string || c == '"' || c == '\''))
             row->colors[i++] = SPAIR_STRING;
-        else if (c == '#') {
+        else if ((E.ht->sh & HIGHLIGHT_C_SPECIAL) && (c == '#')) {
             while (i < row->rlen && !(sep = is_seperator(row->rchars[i]))) {
                 row->colors[i++] = SPAIR_SPECIAL;
             }
@@ -318,37 +333,35 @@ void updateAllSyntax(void) {
 
 void getSyntaxHighlighting(char* filename) {
 
-    E.hl = 0;
-
     if (filename == NULL) {
-        if (E.hl != E.phl)
+        if (E.ht != E.pht)
             updateAllSyntax();
 
-        E.phl = E.hl;
+        E.pht = E.ht;
         return;
     }
 
     char* filetype = strrchr(filename, '.');
     if (filetype == NULL) {
-        if (E.hl != E.phl)
+        if (E.ht != E.pht)
             updateAllSyntax();
 
-        E.phl = E.hl;
+        E.pht = E.ht;
         return;
     }
     filetype++;
 
     for (unsigned int i = 0; i < (sizeof(highlightTable)/sizeof(highlightTable[0])); i++) {
 
-        for (unsigned int j = 0; highlightTable[i].fts[j]; j++) {
+        for (unsigned int j = 0; highlightTable[i].filetypes[j]; j++) {
 
-            if (strcmp(highlightTable[i].fts[j], filetype) == 0) {
+            if (strcmp(highlightTable[i].filetypes[j], filetype) == 0) {
 
-                E.hl = highlightTable[i].hl;
-                if (E.hl != E.phl)
+                E.ht = &highlightTable[i];
+                if (E.ht != E.pht)
                     updateAllSyntax();
 
-                E.phl = E.hl;
+                E.pht = E.ht;
                 return;
             }
         }
@@ -1640,8 +1653,8 @@ void main(int argc, char* argv[]) {
     E.searchy = 0;
 
 #if SYNTAX_HIGHLIGHT
-    E.phl = 0;
-    E.hl = 0;
+    E.pht = NULL;
+    E.ht = NULL;
 #endif
 
     E.clipSize = 0;
@@ -1679,6 +1692,9 @@ void main(int argc, char* argv[]) {
 
     init_pair(SPAIR_SPECIAL,   SCOLOR_SPECIAL, COLOR_BLACK);
     init_pair(SPAIR_SPECIAL+1, SCOLOR_SPECIAL, SCOLOR_VISUAL);
+
+    init_pair(SPAIR_INCLUDE,   SCOLOR_INCLUDE, COLOR_BLACK);
+    init_pair(SPAIR_INCLUDE+1, SCOLOR_INCLUDE, SCOLOR_VISUAL);
 #endif
 
     maxcols = getmaxx(stdscr);
