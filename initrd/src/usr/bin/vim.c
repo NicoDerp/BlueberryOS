@@ -60,6 +60,7 @@
 #define SCOLOR_STRING    COLOR_LIGHT_GREEN
 #define SCOLOR_COMMENT   COLOR_DARK_GRAY
 #define SCOLOR_SEPERATOR COLOR_LIGHT_RED
+#define SCOLOR_KEYWORD   COLOR_LIGHT_MAGENTA
 #define SCOLOR_SPECIAL   COLOR_LIGHT_MAGENTA
 #define SCOLOR_INCLUDE   COLOR_LIGHT_RED
 
@@ -68,17 +69,19 @@
 #define SPAIR_STRING      8
 #define SPAIR_COMMENT     10
 #define SPAIR_SEPERATOR   12
-#define SPAIR_SPECIAL     14
-#define SPAIR_INCLUDE     16
+#define SPAIR_KEYWORD     14
+#define SPAIR_SPECIAL     16
+#define SPAIR_INCLUDE     18
 
 
 /* Filetype syntax highlighting config */
 #define HIGHLIGHT_NUMBERS    (1 << 0)
 #define HIGHLIGHT_STRINGS    (1 << 1)
-#define HIGHLIGHT_C_COMMENTS (1 << 2)
+#define HIGHLIGHT_COMMENTS   (1 << 2)
 #define HIGHLIGHT_SEPERATORS (1 << 3)
-#define HIGHLIGHT_C_SPECIAL  (1 << 4)
-#define HIGHLIGHT_C_INCLUDE  (1 << 5)
+#define HIGHLIGHT_KEYWORDS   (1 << 4)
+#define HIGHLIGHT_SPECIAL    (1 << 5)
+#define HIGHLIGHT_C_INCLUDE    (1 << 6)
 
 
 
@@ -104,7 +107,7 @@ highlight_table_t highlightTable[] = {
             "unsigned", "void", "volatile", "while", NULL
         },
         "//",
-        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_C_COMMENTS | HIGHLIGHT_SEPERATORS | HIGHLIGHT_C_SPECIAL | HIGHLIGHT_C_INCLUDE
+        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS | HIGHLIGHT_KEYWORDS | HIGHLIGHT_SPECIAL | HIGHLIGHT_C_INCLUDE
     },
 };
 
@@ -294,25 +297,43 @@ void updateSyntax(row_t* row) {
             string = true;
             strchar = c;
         }
-        else if (strncmp(&row->rchars[i], E.ht->scomment, strlen(E.ht->scomment)) == 0) {
-            comment = true;
-        }
 
         bool sep = is_seperator(c);
-        if ((E.ht->sh & HIGHLIGHT_C_COMMENTS) && comment)
+        if ((E.ht->sh & HIGHLIGHT_COMMENTS) && (comment || (strncmp(&row->rchars[i], E.ht->scomment, strlen(E.ht->scomment)) == 0))) {
             row->colors[i++] = SPAIR_COMMENT;
-        else if ((E.ht->sh & HIGHLIGHT_NUMBERS) && ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER)))
+            comment = true;
+            goto end;
+        }
+
+        if ((E.ht->sh & HIGHLIGHT_KEYWORDS) && psep) {
+            for (unsigned int j = 0; E.ht->keywords[j]; j++) {
+
+                unsigned int len = strlen(E.ht->keywords[j]);
+                if (strncmp(&row->rchars[i], E.ht->keywords[j], len) == 0) {
+                    printf("Found '%s':'%s'\n", &row->rchars[i], E.ht->keywords[j]);
+                    memset(&row->colors[i], SPAIR_KEYWORD, len);
+                    i += len;
+                    goto end;
+                }
+            }
+        }
+
+        if ((E.ht->sh & HIGHLIGHT_NUMBERS) && ((isdigit(c) && (psep || pcolor == SPAIR_NUMBER)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBER)))
             row->colors[i++] = SPAIR_NUMBER;
+
         else if ((E.ht->sh & HIGHLIGHT_C_INCLUDE) && (c == '<')) {
             while (i < row->rlen && row->rchars[i] != '>') {
                 row->colors[i++] = SPAIR_SEPERATOR;
             }
         }
+
         else if ((E.ht->sh & HIGHLIGHT_SEPERATORS) && is_rseperator(c))
             row->colors[i++] = SPAIR_SEPERATOR;
+
         else if ((E.ht->sh & HIGHLIGHT_STRINGS) && (string || c == '"' || c == '\''))
             row->colors[i++] = SPAIR_STRING;
-        else if ((E.ht->sh & HIGHLIGHT_C_SPECIAL) && (c == '#')) {
+
+        else if ((E.ht->sh & HIGHLIGHT_SPECIAL) && (c == '#')) {
             while (i < row->rlen && !(sep = is_seperator(row->rchars[i]))) {
                 row->colors[i++] = SPAIR_SPECIAL;
             }
@@ -320,6 +341,7 @@ void updateSyntax(row_t* row) {
         else
             i++;
 
+end:
         psep = sep;
     }
 }
@@ -1695,6 +1717,9 @@ void main(int argc, char* argv[]) {
 
     init_pair(SPAIR_INCLUDE,   SCOLOR_INCLUDE, COLOR_BLACK);
     init_pair(SPAIR_INCLUDE+1, SCOLOR_INCLUDE, SCOLOR_VISUAL);
+
+    init_pair(SPAIR_KEYWORD,   SCOLOR_KEYWORD, COLOR_BLACK);
+    init_pair(SPAIR_KEYWORD+1, SCOLOR_KEYWORD, SCOLOR_VISUAL);
 #endif
 
     maxcols = getmaxx(stdscr);
