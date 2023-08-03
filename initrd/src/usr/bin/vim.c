@@ -40,7 +40,7 @@
 #define SYNTAX_HIGHLIGHT  1
 
 /* Default text color with and without syntax highlighting (ncurses defined) */
-#define SCOLOR_DEFAULT   COLOR_WHITE
+#define SCOLOR_DEFAULT   COLOR_LIGHT_GRAY
 
 /* Background text color for selection (BlueberryOS specific ncurses color) */
 #define SCOLOR_VISUAL    COLOR_DARK_GRAY
@@ -95,6 +95,7 @@ typedef unsigned int sh_t;
 typedef struct {
     char** filetypes;
     char** keywords;
+    char** types;
     char* scomment;
     sh_t sh;
 } highlight_table_t;
@@ -103,21 +104,21 @@ highlight_table_t highlightTable[] = {
     {
         (char*[]) {"c", "cpp", "h", NULL},
         (char*[]) {
-            "auto", "break", "case", "char", "const", "continue", "default", "do",
-            "double", "else", "enum", "extern", "float", "for", "goto", "if",
-            "inline", "int", "long", "register", "restrict", "return", "short",
-            "signed", "sizeof", "static", "struct", "switch", "typedef", "union",
-            "unsigned", "void", "volatile", "while", NULL
+            "auto", "break", "case", "continue", "default", "do", "else", "enum",
+            "for", "goto", "if", "return", "sizeof", "offsetof", "struct", "switch",
+            "typedef", "union", "while", NULL
+        },
+        (char*[]) {
+            "char", "const", "double", "float", "int", "long", "register", "restrict", "short",
+            "inline", "extern", "signed", "static", "unsigned", "void", "volatile", NULL
         },
         "//",
-        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS | HIGHLIGHT_KEYWORDS | HIGHLIGHT_SPECIAL | HIGHLIGHT_C_INCLUDE
+        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS |
+        HIGHLIGHT_KEYWORDS | HIGHLIGHT_TYPES | HIGHLIGHT_SPECIAL | HIGHLIGHT_C_INCLUDE
     },
 };
 
 #endif
-
-
-
 
 #define TAB_SIZE   (sizeof(TAB_RENDER)-1)
 #define MAX_CMD_BUFFER 32
@@ -313,8 +314,19 @@ void updateSyntax(row_t* row) {
 
                 unsigned int len = strlen(E.ht->keywords[j]);
                 if (strncmp(&row->rchars[i], E.ht->keywords[j], len) == 0) {
-                    printf("Found '%s':'%s'\n", &row->rchars[i], E.ht->keywords[j]);
                     memset(&row->colors[i], SPAIR_KEYWORDS, len);
+                    i += len;
+                    goto end;
+                }
+            }
+        }
+
+        if ((E.ht->sh & HIGHLIGHT_TYPES) && psep) {
+            for (unsigned int j = 0; E.ht->types[j]; j++) {
+
+                unsigned int len = strlen(E.ht->types[j]);
+                if (strncmp(&row->rchars[i], E.ht->types[j], len) == 0) {
+                    memset(&row->colors[i], SPAIR_TYPES, len);
                     i += len;
                     goto end;
                 }

@@ -27,6 +27,7 @@ I want BlueberryOS to be simple, small and efficient.
 - [x] Preemptive OS
 - [x] C standard-library
 - [x] Built-in standard applications (with similar use to GNU) made specifically for BlueberryOS
+- [x] Built-in highly-customizable text editor with similar to vim (called vim)
 - [x] Built-in terminal-emulator
 
 ## Milestones
@@ -48,11 +49,11 @@ I want BlueberryOS to be simple, small and efficient.
 - [ ] Kernel modules
 - [ ] Multiple CPU cores
 - [ ] Package manager (bpm (Blueberryos Package Manager))
-- [ ] Sound
-- [ ] USB?
-- [ ] NVMe
-- [ ] Fully adapted Cross-compiler
 - [ ] 64-bit
+- [ ] Fully adapted Cross-compiler
+- [ ] Sound
+- [ ] USB
+- [ ] NVMe
 - [ ] UEFI
 
 ## Setup

@@ -66,7 +66,6 @@ extern WINDOW* stdscr;
 #define COLOR_RED           4
 #define COLOR_MAGENTA       5
 #define COLOR_BROWN         6
-#define COLOR_WHITE         7
 #define COLOR_LIGHT_GRAY    7
 #define COLOR_DARK_GRAY     8
 #define COLOR_LIGHT_BLUE    9
@@ -75,7 +74,7 @@ extern WINDOW* stdscr;
 #define COLOR_LIGHT_RED     12
 #define COLOR_LIGHT_MAGENTA 13
 #define COLOR_LIGHT_BROWN   14
-//#define COLOR_WHITE         15
+#define COLOR_WHITE         15
 
 
 #ifdef __cplusplus
