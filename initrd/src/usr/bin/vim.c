@@ -95,8 +95,6 @@
 
 
 
-#if SYNTAX_HIGHLIGHT
-
 typedef unsigned int sh_t;
 typedef struct {
     char* name;
@@ -143,8 +141,6 @@ highlight_table_t highlightTable[] = {
         HIGHLIGHT_KEYWORDS
     },
 };
-
-#endif
 
 #define TAB_SIZE   (sizeof(TAB_RENDER)-1)
 #define MAX_CMD_BUFFER 32
@@ -212,9 +208,9 @@ struct {
     unsigned int searchx;
     unsigned int searchy;
 
+    highlight_table_t* ht;
 #if SYNTAX_HIGHLIGHT
     highlight_table_t* pht;
-    highlight_table_t* ht;
 #endif
 
     unsigned int clipSize;
@@ -407,6 +403,7 @@ void updateAllSyntax(void) {
         updateSyntax(&E.rows[i]);
     }
 }
+#endif
 
 bool getSyntaxName(char* name) {
 
@@ -415,10 +412,13 @@ bool getSyntaxName(char* name) {
         if (strcmp(highlightTable[i].name, name) == 0) {
 
             E.ht = &highlightTable[i];
+
+#if SYNTAX_HIGHLIGHT
             if (E.ht != E.pht)
                 updateAllSyntax();
 
             E.pht = E.ht;
+#endif
             return true;
         }
     }
@@ -434,10 +434,13 @@ bool getSyntaxFiletype(char* filetype) {
             if (strcmp(highlightTable[i].filetypes[j], filetype) == 0) {
 
                 E.ht = &highlightTable[i];
+
+#if SYNTAX_HIGHLIGHT
                 if (E.ht != E.pht)
                     updateAllSyntax();
 
                 E.pht = E.ht;
+#endif
                 return true;
             }
         }
@@ -455,10 +458,13 @@ bool getSyntaxFilename(char* filename) {
             if (strcmp(highlightTable[i].filenames[j], filename) == 0) {
 
                 E.ht = &highlightTable[i];
+
+#if SYNTAX_HIGHLIGHT
                 if (E.ht != E.pht)
                     updateAllSyntax();
 
                 E.pht = E.ht;
+#endif
                 return true;
             }
         }
@@ -471,10 +477,12 @@ void getSyntax(char* filename) {
 
     E.ht = NULL;
     if (filename == NULL) {
+#if SYNTAX_HIGHLIGHT
         if (E.ht != E.pht)
             updateAllSyntax();
 
         E.pht = E.ht;
+#endif
         return;
     }
 
@@ -483,21 +491,24 @@ void getSyntax(char* filename) {
 
     char* filetype = strrchr(filename, '.');
     if (filetype == NULL) {
+#if SYNTAX_HIGHLIGHT
         if (E.ht != E.pht)
             updateAllSyntax();
 
         E.pht = E.ht;
+#endif
         return;
     }
     if (getSyntaxFiletype(filetype + 1))
         return;
 
+#if SYNTAX_HIGHLIGHT
     if (E.ht != E.pht)
         updateAllSyntax();
 
     E.pht = E.ht;
-}
 #endif
+}
 
 #if LINE_NUMBERS
 void updateLineNumbers(void) {
@@ -644,9 +655,7 @@ void readFile(char* filename) {
     E.filename = malloc(fnlen + 1);
     memcpy(E.filename, filename, fnlen + 1);
 
-#if SYNTAX_HIGHLIGHT
     getSyntax(filename);
-#endif
 
     //int fd = open(filename, O_RDONLY | O_CREAT, 0664);
     int fd = open(filename, O_RDONLY);
@@ -728,9 +737,7 @@ unsigned int saveFile(char* filename) {
         exit(1);
     }
 
-#if SYNTAX_HIGHLIGHT
     getSyntax(filename);
-#endif
     E.saved = true;
 
     unsigned int bytesWritten = 0;
