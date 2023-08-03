@@ -19,6 +19,8 @@
 /* 0 then tabs are tabs, 1 for tabs are spaces (bit buggy) */
 #define TAB_AS_SPACE      0
 
+/* 1 for line numbers */
+#define LINE_NUMBERS      1
 
 
 /* Characters of margin left and right when scrolling */
@@ -40,41 +42,44 @@
 #define SYNTAX_HIGHLIGHT  1
 
 /* Default text color with and without syntax highlighting (ncurses defined) */
-#define SCOLOR_DEFAULT   COLOR_LIGHT_GRAY
+#define SCOLOR_DEFAULT      COLOR_LIGHT_GRAY
 
 /* Background text color for selection (BlueberryOS specific ncurses color) */
-#define SCOLOR_VISUAL    COLOR_DARK_GRAY
+#define SCOLOR_VISUAL       COLOR_DARK_GRAY
 
 /* Color for search matches */
-#define SCOLOR_MATCH     COLOR_LIGHT_BLUE
+#define SCOLOR_MATCH        COLOR_LIGHT_BLUE
 
+/* Line numbers color */
+#define SCOLOR_LINE_NUMBERS COLOR_WHITE
 
 /* Color pairs */
-#define SPAIR_TOPBAR      1
-#define SPAIR_CMDBAR      2
-#define SPAIR_MATCH       3
-#define SPAIR_DEFAULT     4
+#define SPAIR_TOPBAR        1
+#define SPAIR_CMDBAR        2
+#define SPAIR_MATCH         3
+#define SPAIR_LINE_NUMBERS  4
+#define SPAIR_DEFAULT       5
 
 /* Colors that syntax highlight uses (BlueberryOS specific ncurses colors) */
-#define SCOLOR_NUMBERS    COLOR_LIGHT_BROWN
-#define SCOLOR_STRINGS    COLOR_LIGHT_GREEN
+#define SCOLOR_NUMBERS      COLOR_LIGHT_BROWN
+#define SCOLOR_STRINGS      COLOR_LIGHT_GREEN
 //#define SCOLOR_COMMENTS   COLOR_DARK_GRAY
-#define SCOLOR_COMMENTS   COLOR_LIGHT_CYAN
-#define SCOLOR_SEPERATORS COLOR_LIGHT_RED
-#define SCOLOR_KEYWORDS   COLOR_LIGHT_MAGENTA
-#define SCOLOR_TYPES      COLOR_WHITE
-#define SCOLOR_SPECIALS   COLOR_LIGHT_MAGENTA
-#define SCOLOR_INCLUDES   COLOR_LIGHT_RED
+#define SCOLOR_COMMENTS     COLOR_LIGHT_CYAN
+#define SCOLOR_SEPERATORS   COLOR_LIGHT_RED
+#define SCOLOR_KEYWORDS     COLOR_LIGHT_MAGENTA
+#define SCOLOR_TYPES        COLOR_WHITE
+#define SCOLOR_SPECIALS     COLOR_LIGHT_MAGENTA
+#define SCOLOR_INCLUDES     COLOR_LIGHT_RED
 
 /* Syntax highlighting color pairs */
-#define SPAIR_NUMBERS      6
-#define SPAIR_STRINGS      8
-#define SPAIR_COMMENTS     10
-#define SPAIR_SEPERATORS   12
-#define SPAIR_KEYWORDS     14
-#define SPAIR_TYPES        16
-#define SPAIR_SPECIALS     18
-#define SPAIR_INCLUDES     20
+#define SPAIR_NUMBERS       7
+#define SPAIR_STRINGS       9
+#define SPAIR_COMMENTS      11
+#define SPAIR_SEPERATORS    13
+#define SPAIR_KEYWORDS      15
+#define SPAIR_TYPES         17
+#define SPAIR_SPECIALS      19
+#define SPAIR_INCLUDES      21
 
 
 /* Filetype syntax highlighting config */
@@ -160,9 +165,6 @@ typedef enum {
 WINDOW* topBar;
 WINDOW* cmdBar;
 
-unsigned int maxcols;
-unsigned int maxrows;
-
 
 typedef void (*handler_t)(void);
 typedef struct {
@@ -200,6 +202,12 @@ struct {
     unsigned int cury;
     mode_t mode;
 
+    unsigned int omaxcols;
+    unsigned int omaxrows;
+    unsigned int maxcols;
+    unsigned int maxrows;
+    unsigned int tdigits;
+
     unsigned int searchSize;
     unsigned int searchx;
     unsigned int searchy;
@@ -223,6 +231,17 @@ struct {
 
 extern inline row_t* currentRow(void) {
     return &E.rows[E.cury];
+}
+
+extern inline unsigned int getDigits(unsigned int n) {
+
+    unsigned int r = 1;
+    while (n > 9) {
+        n /= 10;
+        r++;
+    }
+
+    return r;
 }
 
 extern inline void snapCursor(void) {
@@ -480,6 +499,18 @@ void getSyntax(char* filename) {
 }
 #endif
 
+#if LINE_NUMBERS
+void updateLineNumbers(void) {
+
+    unsigned int d = getDigits(E.numrows);
+    if (E.tdigits == d)
+        return;
+
+    E.tdigits = d;
+    E.maxcols = E.omaxcols - d - 1;
+}
+#endif
+
 void renderRow(row_t* row) {
 
     // Incase there is something there
@@ -545,13 +576,13 @@ void searchFor(bool final) {
             E.searchy = i;
             E.cury = i;
 
-            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
-                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            if (E.rcurx >= E.coloff + E.maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - E.maxcols + SEARCH_MARGIN_S + 1;
             else if (E.rcurx < E.coloff)
                 E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
+            if (E.cury >= E.rowoff + E.maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - E.maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
@@ -587,7 +618,7 @@ void insertCharacter(row_t* row, unsigned int at, int ch) {
 
 void appendRow(char* s, unsigned int linelen) {
 
-    // If maxrows is NULL then realloc will call malloc for us
+    // If E.maxrows is NULL then realloc will call malloc for us
     E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
 
     row_t* row = &E.rows[E.numrows];
@@ -854,7 +885,16 @@ void displayScreen(void) {
     }
 
     size_t i;
-    for (i = 0; (i < maxrows) && (i < E.numrows-E.rowoff); i++) {
+    for (i = 0; (i < E.maxrows) && (i < E.numrows-E.rowoff); i++) {
+
+#if LINE_NUMBERS
+        attron(COLOR_PAIR(SPAIR_LINE_NUMBERS));
+        unsigned int r = getDigits(i + E.rowoff + 1);
+        for (unsigned int j = 0; j < E.tdigits - r; j++)
+            addch(' ');
+        printw("%d ", i + E.rowoff + 1);
+        attroff(COLOR_PAIR(SPAIR_LINE_NUMBERS));
+#endif
 
         unsigned int len = E.rows[i + E.rowoff].rlen;
         if (len <= E.coloff) {
@@ -864,7 +904,7 @@ void displayScreen(void) {
         }
 
         len -= E.coloff;
-        len = len > maxcols ? maxcols : len;
+        len = len > E.maxcols ? E.maxcols : len;
 
 #if SYNTAX_HIGHLIGHT
         for (unsigned int j = 0; j < len; j++) {
@@ -994,11 +1034,11 @@ void displayScreen(void) {
 
     // Draw '~' for empty lines
     attron(COLOR_PAIR(SPAIR_DEFAULT));
-    for (; i < maxrows; i++) {
+    for (; i < E.maxrows; i++) {
 
         printw("~");
         clrtoeol();
-        if (i != maxrows-1)
+        if (i != E.maxrows-1)
             printw("\n");
     }
     attroff(COLOR_PAIR(SPAIR_DEFAULT));
@@ -1014,7 +1054,7 @@ void scrollUp(void) {
 
 void scrollDown(void) {
 
-    if (E.rowoff + maxrows == E.numrows)
+    if (E.rowoff + E.maxrows == E.numrows)
         return;
 
     E.rowoff++;
@@ -1031,7 +1071,11 @@ void scrollRight(void) {
 }
 
 void moveCursor(void) {
+#if LINE_NUMBERS
+    move(E.cury - E.rowoff, E.rcurx - E.coloff + E.tdigits + 1);
+#else
     move(E.cury - E.rowoff, E.rcurx - E.coloff);
+#endif
 }
 
 
@@ -1061,8 +1105,8 @@ void leftArrow(void) {
 
             E.rcurx = currentRow()->rlen;
             E.curx = currentRow()->len;
-            if (E.rcurx > maxcols) {
-                E.coloff = E.rcurx - maxcols + maxcols/2;
+            if (E.rcurx > E.maxcols) {
+                E.coloff = E.rcurx - E.maxcols + E.maxcols/2;
             }
         } else {
 
@@ -1097,7 +1141,7 @@ void rightArrow(void) {
 
     if (E.rcurx >= currentRow()->rlen) {
 
-        if (E.cury - E.rowoff >= maxrows - SCROLL_MARGIN_TB - 1)
+        if (E.cury - E.rowoff >= E.maxrows - SCROLL_MARGIN_TB - 1)
             scrollDown();
 
         E.cury++;
@@ -1108,7 +1152,7 @@ void rightArrow(void) {
             E.coloff = 0;
         }
 
-    } else if (E.rcurx - E.coloff >= maxcols - SCROLL_MARGIN_S - 1) {
+    } else if (E.rcurx - E.coloff >= E.maxcols - SCROLL_MARGIN_S - 1) {
 
         scrollRight();
 
@@ -1157,10 +1201,10 @@ void upArrow(void) {
 
     snapCursor();
 
-    if (E.rcurx < maxcols-1)
+    if (E.rcurx < E.maxcols-1)
         E.coloff = 0;
     else
-        E.coloff = (E.rcurx+maxcols > E.coloff || E.rcurx < E.coloff) ? (E.rcurx-maxcols+maxcols/2) : (E.coloff);
+        E.coloff = (E.rcurx+E.maxcols > E.coloff || E.rcurx < E.coloff) ? (E.rcurx-E.maxcols+E.maxcols/2) : (E.coloff);
 }
 
 void downArrow(void) {
@@ -1168,17 +1212,17 @@ void downArrow(void) {
     if ((E.numrows == 0) || (E.cury == E.numrows-1))
         return;
 
-    if (E.cury - E.rowoff >= maxrows - SCROLL_MARGIN_TB - 1)
+    if (E.cury - E.rowoff >= E.maxrows - SCROLL_MARGIN_TB - 1)
         scrollDown();
 
     E.cury++;
 
     snapCursor();
 
-    if (E.rcurx < maxcols-1)
+    if (E.rcurx < E.maxcols-1)
         E.coloff = 0;
     else
-        E.coloff = (E.rcurx+maxcols > E.coloff || E.rcurx < E.coloff) ? (E.rcurx-maxcols+maxcols/2) : (E.coloff);
+        E.coloff = (E.rcurx+E.maxcols > E.coloff || E.rcurx < E.coloff) ? (E.rcurx-E.maxcols+E.maxcols/2) : (E.coloff);
 }
 
 void escapeKey(void) {
@@ -1208,7 +1252,7 @@ void gotoEndOfLine(void) {
     E.scurx = currentRow()->len;
     E.curx = E.scurx;
 
-    E.coloff = E.rscurx > maxcols ? E.rscurx-maxcols+maxcols/2 : 0;
+    E.coloff = E.rscurx > E.maxcols ? E.rscurx-E.maxcols+E.maxcols/2 : 0;
 }
 
 void gotoStartOfFile(void) {
@@ -1231,7 +1275,7 @@ void gotoEndOfFile(void) {
     E.curx = 0;
 
     E.cury = E.numrows-1;
-    E.rowoff = E.numrows-maxrows;
+    E.rowoff = E.numrows-E.maxrows;
     E.coloff = 0;
 }
 
@@ -1267,7 +1311,7 @@ void splitCurrentRow(void) {
     E.curx = 0;
     E.coloff = 0;
 
-    if (E.cury - E.rowoff >= maxrows)
+    if (E.cury - E.rowoff >= E.maxrows)
         E.rowoff++;
 }
 
@@ -1287,8 +1331,8 @@ void deleteCurrentChar(void) {
         E.scurx = trow->len;
         E.rcurx = trow->rlen;
         E.curx = trow->len;
-        if (E.rcurx > maxcols) {
-            E.coloff = E.rcurx - maxcols + maxcols/2;
+        if (E.rcurx > E.maxcols) {
+            E.coloff = E.rcurx - E.maxcols + E.maxcols/2;
         }
 
         trow->chars = (char*) realloc(trow->chars, trow->len + frow->len + 1);
@@ -1484,7 +1528,7 @@ void pasteClipboard(void) {
             renderRow(row);
 
             E.cury++;
-            if (E.cury - E.rowoff >= maxrows)
+            if (E.cury - E.rowoff >= E.maxrows)
                 E.rowoff++;
 
             E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
@@ -1516,8 +1560,8 @@ void pasteClipboard(void) {
     E.rscurx = E.rcurx;
     E.scurx = E.curx;
 
-    if (E.rcurx > maxcols)
-        E.coloff = E.rcurx - maxcols + maxcols/2;
+    if (E.rcurx > E.maxcols)
+        E.coloff = E.rcurx - E.maxcols + E.maxcols/2;
 
     renderRow(row);
 
@@ -1532,7 +1576,7 @@ void newLineAndInsert(void) {
     E.rcurx = 0;
     E.curx = 0;
     E.cury++;
-    if (E.cury - E.rowoff >= maxrows)
+    if (E.cury - E.rowoff >= E.maxrows)
         E.rowoff++;
 
     E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows + 1));
@@ -1597,13 +1641,13 @@ void searchNext(void) {
             E.searchy = i;
             E.cury = i;
 
-            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
-                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            if (E.rcurx >= E.coloff + E.maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - E.maxcols + SEARCH_MARGIN_S + 1;
             else if (E.rcurx < E.coloff)
                 E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
+            if (E.cury >= E.rowoff + E.maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - E.maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
@@ -1670,13 +1714,13 @@ void searchPrevious(void) {
             }
             E.cury = i;
 
-            if (E.rcurx >= E.coloff + maxcols - SEARCH_MARGIN_S - 1)
-                E.coloff = E.rcurx - maxcols + SEARCH_MARGIN_S + 1;
+            if (E.rcurx >= E.coloff + E.maxcols - SEARCH_MARGIN_S - 1)
+                E.coloff = E.rcurx - E.maxcols + SEARCH_MARGIN_S + 1;
             else if (E.rcurx < E.coloff)
                 E.coloff = MAX((int) E.rcurx - SEARCH_MARGIN_S, 0);
 
-            if (E.cury >= E.rowoff + maxrows - SEARCH_MARGIN_TB - 1)
-                E.rowoff = E.cury - maxrows + SEARCH_MARGIN_TB + 1;
+            if (E.cury >= E.rowoff + E.maxrows - SEARCH_MARGIN_TB - 1)
+                E.rowoff = E.cury - E.maxrows + SEARCH_MARGIN_TB + 1;
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
@@ -1815,6 +1859,8 @@ void main(int argc, char* argv[]) {
     /* Color for search matches */
     init_pair(SPAIR_MATCH,     SCOLOR_DEFAULT,  SCOLOR_MATCH);
 
+    init_pair(SPAIR_LINE_NUMBERS, SCOLOR_LINE_NUMBERS, COLOR_BLACK);
+
     /* Default text color */
     init_pair(SPAIR_DEFAULT,   SCOLOR_DEFAULT,  COLOR_BLACK);
     init_pair(SPAIR_DEFAULT+1, SCOLOR_DEFAULT,  SCOLOR_VISUAL);
@@ -1846,12 +1892,16 @@ void main(int argc, char* argv[]) {
     init_pair(SPAIR_INCLUDES+1,   SCOLOR_INCLUDES,   SCOLOR_VISUAL);
 #endif
 
-    maxcols = getmaxx(stdscr);
-    maxrows = getmaxy(stdscr);
+    E.omaxcols = getmaxx(stdscr);
+    E.omaxrows = getmaxy(stdscr);
 
-    topBar = newwin(1, maxcols, maxrows-2, 0);
-    cmdBar = newwin(1, maxcols, maxrows-1, 0);
-    maxrows -= 2;
+    topBar = newwin(1, E.omaxcols, E.omaxrows-2, 0);
+    cmdBar = newwin(1, E.omaxcols, E.omaxrows-1, 0);
+    E.omaxrows -= 2;
+
+    E.maxrows = E.omaxrows;
+    E.maxcols = E.omaxcols;
+
     refresh();
 
 
@@ -1860,6 +1910,10 @@ void main(int argc, char* argv[]) {
 
     if (E.numrows == 0)
         appendRow("", 0);
+
+#if LINE_NUMBERS
+    updateLineNumbers();
+#endif
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
