@@ -58,10 +58,11 @@
 /* Colors that syntax highlight uses (BlueberryOS specific ncurses colors) */
 #define SCOLOR_NUMBERS    COLOR_LIGHT_BROWN
 #define SCOLOR_STRINGS    COLOR_LIGHT_GREEN
-#define SCOLOR_COMMENTS   COLOR_DARK_GRAY
+//#define SCOLOR_COMMENTS   COLOR_DARK_GRAY
+#define SCOLOR_COMMENTS   COLOR_LIGHT_CYAN
 #define SCOLOR_SEPERATORS COLOR_LIGHT_RED
-#define SCOLOR_KEYWORD   COLOR_LIGHT_MAGENTA
-#define SCOLOR_TYPES     COLOR_LIGHT_BROWN
+#define SCOLOR_KEYWORDS   COLOR_LIGHT_MAGENTA
+#define SCOLOR_TYPES      COLOR_WHITE
 #define SCOLOR_SPECIALS   COLOR_LIGHT_MAGENTA
 #define SCOLOR_INCLUDES   COLOR_LIGHT_RED
 
@@ -83,7 +84,7 @@
 #define HIGHLIGHT_SEPERATORS (1 << 3)
 #define HIGHLIGHT_KEYWORDS   (1 << 4)
 #define HIGHLIGHT_TYPES      (1 << 5)
-#define HIGHLIGHT_SPECIAL    (1 << 6)
+#define HIGHLIGHT_SPECIALS   (1 << 6)
 #define HIGHLIGHT_C_INCLUDE  (1 << 7)
 
 
@@ -93,6 +94,8 @@
 
 typedef unsigned int sh_t;
 typedef struct {
+    char* name;
+    char** filenames;
     char** filetypes;
     char** keywords;
     char** types;
@@ -102,6 +105,8 @@ typedef struct {
 
 highlight_table_t highlightTable[] = {
     {
+        "C",
+        (char*[]) {NULL},
         (char*[]) {"c", "cpp", "h", NULL},
         (char*[]) {
             "auto", "break", "case", "continue", "default", "do", "else", "enum",
@@ -114,7 +119,23 @@ highlight_table_t highlightTable[] = {
         },
         "//",
         HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS |
-        HIGHLIGHT_KEYWORDS | HIGHLIGHT_TYPES | HIGHLIGHT_SPECIAL | HIGHLIGHT_C_INCLUDE
+        HIGHLIGHT_KEYWORDS | HIGHLIGHT_TYPES | HIGHLIGHT_SPECIALS | HIGHLIGHT_C_INCLUDE
+    },
+    {
+        "Python",
+        (char*[]) {NULL},
+        (char*[]) {"py", NULL},
+        (char*[]) {
+            "False", "await", "else", "import", "pass", "None", "break", "except",
+            "in", "raise", "True", "class", "finally", "is", "return", "and",
+            "continue", "for", "lambda", "try", "as", "def", "from", "nonlocal",
+            "while", "assert", "del", "global", "not", "with", "async", "elif",
+            "if", "or", "yield", NULL
+        },
+        (char*[]) {NULL},
+        "#",
+        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS |
+        HIGHLIGHT_KEYWORDS
     },
 };
 
@@ -313,7 +334,7 @@ void updateSyntax(row_t* row) {
             for (unsigned int j = 0; E.ht->keywords[j]; j++) {
 
                 unsigned int len = strlen(E.ht->keywords[j]);
-                if (strncmp(&row->rchars[i], E.ht->keywords[j], len) == 0) {
+                if (strncmp(&row->rchars[i], E.ht->keywords[j], len) == 0 && is_seperator(row->rchars[i + len])) {
                     memset(&row->colors[i], SPAIR_KEYWORDS, len);
                     i += len;
                     goto end;
@@ -348,7 +369,7 @@ void updateSyntax(row_t* row) {
         else if ((E.ht->sh & HIGHLIGHT_STRINGS) && (string || c == '"' || c == '\''))
             row->colors[i++] = SPAIR_STRINGS;
 
-        else if ((E.ht->sh & HIGHLIGHT_SPECIAL) && (c == '#')) {
+        else if ((E.ht->sh & HIGHLIGHT_SPECIALS) && (c == '#')) {
             while (i < row->rlen && !(sep = is_seperator(row->rchars[i]))) {
                 row->colors[i++] = SPAIR_SPECIALS;
             }
@@ -368,25 +389,24 @@ void updateAllSyntax(void) {
     }
 }
 
-void getSyntaxHighlighting(char* filename) {
+bool getSyntaxName(char* name) {
 
-    if (filename == NULL) {
-        if (E.ht != E.pht)
-            updateAllSyntax();
+    for (unsigned int i = 0; i < (sizeof(highlightTable)/sizeof(highlightTable[0])); i++) {
 
-        E.pht = E.ht;
-        return;
+        if (strcmp(highlightTable[i].name, name) == 0) {
+
+            E.ht = &highlightTable[i];
+            if (E.ht != E.pht)
+                updateAllSyntax();
+
+            E.pht = E.ht;
+            return true;
+        }
     }
 
-    char* filetype = strrchr(filename, '.');
-    if (filetype == NULL) {
-        if (E.ht != E.pht)
-            updateAllSyntax();
-
-        E.pht = E.ht;
-        return;
-    }
-    filetype++;
+    return false;
+}
+bool getSyntaxFiletype(char* filetype) {
 
     for (unsigned int i = 0; i < (sizeof(highlightTable)/sizeof(highlightTable[0])); i++) {
 
@@ -399,10 +419,64 @@ void getSyntaxHighlighting(char* filename) {
                     updateAllSyntax();
 
                 E.pht = E.ht;
-                return;
+                return true;
             }
         }
     }
+
+    return false;
+}
+
+bool getSyntaxFilename(char* filename) {
+
+    for (unsigned int i = 0; i < (sizeof(highlightTable)/sizeof(highlightTable[0])); i++) {
+
+        for (unsigned int j = 0; highlightTable[i].filenames[j]; j++) {
+
+            if (strcmp(highlightTable[i].filenames[j], filename) == 0) {
+
+                E.ht = &highlightTable[i];
+                if (E.ht != E.pht)
+                    updateAllSyntax();
+
+                E.pht = E.ht;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void getSyntax(char* filename) {
+
+    E.ht = NULL;
+    if (filename == NULL) {
+        if (E.ht != E.pht)
+            updateAllSyntax();
+
+        E.pht = E.ht;
+        return;
+    }
+
+    if (getSyntaxFilename(filename))
+        return;
+
+    char* filetype = strrchr(filename, '.');
+    if (filetype == NULL) {
+        if (E.ht != E.pht)
+            updateAllSyntax();
+
+        E.pht = E.ht;
+        return;
+    }
+    if (getSyntaxFiletype(filetype + 1))
+        return;
+
+    if (E.ht != E.pht)
+        updateAllSyntax();
+
+    E.pht = E.ht;
 }
 #endif
 
@@ -540,11 +614,11 @@ void readFile(char* filename) {
     memcpy(E.filename, filename, fnlen + 1);
 
 #if SYNTAX_HIGHLIGHT
-    getSyntaxHighlighting(filename);
+    getSyntax(filename);
 #endif
 
     //int fd = open(filename, O_RDONLY | O_CREAT, 0664);
-    int fd = open(filename, O_RDONLY, 0664);
+    int fd = open(filename, O_RDONLY);
     if (fd == -1) {
         int backup = errno;
 
@@ -599,10 +673,11 @@ char* stateToString(mode_t st) {
 
 void updateTopBar(void) {
 
-    mvwprintw(topBar, 0, 0, "%s\t%s%s\t%d/%d",
+    mvwprintw(topBar, 0, 0, "%s\t%s%s\t%s\t%d/%d",
               stateToString(E.mode),
               E.filename ? E.filename : "[Empty]",
               E.saved ? "" : " (*)",
+              E.ht ? E.ht->name : "Plain text",
               E.cury+1,
               E.numrows);
 
@@ -623,7 +698,7 @@ unsigned int saveFile(char* filename) {
     }
 
 #if SYNTAX_HIGHLIGHT
-    getSyntaxHighlighting(filename);
+    getSyntax(filename);
 #endif
     E.saved = true;
 
@@ -725,6 +800,35 @@ void parseCommand(char* buf) {
         delwin(cmdBar);
         endwin();
         exit(0);
+    }
+    else if (strcmp(buf, "syntax") == 0) {
+
+#if SYNTAX_HIGHLIGHT
+        getSyntax(E.filename);
+#else
+        mvwprintw(cmdBar, 0, 0, "Syntax highlighting is off");
+        wclrtoeol(cmdBar);
+#endif
+
+    }
+    else if (strncmp(buf, "syntax ", 7) == 0) {
+
+#if SYNTAX_HIGHLIGHT
+        char* language = buf + 7;
+        if (strlen(language) == 0) {
+            mvwprintw(cmdBar, 0, 0, "No filetype");
+            wclrtoeol(cmdBar);
+            return;
+        }
+
+        if (!(getSyntaxFiletype(language) || getSyntaxName(language))) {
+            mvwprintw(cmdBar, 0, 0, "Invalid language");
+            wclrtoeol(cmdBar);
+        }
+#else
+        mvwprintw(cmdBar, 0, 0, "Syntax highlighting is off");
+        wclrtoeol(cmdBar);
+#endif
     }
     else {
         mvwprintw(cmdBar, 0, 0, "Not an editor command: %s", buf);
@@ -889,6 +993,7 @@ void displayScreen(void) {
     }
 
     // Draw '~' for empty lines
+    attron(COLOR_PAIR(SPAIR_DEFAULT));
     for (; i < maxrows; i++) {
 
         printw("~");
@@ -896,6 +1001,7 @@ void displayScreen(void) {
         if (i != maxrows-1)
             printw("\n");
     }
+    attroff(COLOR_PAIR(SPAIR_DEFAULT));
 }
 
 void scrollUp(void) {
@@ -1704,7 +1810,7 @@ void main(int argc, char* argv[]) {
     init_pair(SPAIR_TOPBAR, COLOR_BLACK, COLOR_WHITE);
 
     /* Cmd-bar color */
-    init_pair(SPAIR_CMDBAR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(SPAIR_CMDBAR, COLOR_LIGHT_GRAY, COLOR_BLACK);
 
     /* Color for search matches */
     init_pair(SPAIR_MATCH,     SCOLOR_DEFAULT,  SCOLOR_MATCH);
@@ -1715,29 +1821,29 @@ void main(int argc, char* argv[]) {
 
     /* Syntax highlighting colors */
 #if SYNTAX_HIGHLIGHT
-    init_pair(SPAIR_NUMBERS,   SCOLOR_NUMBERS,   COLOR_BLACK);
-    init_pair(SPAIR_NUMBERS+1, SCOLOR_NUMBERS,   SCOLOR_VISUAL);
+    init_pair(SPAIR_NUMBERS,      SCOLOR_NUMBERS,    COLOR_BLACK);
+    init_pair(SPAIR_NUMBERS+1,    SCOLOR_NUMBERS,    SCOLOR_VISUAL);
 
-    init_pair(SPAIR_STRINGS,   SCOLOR_STRINGS,   COLOR_BLACK);
-    init_pair(SPAIR_STRINGS+1, SCOLOR_STRINGS,   SCOLOR_VISUAL);
+    init_pair(SPAIR_STRINGS,      SCOLOR_STRINGS,    COLOR_BLACK);
+    init_pair(SPAIR_STRINGS+1,    SCOLOR_STRINGS,    SCOLOR_VISUAL);
 
-    init_pair(SPAIR_COMMENTS,   SCOLOR_COMMENTS, COLOR_BLACK);
-    init_pair(SPAIR_COMMENTS+1, SCOLOR_COMMENTS, SCOLOR_VISUAL);
+    init_pair(SPAIR_COMMENTS,     SCOLOR_COMMENTS,   COLOR_BLACK);
+    init_pair(SPAIR_COMMENTS+1,   SCOLOR_COMMENTS,   SCOLOR_VISUAL);
 
     init_pair(SPAIR_SEPERATORS,   SCOLOR_SEPERATORS, COLOR_BLACK);
     init_pair(SPAIR_SEPERATORS+1, SCOLOR_SEPERATORS, SCOLOR_VISUAL);
 
-    init_pair(SPAIR_KEYWORDS,   SCOLOR_KEYWORD, COLOR_BLACK);
-    init_pair(SPAIR_KEYWORDS+1, SCOLOR_KEYWORD, SCOLOR_VISUAL);
+    init_pair(SPAIR_KEYWORDS,     SCOLOR_KEYWORDS,   COLOR_BLACK);
+    init_pair(SPAIR_KEYWORDS+1,   SCOLOR_KEYWORDS,   SCOLOR_VISUAL);
 
-    init_pair(SPAIR_TYPES,   SCOLOR_TYPES, COLOR_BLACK);
-    init_pair(SPAIR_TYPES+1, SCOLOR_TYPES, SCOLOR_VISUAL);
+    init_pair(SPAIR_TYPES,        SCOLOR_TYPES,      COLOR_BLACK);
+    init_pair(SPAIR_TYPES+1,      SCOLOR_TYPES,      SCOLOR_VISUAL);
 
-    init_pair(SPAIR_SPECIALS,   SCOLOR_SPECIALS, COLOR_BLACK);
-    init_pair(SPAIR_SPECIALS+1, SCOLOR_SPECIALS, SCOLOR_VISUAL);
+    init_pair(SPAIR_SPECIALS,     SCOLOR_SPECIALS,   COLOR_BLACK);
+    init_pair(SPAIR_SPECIALS+1,   SCOLOR_SPECIALS,   SCOLOR_VISUAL);
 
-    init_pair(SPAIR_INCLUDES,   SCOLOR_INCLUDES, COLOR_BLACK);
-    init_pair(SPAIR_INCLUDES+1, SCOLOR_INCLUDES, SCOLOR_VISUAL);
+    init_pair(SPAIR_INCLUDES,     SCOLOR_INCLUDES,   COLOR_BLACK);
+    init_pair(SPAIR_INCLUDES+1,   SCOLOR_INCLUDES,   SCOLOR_VISUAL);
 #endif
 
     maxcols = getmaxx(stdscr);

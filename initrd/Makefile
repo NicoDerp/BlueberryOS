@@ -90,7 +90,7 @@ initrd: $(BINS)
 	chmod 755 initrd/bin/*
 	chmod 4750 initrd/bin/sudo
 	mkdir -p initrd/home/nico
-	cp file initrd/home/nico/file
+	cp file.py initrd/home/nico/file.py
 	cp vim.c initrd/home/nico/vim.c
 
 initrd.tar.gz: initrd
