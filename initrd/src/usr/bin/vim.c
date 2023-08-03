@@ -37,6 +37,12 @@
 #define SEARCH_MARGIN_TB  4
 
 
+/* Characters of margin left at all times */
+#define LEFT_MARGIN       1
+
+/* Characters of margin between the line numbers and text. Only used when LINE_NUMBERS is 1 */
+#define LINE_NUMBERS_RIGHT_MARGIN 1
+
 
 /* 1 for syntax highlighting */
 #define SYNTAX_HIGHLIGHT  1
@@ -202,7 +208,10 @@ struct {
     unsigned int omaxrows;
     unsigned int maxcols;
     unsigned int maxrows;
+
+#if LINE_NUMBERS
     unsigned int tdigits;
+#endif
 
     unsigned int searchSize;
     unsigned int searchx;
@@ -510,17 +519,19 @@ void getSyntax(char* filename) {
 #endif
 }
 
-#if LINE_NUMBERS
-void updateLineNumbers(void) {
+void updateMaxWidth(void) {
 
+#if LINE_NUMBERS
     unsigned int d = getDigits(E.numrows);
     if (E.tdigits == d)
         return;
 
     E.tdigits = d;
-    E.maxcols = E.omaxcols - d - 1;
-}
+    E.maxcols = E.omaxcols - d - LEFT_MARGIN - LINE_NUMBERS_RIGHT_MARGIN;
+#else
+    E.maxcols = E.omaxcols - LEFT_MARGIN;
 #endif
+}
 
 void renderRow(row_t* row) {
 
@@ -891,17 +902,29 @@ void displayScreen(void) {
         endx = E.curx;
     }
 
+#if !LINE_NUMBERS && (LEFT_MARGIN > 0)
+    char leftmargin[LEFT_MARGIN+1];
+    memset(leftmargin, ' ', LEFT_MARGIN);
+    leftmargin[LEFT_MARGIN] = '\0';
+#endif
+
     size_t i;
     for (i = 0; (i < E.maxrows) && (i < E.numrows-E.rowoff); i++) {
 
-#if LINE_NUMBERS
         attron(COLOR_PAIR(SPAIR_LINE_NUMBERS));
+#if LINE_NUMBERS
         unsigned int r = getDigits(i + E.rowoff + 1);
-        for (unsigned int j = 0; j < E.tdigits - r; j++)
+        for (unsigned int j = 0; j < E.tdigits + LEFT_MARGIN - r; j++)
             addch(' ');
         printw("%d ", i + E.rowoff + 1);
-        attroff(COLOR_PAIR(SPAIR_LINE_NUMBERS));
+#else
+    #if LEFT_MARGIN > 0
+
+        printw("%s", leftmargin);
+    #endif
+
 #endif
+        attroff(COLOR_PAIR(SPAIR_LINE_NUMBERS));
 
         unsigned int len = E.rows[i + E.rowoff].rlen;
         if (len <= E.coloff) {
@@ -1079,9 +1102,9 @@ void scrollRight(void) {
 
 void moveCursor(void) {
 #if LINE_NUMBERS
-    move(E.cury - E.rowoff, E.rcurx - E.coloff + E.tdigits + 1);
+    move(E.cury - E.rowoff, E.rcurx - E.coloff + E.tdigits + LEFT_MARGIN + 1);
 #else
-    move(E.cury - E.rowoff, E.rcurx - E.coloff);
+    move(E.cury - E.rowoff, E.rcurx - E.coloff + LEFT_MARGIN);
 #endif
 }
 
@@ -1918,9 +1941,7 @@ void main(int argc, char* argv[]) {
     if (E.numrows == 0)
         appendRow("", 0);
 
-#if LINE_NUMBERS
-    updateLineNumbers();
-#endif
+    updateMaxWidth();
 
     char cmdBuffer[MAX_CMD_BUFFER+1];
     unsigned int cmdCursor = 0;
