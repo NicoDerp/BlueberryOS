@@ -20,9 +20,9 @@ void main ()
     }
     */
 
-    const char* str = "Hello test this is a cool test :)";
-    const char* sub = "test";
-    char* s = strrstr(str, sub);
+    const char* str = ".myfile";
+    char c = '.';
+    char* s = strrchr(str, c);
     if (s == NULL)
         printf("S not found\n");
     else

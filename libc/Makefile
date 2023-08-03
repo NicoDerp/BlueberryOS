@@ -63,6 +63,7 @@ FREEOBJS =\
 	string/strncpy.o \
 	string/strtok.o \
 	string/strchr.o \
+	string/strrchr.o \
 	string/strstr.o \
 	string/strrstr.o \
 	string/strerror.o \

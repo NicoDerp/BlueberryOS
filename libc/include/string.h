@@ -25,6 +25,7 @@ char* strncpy(char*, const char*, size_t);
 
 char* strtok(char*, const char*);
 char* strchr(const char*, int);
+char* strrchr(const char*, int);
 
 char* strstr(const char*, const char*);
 char* strrstr(const char*, const char*);

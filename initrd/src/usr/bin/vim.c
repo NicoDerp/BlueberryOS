@@ -70,6 +70,36 @@
 #define SPAIR_SPECIAL     14
 
 
+/* Filetype syntax highlighting config */
+#define HIGHLIGHT_NUMBERS    (1 << 0)
+#define HIGHLIGHT_STRINGS    (1 << 1)
+#define HIGHLIGHT_C_COMMENTS (1 << 2)
+#define HIGHLIGHT_SEPERATORS (1 << 3)
+#define HIGHLIGHT_C_SPECIAL  (1 << 4)
+
+
+
+
+#if SYNTAX_HIGHLIGHT
+
+typedef unsigned int hl_t;
+
+typedef struct {
+    char** fts;
+    hl_t hl;
+} highlight_t;
+
+highlight_t highlightTable[] = {
+    {
+        (char*[]) {"c", "cpp", "h", NULL},
+        HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS
+    },
+};
+
+#endif
+
+
+
 
 #define TAB_SIZE   (sizeof(TAB_RENDER)-1)
 #define MAX_CMD_BUFFER 32
@@ -133,6 +163,11 @@ struct {
     unsigned int searchSize;
     unsigned int searchx;
     unsigned int searchy;
+
+#if SYNTAX_HIGHLIGHT
+    hl_t phl;
+    hl_t hl;
+#endif
 
     unsigned int clipSize;
     char* clipboard;
@@ -219,9 +254,8 @@ inline bool is_seperator(int c) {
     return c == '\0' || isspace(c) || is_rseperator(c);
 }
 
-void updateSyntax(row_t* row) {
-
 #if SYNTAX_HIGHLIGHT
+void updateSyntax(row_t* row) {
 
     free(row->colors);
     row->colors = (unsigned char*) malloc(row->rlen);
@@ -273,10 +307,54 @@ void updateSyntax(row_t* row) {
 
         psep = sep;
     }
-#else
-    (void) row;
-#endif
 }
+
+void updateAllSyntax(void) {
+
+    for (unsigned int i = 0; i < E.numrows; i++) {
+        updateSyntax(&E.rows[i]);
+    }
+}
+
+void getSyntaxHighlighting(char* filename) {
+
+    E.hl = 0;
+
+    if (filename == NULL) {
+        if (E.hl != E.phl)
+            updateAllSyntax();
+
+        E.phl = E.hl;
+        return;
+    }
+
+    char* filetype = strrchr(filename, '.');
+    if (filetype == NULL) {
+        if (E.hl != E.phl)
+            updateAllSyntax();
+
+        E.phl = E.hl;
+        return;
+    }
+    filetype++;
+
+    for (unsigned int i = 0; i < (sizeof(highlightTable)/sizeof(highlightTable[0])); i++) {
+
+        for (unsigned int j = 0; highlightTable[i].fts[j]; j++) {
+
+            if (strcmp(highlightTable[i].fts[j], filetype) == 0) {
+
+                E.hl = highlightTable[i].hl;
+                if (E.hl != E.phl)
+                    updateAllSyntax();
+
+                E.phl = E.hl;
+                return;
+            }
+        }
+    }
+}
+#endif
 
 void renderRow(row_t* row) {
 
@@ -312,14 +390,18 @@ void renderRow(row_t* row) {
     row->rchars = realloc(row->rchars, row->rlen + 1);
     row->rchars[row->rlen] = '\0';
 
+#if SYNTAX_HIGHLIGHT
     updateSyntax(row);
+#endif
 }
 
 void searchFor(bool final) {
 
     E.searchPrev = false;
 
+#if SYNTAX_HIGHLIGHT
     updateSyntax(&E.rows[E.searchy]);
+#endif
 
     char* pos;
     bool lapped = false;
@@ -349,7 +431,9 @@ void searchFor(bool final) {
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
+#if SYNTAX_HIGHLIGHT
             memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
+#endif
             return;
         }
 
@@ -404,6 +488,10 @@ void readFile(char* filename) {
     unsigned int fnlen = strlen(filename);
     E.filename = malloc(fnlen + 1);
     memcpy(E.filename, filename, fnlen + 1);
+
+#if SYNTAX_HIGHLIGHT
+    getSyntaxHighlighting(filename);
+#endif
 
     //int fd = open(filename, O_RDONLY | O_CREAT, 0664);
     int fd = open(filename, O_RDONLY, 0664);
@@ -484,6 +572,9 @@ unsigned int saveFile(char* filename) {
         exit(1);
     }
 
+#if SYNTAX_HIGHLIGHT
+    getSyntaxHighlighting(filename);
+#endif
     E.saved = true;
 
     unsigned int bytesWritten = 0;
@@ -938,7 +1029,10 @@ void escapeKey(void) {
 
     E.mode = NORMAL;
     werase(cmdBar);
+
+#if SYNTAX_HIGHLIGHT
     updateSyntax(&E.rows[E.searchy]);
+#endif
 }
 
 void startOfLine(void) {
@@ -1316,7 +1410,9 @@ void searchNext(void) {
     else
         searchy = E.cury;
 
+#if SYNTAX_HIGHLIGHT
     updateSyntax(&E.rows[E.searchy]);
+#endif
 
     char* pos;
     bool lapped = false;
@@ -1355,7 +1451,9 @@ void searchNext(void) {
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
+#if SYNTAX_HIGHLIGHT
             memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
+#endif
             return;
         }
         E.searchx = 0;
@@ -1384,7 +1482,9 @@ void searchPrevious(void) {
     else
         searchy = E.cury;
 
+#if SYNTAX_HIGHLIGHT
     updateSyntax(&E.rows[E.searchy]);
+#endif
 
     char* pos;
     bool lapped = false;
@@ -1424,7 +1524,9 @@ void searchPrevious(void) {
             else if (E.cury < E.rowoff)
                 E.rowoff = MAX((int) E.cury - SEARCH_MARGIN_TB, 0);
 
+#if SYNTAX_HIGHLIGHT
             memset(&E.rows[i].colors[E.rcurx], SPAIR_MATCH, strlen(E.searchBuffer));
+#endif
             return;
         }
         free(buf);
@@ -1536,6 +1638,11 @@ void main(int argc, char* argv[]) {
     E.searchPrev = false;
     E.searchx = 0;
     E.searchy = 0;
+
+#if SYNTAX_HIGHLIGHT
+    E.phl = 0;
+    E.hl = 0;
+#endif
 
     E.clipSize = 0;
     E.clipboard = NULL;
