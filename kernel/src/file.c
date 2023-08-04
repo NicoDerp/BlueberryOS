@@ -975,9 +975,8 @@ directory_t* getDirectoryFrom(directory_t* dir, char* path, bool redirectSymboli
         return (directory_t*) 0;
     }
 
-    if (strcmp(parent->name, path) == 0) {
+    if (strcmp(parent->name, path) == 0)
         return parent;
-    }
 
     VERBOSE("getDirectory: Got parent %s\n", parent->fullpath);
 

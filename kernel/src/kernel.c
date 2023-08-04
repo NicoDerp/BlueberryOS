@@ -116,7 +116,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                             unsigned int len = addr + reallen - FRAME_START;
 
                             foundMemory = true;
-                            virtualFramebuffer = addr + len - FRAME_4KB;
+                            virtualFramebuffer = addr + reallen - FRAME_4KB;
                             memorySize = len - FRAME_4KB;
                         }
                     }
@@ -223,38 +223,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                   ((struct multiboot_tag_bootdev *) tag)->slice,
                   ((struct multiboot_tag_bootdev *) tag)->part);
                 break;
-
-            /*
-            case MULTIBOOT_TAG_TYPE_MMAP:
-                {
-                    multiboot_memory_map_t *mmap;
-
-                    VERBOSE("mmap\n");
-
-                    for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
-                        (multiboot_uint8_t*) mmap < (multiboot_uint8_t *) tag + tag->size;
-                        mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
-
-                        VERBOSE(" base_addr = 0x%x%x,"
-                        " length = 0x%x%x, type = 0x%x\n",
-                        (unsigned) (mmap->addr >> 32),
-                        (unsigned) (mmap->addr & 0xffffffff),
-                        (unsigned) (mmap->len >> 32),
-                        (unsigned) (mmap->len & 0xffffffff),
-                        (unsigned) mmap->type);
-
-                        unsigned int addr = p_to_v((unsigned int) (mmap->addr & 0xFFFFFFFF));
-                        unsigned int len = (unsigned int) (mmap->len & 0xFFFFFFFF);
-
-                        // Minimum requirement
-                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + len > FRAME_START + 2*FRAME_4MB)) {
-                            foundMemory = true;
-                            VERBOSE("MMAP: Found mmap to use with size %d MB ranging from 0x%x to 0x%x\n", memorySize / FRAME_1MB, addr, addr + len);
-                        }
-                    }
-                }
-                break;
-            */
         }
     }
 
@@ -305,7 +273,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     printf("Decompressing initrd     ... ");
     int status = ktinf_gzip_uncompress((void*) modules[0].mod_start, sourceLen, &dest, &destLen);
-    printf("Got status %d\n", status);
 
     if (status == TINF_BUF_ERROR) {
         printf("\e[34;46m[ERROR]\e[0m\n");

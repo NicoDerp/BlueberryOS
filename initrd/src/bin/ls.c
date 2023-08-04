@@ -10,7 +10,6 @@
 #include <pwd.h>
 #include <grp.h>
 
-
 void ls(char* path, bool showHidden, bool list) {
 
     DIR* pdir = opendir(path);
@@ -36,10 +35,23 @@ void ls(char* path, bool showHidden, bool list) {
         if (strncmp(ent->d_name, ".", 1) == 0 && !showHidden)
             continue;
 
-        if (lstat(ent->d_name, &statStruct) == -1) {
+        char* buf;
+        if (path[strlen(path)-1] == '/') {
+            buf = (char*) malloc(strlen(path) + strlen(ent->d_name) + 1);
+            memcpy(buf, path, strlen(path));
+            memcpy(buf+strlen(path), ent->d_name, strlen(ent->d_name)+1);
+        } else {
+            buf = (char*) malloc(strlen(path) + strlen(ent->d_name) + 2);
+            memcpy(buf, path, strlen(path));
+            buf[strlen(path)] = '/';
+            memcpy(buf+strlen(path)+1, ent->d_name, strlen(ent->d_name)+1);
+        }
+
+        if (lstat(buf, &statStruct) == -1) {
             printf("lstat failed\n");
             continue;
         }
+        free(buf);
 
         if (list) {
 
@@ -81,7 +93,7 @@ void ls(char* path, bool showHidden, bool list) {
         if (ent->d_type == DT_DIR)
             printf("\e[39;46m%s\e[0m", ent->d_name);
         else if (statStruct.st_mode & S_IXUSR || statStruct.st_mode & S_IXGRP || statStruct.st_mode & S_IXOTH)
-            printf("\e[39;46m%s\e[0m", ent->d_name);
+            printf("\e[40;46m%s\e[0m", ent->d_name);
         else
             printf("%s", ent->d_name);
 

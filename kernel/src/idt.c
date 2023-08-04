@@ -738,12 +738,14 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 if (!resolveZeroProcessAddress(process, path)) {
                     ERROR("SYS_lstat: Invalid address 0x%x passed to kernel from %d:%s\n", path, process->id, process->name);
+                    process->regs.eax = -1;
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
 
                 if (!resolveProcessAddress(process, buf, sizeof(struct stat), true)) {
                     ERROR("SYS_lstat: Invalid address 0x%x passed to kernel from %d:%s\n", buf, process->id, process->name);
+                    process->regs.eax = -1;
                     process->regs.ecx = EFAULT;
                     runCurrentProcess();
                 }
