@@ -8,6 +8,10 @@
 #include <unistd.h>
 
 
+"/* Comment 1 */"
+hei /* Comment 2 ooga
+hei */
+
 #define MAX_CMD_BUFFER 32 Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga
 #define MAX_CMD_BUFFER 32 Hei hallo ooga booga Hei hallo ooga booga Hei hallo ooga booga
 

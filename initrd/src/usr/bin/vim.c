@@ -92,6 +92,7 @@
 #define HIGHLIGHT_NUMBERS    (1 << 0)
 #define HIGHLIGHT_STRINGS    (1 << 1)
 #define HIGHLIGHT_COMMENTS   (1 << 2)
+#define HIGHLIGHT_COMMENTS   (1 << 2)
 #define HIGHLIGHT_SEPERATORS (1 << 3)
 #define HIGHLIGHT_KEYWORDS   (1 << 4)
 #define HIGHLIGHT_TYPES      (1 << 5)
@@ -109,6 +110,8 @@ typedef struct {
     char** keywords;
     char** types;
     char* scomment;
+    char* mscomment;
+    char* mecomment;
     sh_t sh;
 } highlight_table_t;
 
@@ -127,6 +130,8 @@ highlight_table_t highlightTable[] = {
             "inline", "extern", "signed", "static", "unsigned", "void", "volatile", NULL
         },
         "//",
+        "/*",
+        "*/",
         HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS |
         HIGHLIGHT_KEYWORDS | HIGHLIGHT_TYPES | HIGHLIGHT_SPECIALS | HIGHLIGHT_C_INCLUDE
     },
@@ -143,6 +148,8 @@ highlight_table_t highlightTable[] = {
         },
         (char*[]) {NULL},
         "#",
+        "\"\"\"",
+        "\"\"\"",
         HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS | HIGHLIGHT_COMMENTS | HIGHLIGHT_SEPERATORS |
         HIGHLIGHT_KEYWORDS
     },
@@ -184,6 +191,7 @@ typedef struct {
 
     char* chars;
     char* rchars;
+    int unclosed;
 } row_t;
 
 struct {
@@ -321,88 +329,124 @@ inline bool is_seperator(int c) {
 #if SYNTAX_HIGHLIGHT
 void updateSyntax(row_t* row) {
 
-    free(row->colors);
-    row->colors = (unsigned char*) malloc(row->rlen);
-    memset(row->colors, SPAIR_DEFAULT, row->rlen);
+    bool mcomment;
+    if ((unsigned int) row - sizeof(row_t) < (unsigned int) E.rows)
+        mcomment = false;
+    else
+        mcomment = ((row_t*) ((unsigned int) row - sizeof(row_t)))->unclosed;
 
-    if (E.ht == NULL)
-        return;
+    while (true) {
 
-    char strchar = 0;
-    bool string = false;
-    bool comment = false;
-    bool psep = true;
-    unsigned char pcolor = 0;
-    unsigned int i = 0;
-    while (i < row->rlen) {
-        char c = row->rchars[i];
+        free(row->colors);
+        row->colors = (unsigned char*) malloc(row->rlen);
+        memset(row->colors, SPAIR_DEFAULT, row->rlen);
 
-        if (i > 0)
-            pcolor = row->colors[i-1];
+        if (E.ht == NULL)
+            return;
 
-        if (string && c == strchar)
-            string = false;
-        else if (!string && (c == '"' || c == '\'')) {
-            string = true;
-            strchar = c;
-        }
+        char strchar = 0;
+        bool string = false;
+        bool comment = false;
+        bool psep = true;
+        unsigned char pcolor = 0;
+        unsigned int i = 0;
+        while (i < row->rlen) {
+            char c = row->rchars[i];
 
-        bool sep = is_seperator(c);
-        if ((E.ht->sh & HIGHLIGHT_COMMENTS) && (comment || (strncmp(&row->rchars[i], E.ht->scomment, strlen(E.ht->scomment)) == 0))) {
-            row->colors[i++] = SPAIR_COMMENTS;
-            comment = true;
-            goto end;
-        }
+            if (i > 0)
+                pcolor = row->colors[i-1];
 
-        if ((E.ht->sh & HIGHLIGHT_KEYWORDS) && psep) {
-            for (unsigned int j = 0; E.ht->keywords[j]; j++) {
+            if (string && c == strchar)
+                string = false;
+            else if (!string && (c == '"' || c == '\'')) {
+                string = true;
+                strchar = c;
+            }
 
-                unsigned int len = strlen(E.ht->keywords[j]);
-                if (strncmp(&row->rchars[i], E.ht->keywords[j], len) == 0 && is_seperator(row->rchars[i + len])) {
-                    memset(&row->colors[i], SPAIR_KEYWORDS, len);
-                    i += len;
-                    goto end;
+            bool sep = is_seperator(c);
+            if ((E.ht->sh & HIGHLIGHT_STRINGS) && !mcomment && !comment && (string || c == '"' || c == '\'')) {
+                row->colors[i++] = SPAIR_STRINGS;
+                goto end;
+            }
+
+            if ((E.ht->sh & HIGHLIGHT_COMMENTS) && (mcomment || ((strlen(E.ht->mscomment) > 0) && (strncmp(&row->rchars[i], E.ht->mscomment, strlen(E.ht->mscomment)) == 0)))) {
+
+                row->colors[i++] = SPAIR_COMMENTS;
+                mcomment = true;
+                goto end;
+            }
+
+            if ((E.ht->sh & HIGHLIGHT_COMMENTS) && (comment || (strncmp(&row->rchars[i], E.ht->scomment, strlen(E.ht->scomment)) == 0))) {
+                row->colors[i++] = SPAIR_COMMENTS;
+                comment = true;
+                goto end;
+            }
+
+            if ((E.ht->sh & HIGHLIGHT_KEYWORDS) && psep) {
+                for (unsigned int j = 0; E.ht->keywords[j]; j++) {
+
+                    unsigned int len = strlen(E.ht->keywords[j]);
+                    if (strncmp(&row->rchars[i], E.ht->keywords[j], len) == 0 && is_seperator(row->rchars[i + len])) {
+                        memset(&row->colors[i], SPAIR_KEYWORDS, len);
+                        i += len;
+                        goto end;
+                    }
                 }
             }
-        }
 
-        if ((E.ht->sh & HIGHLIGHT_TYPES) && psep) {
-            for (unsigned int j = 0; E.ht->types[j]; j++) {
+            if ((E.ht->sh & HIGHLIGHT_TYPES) && psep) {
+                for (unsigned int j = 0; E.ht->types[j]; j++) {
 
-                unsigned int len = strlen(E.ht->types[j]);
-                if (strncmp(&row->rchars[i], E.ht->types[j], len) == 0) {
-                    memset(&row->colors[i], SPAIR_TYPES, len);
-                    i += len;
-                    goto end;
+                    unsigned int len = strlen(E.ht->types[j]);
+                    if (strncmp(&row->rchars[i], E.ht->types[j], len) == 0) {
+                        memset(&row->colors[i], SPAIR_TYPES, len);
+                        i += len;
+                        goto end;
+                    }
                 }
             }
-        }
 
-        if ((E.ht->sh & HIGHLIGHT_NUMBERS) && ((isdigit(c) && (psep || pcolor == SPAIR_NUMBERS)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBERS)))
-            row->colors[i++] = SPAIR_NUMBERS;
+            if ((E.ht->sh & HIGHLIGHT_NUMBERS) && ((isdigit(c) && (psep || pcolor == SPAIR_NUMBERS)) || (c == '-' && isdigit(row->rchars[i+1])) || (c == '.' && pcolor == SPAIR_NUMBERS)))
+                row->colors[i++] = SPAIR_NUMBERS;
 
-        else if ((E.ht->sh & HIGHLIGHT_C_INCLUDE) && (c == '<')) {
-            while (i < row->rlen && row->rchars[i] != '>') {
+            else if ((E.ht->sh & HIGHLIGHT_C_INCLUDE) && (c == '<')) {
+                while (i < row->rlen && row->rchars[i] != '>') {
+                    row->colors[i++] = SPAIR_SEPERATORS;
+                }
+            }
+
+            else if ((E.ht->sh & HIGHLIGHT_SEPERATORS) && is_rseperator(c))
                 row->colors[i++] = SPAIR_SEPERATORS;
+
+            else if ((E.ht->sh & HIGHLIGHT_SPECIALS) && (c == '#')) {
+                while (i < row->rlen && !(sep = is_seperator(row->rchars[i]))) {
+                    row->colors[i++] = SPAIR_SPECIALS;
+                }
             }
+            else
+                i++;
+
+    end:
+            if ((E.ht->sh & HIGHLIGHT_COMMENTS) && mcomment && ((strlen(E.ht->mecomment) > 0) && (strncmp(&row->rchars[i], E.ht->mecomment, strlen(E.ht->mecomment)) == 0))) {
+                mcomment = false;
+                memset(&row->colors[i], SPAIR_COMMENTS, strlen(E.ht->mecomment));
+                i += strlen(E.ht->mecomment);
+            }
+
+            psep = sep;
         }
 
-        else if ((E.ht->sh & HIGHLIGHT_SEPERATORS) && is_rseperator(c))
-            row->colors[i++] = SPAIR_SEPERATORS;
+        if (row->unclosed == mcomment)
+            return;
 
-        else if ((E.ht->sh & HIGHLIGHT_STRINGS) && (string || c == '"' || c == '\''))
-            row->colors[i++] = SPAIR_STRINGS;
+        //printf("0x%x\n", sizeof(row_t));
+        //printf("0x%x 0x%x\n", row, (unsigned int) E.rows + sizeof(row_t) * E.numrows);
+        //for(;;){}
+        row->unclosed = mcomment;
+        if ((unsigned int) row + sizeof(row_t) >= (unsigned int) E.rows + sizeof(row_t) * E.numrows)
+            return;
 
-        else if ((E.ht->sh & HIGHLIGHT_SPECIALS) && (c == '#')) {
-            while (i < row->rlen && !(sep = is_seperator(row->rchars[i]))) {
-                row->colors[i++] = SPAIR_SPECIALS;
-            }
-        }
-        else
-            i++;
-
-end:
-        psep = sep;
+        row = (row_t*) ((unsigned int) row + sizeof(row_t));
     }
 }
 
@@ -649,15 +693,14 @@ void appendRow(char* s, unsigned int linelen) {
     memcpy(row->chars, s, linelen+1);
 
     row->rchars = NULL;
+    row->unclosed = false;
 
 #if SYNTAX_HIGHLIGHT
     row->colors = NULL;
 #endif
     E.numrows++;
 
-    printf("before\n");
     renderRow(row);
-    printf("before\n");
 }
 
 void readFile(char* filename) {
@@ -701,10 +744,8 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        printf("Appending %d:'%s'\n", linelen, line);
         appendRow(line, linelen);
     }
-    printf("Done!\n");
 
     free(line);
 
@@ -1339,6 +1380,7 @@ void splitCurrentRow(void) {
     trow->len = frow->len - E.curx;
     trow->chars = (char*) malloc(frow->len - E.curx + 1);
     trow->rchars = NULL;
+    trow->unclosed = false;
 #if SYNTAX_HIGHLIGHT
     trow->colors = NULL;
 #endif
@@ -1589,6 +1631,7 @@ void pasteClipboard(void) {
             r->chars = (char*) malloc(1);
             r->chars[0] = '\0';
             r->rchars = NULL;
+            r->unclosed = false;
 #if SYNTAX_HIGHLIGHT
             r->colors = NULL;
 #endif
@@ -1640,6 +1683,7 @@ void newLineAndInsert(void) {
 #endif
     r->chars[0] = '\0';
     r->rchars = NULL;
+    r->unclosed = false;
     r->len = 0;
     r->rlen = 0;
     renderRow(r);
