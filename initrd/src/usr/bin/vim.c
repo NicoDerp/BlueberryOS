@@ -1480,11 +1480,30 @@ void deleteCurrentLine(void) {
     if (E.numrows == 0)
         return;
 
+    if (E.numrows == 1) {
+        E.rows[0].chars = realloc(E.rows[0].chars, 1);
+        E.rows[0].chars = '\0';
+        E.rows[0].len = '\0';
+        E.rows[0].unclosed = false;
+        renderRow(&E.rows[0]);
+        E.saved = false;
+        snapCursor();
+        return;
+    }
+
     if (E.cury < E.numrows-1)
         memmove(&E.rows[E.cury], &E.rows[E.cury+1], sizeof(row_t) * (E.numrows - E.cury - 1));
 
     E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows-1));
     E.numrows--;
+
+    updateSyntax(&E.rows[E.cury]);
+
+    if (E.cury == E.numrows)
+        E.cury--;
+
+    if ((E.rowoff > 0) && (E.cury <= SCROLL_MARGIN_TB + E.rowoff))
+        E.rowoff--;
 
     snapCursor();
 
