@@ -98,6 +98,23 @@ extern "C" {
             const void *source, unsigned int sourceLen);
 
     /**
+     * Decompress `sourceLen` bytes of gzip data from `source` to `dest`.
+     *
+     * The variable `dest` will be set to the location of the data,
+     * and `destLen` to the size of the decompressed data on success.
+     *
+     * Reads at most `sourceLen` bytes from `source`.
+     * Writes as much as required to `*dest`.
+     *
+     * @param source pointer to compressed data
+     * @param sourceLen size of compressed data
+     * @param dest pointer to variable which will be set to the destination
+     * @param destLen pointer to variable which will be set to the size of decompressed data
+     * @return `TINF_OK` on success, error code on error
+     */
+    int TINFCC ktinf_gzip_uncompress(const void *source, unsigned int sourceLen, unsigned int* dest, unsigned int* destLen);
+
+    /**
      * Decompress `sourceLen` bytes of zlib data from `source` to `dest`.
      *
      * The variable `destLen` points to must contain the size of `dest` on entry,

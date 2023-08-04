@@ -275,7 +275,7 @@ void map_page_wflags_pd(pagedirectory_t pd, uint32_t physicalAddr, uint32_t virt
         memset(pagetable, 0, FRAME_4KB);
     }
 
-    VERBOSE("map_page_pd: Mapping 0x%x(p) to 0x%x(v). rw%d, k%d\n", physicalPTI*FRAME_4MB+physicalPI*FRAME_4KB, virtualPTI*FRAME_4MB+virtualPI*FRAME_4KB, writable, kernel);
+    VERBOSE("map_page_pd: Mapping 0x%x(p) to 0x%x(v). f%d\n", physicalPTI*FRAME_4MB+physicalPI*FRAME_4KB, virtualPTI*FRAME_4MB+virtualPI*FRAME_4KB, flags);
 
     // Sets address and attributes for page
     pagetable[virtualPI] = (physicalPI * FRAME_4KB + physicalPTI * FRAME_4MB) | flags;

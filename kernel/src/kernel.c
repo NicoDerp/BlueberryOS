@@ -108,10 +108,13 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                         mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
 
                         unsigned int addr = p_to_v((unsigned int) (mmap->addr & 0xFFFFFFFF));
-                        unsigned int len = (unsigned int) (mmap->len & 0xFFFFFFFF);
+                        unsigned int reallen = (unsigned int) (mmap->len & 0xFFFFFFFF);
 
                         // Minimum requirement
-                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + len > FRAME_START + 2*FRAME_4MB)) {
+                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + reallen > FRAME_START + 2*FRAME_4MB)) {
+
+                            unsigned int len = addr + reallen - FRAME_START;
+
                             foundMemory = true;
                             virtualFramebuffer = addr + len - FRAME_4KB;
                             memorySize = len - FRAME_4KB;
@@ -124,17 +127,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     if (!foundMemory) {
 
-        // Enough for just one pagetable
-        memory_initialize(FRAME_START, FRAME_4KB);
+        // virtualFramebuffer will be inside present pagetable so not actually needed but just in case
+        memory_initialize(FRAME_4KB, 1);
         virtualFramebuffer = 0xC03FF000;
         map_page(0x000B8000, virtualFramebuffer, true, true);
         terminal_initialize(80, 25, (void*) virtualFramebuffer);
+        enableLogging();
 
-        printf("\n\n[\e[4;0m[FATAL]\e[0m Not enough memory available to run OS!\n");
+        FATAL("Not enough memory available to run OS!\n");
         kabort();
     }
 
-    memory_initialize(FRAME_START, memorySize);
+    memory_initialize(memorySize, 4);
     map_page(0x000B8000, virtualFramebuffer, true, true);
     terminal_initialize(80, 25, (void*) virtualFramebuffer);
     enableLogging();
@@ -159,9 +163,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     idt_initialize();
     printf("\e[32;46m[OK]\e[0m\n");
 
+    /*
     printf("Setting up Paging        ... ");
     paging_initialize();
     printf("\e[32;46m[OK]\e[0m\n");
+    */
 
     struct multiboot_tag_module modules[32];
     size_t moduleCount = 0;
@@ -288,12 +294,18 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 #endif
     }
 
+    unsigned int dest;
     unsigned int destLen;
-    void* dest = (void*) modules[0].mod_end + FRAME_4KB;
     uint32_t sourceLen = (uint32_t) modules[0].mod_end - (uint32_t) modules[0].mod_start;
 
+
+    printf("Initializing memory      ... ");
+    memory_mark_allocated(modules[0].mod_start, modules[0].mod_end);
+    printf("\e[32;46m[OK]\e[0m\n");
+
     printf("Decompressing initrd     ... ");
-    int status = tinf_gzip_uncompress(dest, &destLen, (void*) modules[0].mod_start, sourceLen);
+    int status = ktinf_gzip_uncompress((void*) modules[0].mod_start, sourceLen, &dest, &destLen);
+    printf("Got status %d\n", status);
 
     if (status == TINF_BUF_ERROR) {
         printf("\e[34;46m[ERROR]\e[0m\n");
@@ -312,6 +324,11 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
         printf("\e[32;46m[OK]\e[0m\n");
         loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
     }
+
+    printf("Initializing more memory ... ");
+    unsigned int frames = (modules[0].mod_end - modules[0].mod_start) / FRAME_SIZE;
+    kfree_frames((pageframe_t) modules[0].mod_start, frames);
+    printf("\e[32;46m[OK]\e[0m\n");
 
     printf("Setting up users         ... ");
     createUser("root", "root", false, true);

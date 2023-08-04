@@ -679,11 +679,11 @@ void readFile(char* filename) {
             return;
         }
 
-        printf("open error: %s\n", strerror(backup));
-
         delwin(topBar);
         delwin(cmdBar);
         endwin();
+
+        printf("open error: %s\n", strerror(backup));
         exit(1);
     }
 
@@ -699,9 +699,10 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        //printf("Appending '%s' with len %d\n", line, linelen);
+        printf("Appending '%s' with len %d\n", line, linelen);
         appendRow(line, linelen);
     }
+    for(;;){}
 
     free(line);
 
@@ -735,17 +736,30 @@ void updateTopBar(void) {
     wclrtoeol(topBar);
 }
 
-unsigned int saveFile(char* filename) {
+int saveFile(char* filename) {
 
     int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0664);
     if (fd == -1) {
         int backup = errno;
-        printf("open error: %s\n", strerror(backup));
 
+        if (backup == EACCES) {
+            mvwprintw(cmdBar, 0, 0, "Permission denied");
+            wclrtoeol(cmdBar);
+            return -1;
+        }
+
+        mvwprintw(cmdBar, 0, 0, "Failed to open file for writing");
+        wclrtoeol(cmdBar);
+        return -1;
+
+        /*
         delwin(topBar);
         delwin(cmdBar);
         endwin();
+
+        printf("open error: %s\n", strerror(backup));
         exit(1);
+        */
     }
 
     getSyntax(filename);
@@ -796,9 +810,11 @@ void parseCommand(char* buf) {
             return;
         }
 
-        unsigned int bytesWritten = saveFile(E.filename);
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", E.filename, E.numrows, bytesWritten);
-        wclrtoeol(cmdBar);
+        int bytesWritten = saveFile(E.filename);
+        if (bytesWritten >= 0) {
+            mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", E.filename, E.numrows, bytesWritten);
+            wclrtoeol(cmdBar);
+        }
     }
     else if (strncmp(buf, "w ", 2) == 0) {
 
@@ -816,9 +832,11 @@ void parseCommand(char* buf) {
             memcpy(E.filename, filename, fnlen + 1);
         }
 
-        unsigned int bytesWritten = saveFile(filename);
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", filename, E.numrows, bytesWritten);
-        wclrtoeol(cmdBar);
+        int bytesWritten = saveFile(filename);
+        if (bytesWritten >= 0) {
+            mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", filename, E.numrows, bytesWritten);
+            wclrtoeol(cmdBar);
+        }
     }
     else if (strcmp(buf, "wq") == 0) {
         if (!E.filename) {
@@ -826,9 +844,6 @@ void parseCommand(char* buf) {
             wclrtoeol(cmdBar);
             return;
         }
-
-        unsigned int bytesWritten = saveFile(E.filename);
-        mvwprintw(cmdBar, 0, 0, "\"%s\" %dL, %dB written", E.filename, E.numrows, bytesWritten);
 
         delwin(topBar);
         delwin(cmdBar);
@@ -844,7 +859,10 @@ void parseCommand(char* buf) {
             return;
         }
 
-        saveFile(filename);
+        int bytesWritten = saveFile(filename);
+        if (bytesWritten == -1)
+            return;
+
         delwin(topBar);
         delwin(cmdBar);
         endwin();

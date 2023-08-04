@@ -23,10 +23,12 @@ extern unsigned int _kernelstart;
 #define FRAME_SIZE FRAME_4KB
 //#define MAX_FRAMES (FRAME_SIZE / FRAME_MAP_SIZE)
 #define FRAME_START (FRAME_SIZE - (KERNEL_END) % FRAME_SIZE + KERNEL_END)
-#define FRAME_CACHE_SIZE 8
+
+#define MAX_FRAME_CACHE_SIZE 32
 
 typedef void* pageframe_t;
-void memory_initialize(uint32_t framestart_, uint32_t bytes);
+void memory_initialize(uint32_t total, uint32_t frames);
+void memory_mark_allocated(uint32_t start, uint32_t end);
 
 void* kmalloc(size_t size);
 void kfree(void* ptr);

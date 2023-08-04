@@ -12,34 +12,64 @@
 
 void kalloc_cache();
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 char* frame_map;
-pageframe_t cached_frame_map[FRAME_CACHE_SIZE];
-uint32_t totalFrameMapSize;
-uint32_t frameMapSize;
+pageframe_t cached_frame_map[MAX_FRAME_CACHE_SIZE];
+uint32_t totalFrameMapSize = 0;
+uint32_t frameMapSize = 0;
+uint32_t frame_cache_size = 0;
 
 uint32_t framestart;
 size_t cachedIndex = 0;
 
 uint32_t framesUsed = 0;
 
-void memory_initialize(uint32_t framestart_, uint32_t bytes) {
+void memory_initialize(uint32_t total, uint32_t frames) {
 
-    frame_map = (char*) framestart_;
-
-    totalFrameMapSize = bytes / FRAME_SIZE;
+    frame_map = (char*) FRAME_START;
+    totalFrameMapSize = total / FRAME_SIZE;
 
     // Minimum requirement, increase if needed
-    frameMapSize = 2*FRAME_4MB;
-    framestart = framestart_ + frameMapSize/8;
+    frameMapSize = MIN(totalFrameMapSize, 600);
 
+    uint32_t offset = frameMapSize / 8;
+    if (frameMapSize & 7)
+        offset++;
+
+    framestart = (FRAME_SIZE - (FRAME_START + offset) % FRAME_SIZE + (FRAME_START + offset));
+
+    frame_cache_size = 0;
     cachedIndex = 0;
-    kalloc_cache();
+    kalloc_cache(frames);
+}
+
+void memory_mark_allocated(uint32_t start, uint32_t end) {
+
+    if ((start & 0x03FF) || (end & 0x03FF)) {
+        FATAL("Memory to mark used isn't page-aligned!\n");
+        kabort();
+    }
+
+    size_t startindex = (start - framestart) / FRAME_SIZE;
+    size_t endindex = (end - framestart) / FRAME_SIZE;
+
+    if (endindex >= frameMapSize) {
+        FATAL("End index outside memory map!\n");
+        kabort();
+    }
+
+    for (size_t index = startindex; index < endindex; index++) {
+
+        frame_map[index >> 3] |= (1 << (index & 0x7));
+        framesUsed++;
+    }
 }
 
 pageframe_t kalloc_frame(void) {
-    if (cachedIndex >= FRAME_CACHE_SIZE) {
+    if (cachedIndex >= frame_cache_size) {
         cachedIndex = 0;
-        kalloc_cache();
+        kalloc_cache(MAX_FRAME_CACHE_SIZE);
     }
 
     pageframe_t frame = cached_frame_map[cachedIndex];
@@ -50,6 +80,11 @@ pageframe_t kalloc_frame(void) {
     */
 
     VERBOSE("kalloc_frame: Allocated 4KB frame at 0x%x\n", frame);
+
+    /*
+    if (loggingEnabled)
+        printf("Allocated frame at 0x%x\n", frame);
+    */
 
     cachedIndex++;
 
@@ -99,14 +134,21 @@ pageframe_t kalloc_frames(unsigned int count) {
 
         uint32_t pf = i * FRAME_SIZE + framestart;
         uint32_t page = getPage(pf);
-        if (!(page & 1))
+        if (!(page & 1)) {
+            VERBOSE("kalloc_frames: Mapping pageframe p0x%x to c0x%x\n", v_to_p(pf), pf);
             map_page(v_to_p(pf), pf, true, true);
+        }
     }
 
     pageframe_t frame = (pageframe_t) (startindex*FRAME_SIZE + framestart);
     framesUsed += count;
 
     VERBOSE("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
+
+    /*
+    if (loggingEnabled)
+        printf("kalloc_frames: Allocated %d 4KB frames starting at 0x%x, ending at 0x%x\n", count, frame, frame + FRAME_4KB*count);
+    */
 
     return frame;
 }
@@ -165,15 +207,26 @@ void kfree_frames(pageframe_t frame, unsigned int count) {
     framesUsed -= count;
 }
 
-void kalloc_cache(void) {
+void kalloc_cache(uint32_t cacheSize) {
     size_t index = 0;
 
-    for (size_t c = 0; c < FRAME_CACHE_SIZE; c++) {
+    frame_cache_size = 0;
+    for (size_t c = 0; c < cacheSize; c++) {
 
         // Check for first free bit
         while ((frame_map[index >> 3] & (1 << (index & 0x7))) != 0) {
             index++;
+
+            /*
+            if (loggingEnabled)
+                printf("Checking index %d/%d with %d\n", index+1, frameMapSize, c);
+            */
+
+            // Only abort if we don't have any more frames at first cache
             if (index >= frameMapSize) {
+                if (c != 0)
+                    goto end;
+
                 FATAL("Out of memory!\n");
                 kabort();
                 return;
@@ -185,11 +238,16 @@ void kalloc_cache(void) {
         cached_frame_map[c] = (pageframe_t) pf;
 
         uint32_t page = getPage(pf);
-        if (!(page & 1))
+        if (!(page & 1)) {
+            VERBOSE("kalloc_cache: Mapping pageframe p0x%x to c0x%x\n", v_to_p(pf), pf);
             map_page(v_to_p(pf), pf, true, true);
+        }
+
+        frame_cache_size++;
+        framesUsed++;
     }
 
-    framesUsed += FRAME_CACHE_SIZE;
+end:
 }
 
 uint32_t get_used_memory(void) {

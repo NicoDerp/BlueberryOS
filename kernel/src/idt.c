@@ -229,6 +229,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
 
                 if (!resolveZeroProcessAddress(process, pathname)) {
                     ERROR("SYS_open: Invalid address 0x%x passed to kernel from %d:%s\n", pathname, process->id, process->name);
+                    process->regs.eax = -1;
                     process->regs.ecx = EFAULT;
                 }
                 else {
@@ -1446,7 +1447,7 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
         bool present = pd[virtualPTI] & 0x1;
         bool rw = (pd[virtualPTI] & 0x2) > 0;
-        bool kernel = !(pd[virtualPTI] & 0x4);
+        bool user = (pd[virtualPTI] & 0x4) > 0;
 
 
 
@@ -1509,18 +1510,21 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
 
 
 
-        printf(" - Pagetable is 0x%x with flags p%d rw%d and k%d\n", pd[virtualPTI], present, rw, kernel);
+        printf(" - Pagetable is 0x%x with flags p%d rw%d and u%d\n", pd[virtualPTI], present, rw, user);
         if (pd[virtualPTI] & 1) {
-            pagetable_t pagetable = (pagetable_t) p_to_v((pd[virtualPTI] & 0xFFFFF000));
+            pagetable_t pagetable = (pagetable_t) p_to_v(pd[virtualPTI] & 0xFFFFF000);
             uint32_t page = pagetable[virtualPI];
 
             present = page & 0x1;
             rw = (page & 0x2) > 0;
-            kernel = !(page & 0x4);
+            user = (page & 0x4) > 0;
 
-            printf(" - Page is 0x%x with flags p%d rw%d and k%d\n", page, present, rw, kernel);
+            printf(" - Page is 0x%x with flags p%d rw%d and u%d\n", page, present, rw, user);
+
+            (void) canResolve;
 
             // If we can resolve we try
+            /*
             if (canResolve) {
                 process_t* process = getCurrentProcess();
 
@@ -1536,6 +1540,7 @@ void exception_handler(unsigned int cr2, test_struct_t test_struct, unsigned int
                 }
 
             }
+            */
 
         } else {
             printf(" - Pagetable not present\n");

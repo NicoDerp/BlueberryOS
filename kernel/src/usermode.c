@@ -748,7 +748,7 @@ void runCurrentProcess(void) {
     __builtin_unreachable();
 }
 
-bool fileAccessAllowed(process_t* process, file_t* file, uint32_t check) {
+bool fileAccessAllowed(process_t* process, file_t* file, unsigned int check) {
 
     uint32_t mode = file->mode;
 
@@ -1531,6 +1531,11 @@ int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t
         pfd->pointer = (uint32_t) file;
 
         if (flags & O_TRUNC) {
+            if (!fileAccessAllowed(process, file, P_WRITE)) {
+                *errnum = EACCES;
+                return -1;
+            }
+
             memset(file->content, 0, file->size);
             file->size = 0;
         }
@@ -1616,7 +1621,6 @@ int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd,
 
         if (file->content != NULL) {
             memcpy(content, file->content, file->size);
-            printf("Here\n");
             kfree(file->content);
         }
 
