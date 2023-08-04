@@ -187,11 +187,11 @@ typedef struct {
 
 #if SYNTAX_HIGHLIGHT
     unsigned char* colors;
+    int unclosed;
 #endif
 
     char* chars;
     char* rchars;
-    int unclosed;
 } row_t;
 
 struct {
@@ -693,10 +693,10 @@ void appendRow(char* s, unsigned int linelen) {
     memcpy(row->chars, s, linelen+1);
 
     row->rchars = NULL;
-    row->unclosed = false;
 
 #if SYNTAX_HIGHLIGHT
     row->colors = NULL;
+    row->unclosed = false;
 #endif
     E.numrows++;
 
@@ -1380,8 +1380,8 @@ void splitCurrentRow(void) {
     trow->len = frow->len - E.curx;
     trow->chars = (char*) malloc(frow->len - E.curx + 1);
     trow->rchars = NULL;
-    trow->unclosed = false;
 #if SYNTAX_HIGHLIGHT
+    trow->unclosed = false;
     trow->colors = NULL;
 #endif
 
@@ -1392,9 +1392,6 @@ void splitCurrentRow(void) {
     frow->chars[E.curx] = '\0';
     frow->len = E.curx;
 
-    renderRow(frow);
-    renderRow(trow);
-
     E.numrows++;
     E.cury++;
     E.rscurx = 0;
@@ -1402,6 +1399,9 @@ void splitCurrentRow(void) {
     E.rcurx = 0;
     E.curx = 0;
     E.coloff = 0;
+
+    renderRow(trow);
+    renderRow(frow);
 
     if (E.cury - E.rowoff >= E.maxrows)
         E.rowoff++;
@@ -1484,7 +1484,9 @@ void deleteCurrentLine(void) {
         E.rows[0].chars = realloc(E.rows[0].chars, 1);
         E.rows[0].chars = '\0';
         E.rows[0].len = '\0';
+#if SYNTAX_HIGHLIGHT
         E.rows[0].unclosed = false;
+#endif
         renderRow(&E.rows[0]);
         E.saved = false;
         snapCursor();
@@ -1497,7 +1499,9 @@ void deleteCurrentLine(void) {
     E.rows = (row_t*) realloc(E.rows, sizeof(row_t) * (E.numrows-1));
     E.numrows--;
 
+#if SYNTAX_HIGHLIGHT
     updateSyntax(&E.rows[E.cury]);
+#endif
 
     if (E.cury == E.numrows)
         E.cury--;
@@ -1650,8 +1654,8 @@ void pasteClipboard(void) {
             r->chars = (char*) malloc(1);
             r->chars[0] = '\0';
             r->rchars = NULL;
-            r->unclosed = false;
 #if SYNTAX_HIGHLIGHT
+            r->unclosed = false;
             r->colors = NULL;
 #endif
             r->len = 0;
@@ -1699,10 +1703,10 @@ void newLineAndInsert(void) {
     r->chars = malloc(1);
 #if SYNTAX_HIGHLIGHT
     r->colors = NULL;
+    r->unclosed = false;
 #endif
     r->chars[0] = '\0';
     r->rchars = NULL;
-    r->unclosed = false;
     r->len = 0;
     r->rlen = 0;
     renderRow(r);
