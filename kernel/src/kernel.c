@@ -326,7 +326,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
 
     printf("Initializing more memory ... ");
-    unsigned int frames = (modules[0].mod_end - modules[0].mod_start) / FRAME_SIZE;
+    unsigned int frames = (modules[0].mod_end - modules[0].mod_start) / FRAME_SIZE + 1;
     kfree_frames((pageframe_t) modules[0].mod_start, frames);
     printf("\e[32;46m[OK]\e[0m\n");
 

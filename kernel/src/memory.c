@@ -23,7 +23,7 @@ uint32_t frame_cache_size = 0;
 uint32_t framestart;
 size_t cachedIndex = 0;
 
-uint32_t framesUsed = 0;
+uint32_t framesUsed;
 
 void memory_initialize(uint32_t total, uint32_t frames) {
 
@@ -31,7 +31,8 @@ void memory_initialize(uint32_t total, uint32_t frames) {
     totalFrameMapSize = total / FRAME_SIZE;
 
     // Minimum requirement, increase if needed
-    frameMapSize = MIN(totalFrameMapSize, 600);
+    //frameMapSize = MIN(totalFrameMapSize, 600);
+    frameMapSize = totalFrameMapSize;
 
     uint32_t offset = frameMapSize / 8;
     if (frameMapSize & 7)
@@ -39,8 +40,9 @@ void memory_initialize(uint32_t total, uint32_t frames) {
 
     framestart = (FRAME_SIZE - (FRAME_START + offset) % FRAME_SIZE + (FRAME_START + offset));
 
-    frame_cache_size = 0;
+    framesUsed = 0;
     cachedIndex = 0;
+    frame_cache_size = 0;
     kalloc_cache(frames);
 }
 
@@ -59,7 +61,7 @@ void memory_mark_allocated(uint32_t start, uint32_t end) {
         kabort();
     }
 
-    for (size_t index = startindex; index < endindex; index++) {
+    for (size_t index = startindex; index <= endindex; index++) {
 
         frame_map[index >> 3] |= (1 << (index & 0x7));
         framesUsed++;
@@ -87,6 +89,7 @@ pageframe_t kalloc_frame(void) {
     */
 
     cachedIndex++;
+    framesUsed++;
 
     return frame;
 }
@@ -244,7 +247,6 @@ void kalloc_cache(uint32_t cacheSize) {
         }
 
         frame_cache_size++;
-        framesUsed++;
     }
 
 end:
