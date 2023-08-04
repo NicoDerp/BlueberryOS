@@ -2,6 +2,7 @@
 #include <kernel/logging.h>
 #include <kernel/memory.h>
 #include <kernel/paging.h>
+#include <kernel/usermode.h>
 #include <kernel/errors.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -24,6 +25,20 @@ uint32_t framestart;
 size_t cachedIndex = 0;
 
 uint32_t framesUsed;
+
+void mapPageframe(pageframe_t pf) {
+
+    map_page(v_to_p((unsigned int) pf), (unsigned int) pf, true, true);
+
+    for (unsigned int i = 0; i < PROCESSES_MAX; i++) {
+        process_t* process = &processes[i];
+        if (!process->initialized)
+            return;
+
+        map_page_pd(process->pd, v_to_p((unsigned int) pf), (unsigned int) pf, true, true);
+    }
+}
+
 
 void memory_initialize(uint32_t total, uint32_t frames) {
 
@@ -139,7 +154,7 @@ pageframe_t kalloc_frames(unsigned int count) {
         uint32_t page = getPage(pf);
         if (!(page & 1)) {
             VERBOSE("kalloc_frames: Mapping pageframe p0x%x to c0x%x\n", v_to_p(pf), pf);
-            map_page(v_to_p(pf), pf, true, true);
+            mapPageframe((pageframe_t) pf);
         }
     }
 
@@ -243,7 +258,7 @@ void kalloc_cache(uint32_t cacheSize) {
         uint32_t page = getPage(pf);
         if (!(page & 1)) {
             VERBOSE("kalloc_cache: Mapping pageframe p0x%x to c0x%x\n", v_to_p(pf), pf);
-            map_page(v_to_p(pf), pf, true, true);
+            mapPageframe((pageframe_t) pf);
         }
 
         frame_cache_size++;

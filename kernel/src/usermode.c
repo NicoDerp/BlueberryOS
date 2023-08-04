@@ -487,7 +487,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
     argPointers[argCount] = NULL;
 
     // Add args
-    loadPageDirectory(process->pd);
+    //loadPageDirectory(process->pd);
     setProcessArgs(process, argPointers);
 
     // Free pagedirectory since that is kalloc'ed in loadELF/Binary IntoMemory

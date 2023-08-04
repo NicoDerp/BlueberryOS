@@ -174,6 +174,8 @@ extern user_t* rootUser;
 extern user_t* currentUser;
 extern group_t* rootPGroup;
 
+extern process_t processes[];
+
 void tss_initialize(void);
 //void install_tss(struct GDT* source);
 void install_tss(uint8_t* entryBytes);

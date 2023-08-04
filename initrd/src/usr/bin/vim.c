@@ -655,7 +655,9 @@ void appendRow(char* s, unsigned int linelen) {
 #endif
     E.numrows++;
 
+    printf("before\n");
     renderRow(row);
+    printf("before\n");
 }
 
 void readFile(char* filename) {
@@ -699,9 +701,10 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        //printf("Appending %d:'%s'\n", linelen, line);
+        printf("Appending %d:'%s'\n", linelen, line);
         appendRow(line, linelen);
     }
+    printf("Done!\n");
 
     free(line);
 
