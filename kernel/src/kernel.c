@@ -163,11 +163,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     idt_initialize();
     printf("\e[32;46m[OK]\e[0m\n");
 
-    /*
-    printf("Setting up Paging        ... ");
-    paging_initialize();
-    printf("\e[32;46m[OK]\e[0m\n");
-    */
 
     struct multiboot_tag_module modules[32];
     size_t moduleCount = 0;
@@ -289,7 +284,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
         VERBOSE("init: initrd decompression sucessfull\n");
         printf("\e[32;46m[OK]\e[0m\n");
-        loadInitrd((uint32_t) dest, (uint32_t) dest + destLen);
+        loadInitrd(dest, dest + destLen);
     }
 
     printf("Initializing more memory ... ");
@@ -331,7 +326,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     printf("Welcome to BlueberryOS!\n");
 
     file_t* file;
-    char* args[] = {"af", "Booga", 0};
+    char* args[] = {NULL};
 
     // TODO only run when there are no other processes
     file = getFile("/sbin/loop");
