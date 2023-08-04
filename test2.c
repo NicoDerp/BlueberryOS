@@ -1,41 +1,45 @@
 
 #include <stdio.h>
-#include <ncurses.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/wait.h>
+#include <fcntl.h>
+#include <errno.h>
 
 
 void main(void) {
 
-    initscr();
-    raw();
+    char* filename = "/usr/bin/echo";
 
-    char* str = "Halla";
-    write(STDIN_FILENO, str, strlen(str)+1);
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        int backup = errno;
 
-    int ch;
-    //printf("\e[6n");
-    //printf("\e[6n");
-
-    while ((ch = getchar()) != 'q') {
-        printf("Got %d: '%c'\n", ch, ch);
-    }
-    endwin();
-    return;
-
-
-    keypad(stdscr, TRUE);
-    //noecho();
-
-    //box(stdscr, 0, 0);
-    wrefresh(stdscr);
-    scrollok(stdscr, TRUE);
-    while ((ch=wgetch(stdscr)) != 'q') {
-        wprintw(stdscr, "%#x - %s\n", ch, keyname(ch));
+        printf("open error: %s\n", strerror(backup));
+        exit(1);
     }
 
+    FILE* fp = fdopen(fd, "r");
+
+    char* line = NULL;
+    size_t linecap = 0;
+    ssize_t linelen;
+    while ((linelen = getline(&line, &linecap, fp)) != -1) {
+
+        while (line[linelen-1] == '\n')
+            line[--linelen] = '\0';
+
+        printf("Appending %ld:'%s'\n", linelen, line);
+        getchar();
+    }
+
+    free(line);
+
+    if (fclose(fp) == -1) {
+        int backup = errno;
+        printf("fclose error: %s\n", strerror(backup));
+        exit(1);
+    }
 
 }
 

@@ -111,7 +111,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
                         unsigned int reallen = (unsigned int) (mmap->len & 0xFFFFFFFF);
 
                         // Minimum requirement
-                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + reallen > FRAME_START + 2*FRAME_4MB)) {
+                        if ((mmap->type == MULTIBOOT_MEMORY_AVAILABLE) && (addr + reallen > FRAME_START + FRAME_4MB)) {
 
                             unsigned int len = addr + reallen - FRAME_START;
 
@@ -353,7 +353,6 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     // Skip waiting
     runProcess(process);
-
 
     for (;;) {
         asm("hlt");

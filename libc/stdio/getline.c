@@ -63,8 +63,10 @@ ssize_t getline(char** __restrict lineptr, size_t* __restrict n, FILE* __restric
         total += bytes;
 
         // EOF
-        if (bytes == 0)
+        if (bytes == 0) {
+            pos = &fp->dd_buf[fp->dd_index];
             break;
+        }
     }
 
     // No bytes read so EOF

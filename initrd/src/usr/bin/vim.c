@@ -699,10 +699,9 @@ void readFile(char* filename) {
         while (line[linelen-1] == '\n')
             line[--linelen] = '\0';
 
-        printf("Appending '%s' with len %d\n", line, linelen);
+        //printf("Appending %d:'%s'\n", linelen, line);
         appendRow(line, linelen);
     }
-    for(;;){}
 
     free(line);
 
