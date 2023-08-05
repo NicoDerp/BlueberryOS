@@ -61,6 +61,7 @@ I want BlueberryOS to be simple, small and efficient.
 You will need:
  - Linux (not tested on anything other)
  - Git
+ - NASM
  - The source code for BlueberryOS (download by using `git clone https://github.com/NicoDerp/BlueberryOS.git`)
  - Custom cross-compiler for BlueberryOS (see Cross-compiler section below)
  - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
