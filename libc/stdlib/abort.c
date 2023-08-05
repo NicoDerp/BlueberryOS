@@ -11,6 +11,7 @@ void abort(void) {
 #else
     // TODO abnormally terminate the process as if by SIGABRT
     printf("abort()\n");
+    exit(1);
 #endif
     while (1) { }
     __builtin_unreachable();

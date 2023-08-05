@@ -31,8 +31,9 @@ ASMFLAGS = -felf32
 AR = i686-elf-ar
 
 FREEOBJS =\
-	stdio/printf.o \
 	stdio/vprintf.o \
+	stdio/printf.o \
+	stdio/fprintf.o \
 	stdio/putchar.o \
 	stdio/puts.o \
 	stdio/getc.o \
@@ -103,8 +104,7 @@ OBJS = $(FREEOBJS) $(HOSTEDOBJS)
 
 LIBK_OBJS = $(FREEOBJS:.o=.libk.o)
 
-BINARIES = libc.a libk.a # Not ready for libc yet.
-#BINARIES = libk.a
+BINARIES = libc.so libc.a libk.a
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
@@ -116,6 +116,9 @@ all:
 	$(MAKE) install
 
 build: $(BINARIES)
+
+libc.so: $(OBJS)
+	$(AR) rcs $@ $(OBJS)
 
 libc.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
@@ -137,7 +140,7 @@ libk.a: $(LIBK_OBJS)
 
 
 clean:
-	rm -rf $(BINARIES) *.a
+	rm -rf $(BINARIES) *.so *.a
 	rm -rf $(OBJS) $(LIBK_OBJS)	*.o */*.o */*/*.o
 	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) *.d */*.d */*/*.d
 
