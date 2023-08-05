@@ -73,6 +73,7 @@ This is because the entire standard-library is re-written to work with Blueberry
 This ensures portability, so any C code can run with ease.
 
 Compiling the cross-compiler can be tedious and take some time. Be very careful with every command you enter and make sure the paths are correct!
+Tip: For much faster compilation times, specify flag -j<n> for parallel compilation when running `make`, but only for compilation, don't do it for install! <n> is how many physical cores your CPU has, but you may want <n> to be 1 or 2 lower than that so you don't slow down your entire pc.
 
 1. Find out where to install all source. This guide assumes that the BlueberryOS source is at $HOME/blueberryos, and that Binutils and GCC is at $HOME/crosscompiler/<binutils/gcc>.
 1. Donwload BlueberryOS source if you haven't already.
