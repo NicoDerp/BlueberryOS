@@ -1405,6 +1405,8 @@ void splitCurrentRow(void) {
 
     if (E.cury - E.rowoff >= E.maxrows)
         E.rowoff++;
+
+    updateMaxWidth();
 }
 
 void deleteCurrentChar(void) {
@@ -1444,6 +1446,7 @@ void deleteCurrentChar(void) {
         E.cury--;
 
         E.saved = false;
+        updateMaxWidth();
         return;
     }
 
@@ -1512,6 +1515,7 @@ void deleteCurrentLine(void) {
     snapCursor();
 
     E.saved = false;
+    updateMaxWidth();
 }
 
 void copySelection(void) {
@@ -1682,6 +1686,7 @@ void pasteClipboard(void) {
     renderRow(row);
 
     E.saved = false;
+    updateMaxWidth();
 }
 
 void newLineAndInsert(void) {
@@ -1714,6 +1719,7 @@ void newLineAndInsert(void) {
     E.mode = INSERT;
 
     E.saved = false;
+    updateMaxWidth();
 }
 
 void searchNext(void) {

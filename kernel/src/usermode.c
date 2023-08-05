@@ -1613,18 +1613,20 @@ int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd,
         file->size = pfd->position + count;
 
     // Reallocate
-    if (pfd->position + count > file->frames*FRAME_4KB) {
-        file->size = pfd->position + count;
-        file->frames = (file->size+FRAME_4KB-1)/FRAME_4KB;
+    if (pfd->position + count >= file->frames*FRAME_4KB) {
+        unsigned int size = pfd->position + count;
+        unsigned int frames = (file->size+FRAME_4KB-1)/FRAME_4KB;
 
-        pageframe_t content = kalloc_frames(file->frames);
+        pageframe_t content = kalloc_frames(frames);
 
         if (file->content != NULL) {
             memcpy(content, file->content, file->size);
-            kfree(file->content);
+            kfree_frames(file->content, file->frames);
         }
 
         file->content = content;
+        file->size = size;
+        file->frames = frames;
     }
 
     memcpy(file->content + pfd->position, buf, count);

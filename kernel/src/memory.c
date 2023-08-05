@@ -37,6 +37,18 @@ void mapPageframe(pageframe_t pf) {
 
         map_page_pd(process->pd, v_to_p((unsigned int) pf), (unsigned int) pf, true, true);
     }
+
+    // Security measure so we don't have enough frames for pagetables
+    pageframe_t npf = (pageframe_t) ((unsigned int) pf + FRAME_SIZE);
+    map_page(v_to_p((unsigned int) npf), (unsigned int) npf, true, true);
+
+    for (unsigned int i = 0; i < PROCESSES_MAX; i++) {
+        process_t* process = &processes[i];
+        if (!process->initialized)
+            return;
+
+        map_page_pd(process->pd, v_to_p((unsigned int) npf), (unsigned int) npf, true, true);
+    }
 }
 
 
