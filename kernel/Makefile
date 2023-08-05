@@ -5,7 +5,8 @@ CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
 DESTDIR = $(SYSROOT)
-PREFIX = /usr/local
+#PREFIX = /usr/local
+PREFIX = /usr
 INCLUDEDIR = $(PREFIX)/include
 LIBDIR = $(PREFIX)/lib
 

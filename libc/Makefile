@@ -7,7 +7,8 @@ LIBS ?=
 
 SYSROOT = /home/nico/Projects/blueberryos/sysroot
 DESTDIR = $(SYSROOT)
-PREFIX = /usr/local
+#PREFIX = /usr/local
+PREFIX = /usr
 EXEC_PREFIX = $(PREFIX)
 INCLUDEDIR = $(PREFIX)/include
 LIBDIR = $(EXEC_PREFIX)/lib
