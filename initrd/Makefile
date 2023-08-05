@@ -9,18 +9,13 @@ PREFIX = /usr/local
 INCLUDEDIR = $(PREFIX)/include
 LIBDIR = $(PREFIX)/lib
 
-# Necessary
-#CC = i686-elf-gcc --sysroot=$(SYSROOT)
-
-# Work-around because compiler wasn't configured with --with-sysroot
-#CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem=/usr/include
-#CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem /usr/include
-CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/local/include
+CC = i686-blueberryos-gcc
 CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude
 ASM_CFLAGS =
 LFLAGS := $(LFLAGS)
 #-Wl,--gc-sections
-LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lncurses -lc -lgcc
+LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lncurses -lc
+#LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lncurses -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
 #LIBS := $(LIBS) -nostdlib -lgcc
 

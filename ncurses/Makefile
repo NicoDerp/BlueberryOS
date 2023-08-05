@@ -12,10 +12,7 @@ INCLUDEDIR = $(PREFIX)/include
 LIBDIR = $(EXEC_PREFIX)/lib
 
 # Necessary
-#CC = i686-elf-gcc --sysroot=$(SYSROOT)
-#CC = i686-elf-gcc -isystem=/usr/include
-#CC = i686-elf-gcc --sysroot=$(SYSROOT) -isystem /usr/include
-CC = i686-elf-gcc -isystem $(SYSROOT)$(INCLUDEDIR)
+CC = i686-blueberryos-gcc
 CFLAGS := $(CFLAGS) -ffreestanding -Wall -Wextra -Iinclude -D__is_ncurses
 ASM_CFLAGS = -D__is_ncurses
 LFLAGS := $(LFLAGS) -ffreestanding
