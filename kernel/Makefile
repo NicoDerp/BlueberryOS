@@ -5,18 +5,15 @@ CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
 DESTDIR = $(SYSROOT)
-#PREFIX = /usr/local
 PREFIX = /usr
 INCLUDEDIR = $(PREFIX)/include
-LIBDIR = $(PREFIX)/lib
 
 CC = i686-blueberryos-gcc
 CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra -Iinclude -D__is_kernel
 ASM_CFLAGS = -D__is_kernel
 LFLAGS := $(LFLAGS)
-LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lk
-#LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lk -lgcc
-#LIBS := $(LIBS) -nostdlib -lgcc
+LIBS := $(LIBS) -nostdlib -lk
+#LIBS := $(LIBS) -nostdlib -lk -lgcc
 
 ASM = nasm
 ASMFLAGS = -felf32

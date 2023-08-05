@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 
 extern color_pair_t color_pairs[];

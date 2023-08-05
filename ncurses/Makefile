@@ -7,17 +7,16 @@ LIBS ?=
 SYSROOT = /home/nico/Projects/blueberryos/sysroot
 DESTDIR = $(SYSROOT)
 PREFIX = /usr/local
-EXEC_PREFIX = $(PREFIX)
 INCLUDEDIR = $(PREFIX)/include
-LIBDIR = $(EXEC_PREFIX)/lib
+LIBDIR = $(PREFIX)/lib
 
 # Necessary
 CC = i686-blueberryos-gcc
 CFLAGS := $(CFLAGS) -ffreestanding -Wall -Wextra -Iinclude -D__is_ncurses
 ASM_CFLAGS = -D__is_ncurses
 LFLAGS := $(LFLAGS) -ffreestanding
-#LIBS = -nostdlib -lk -lgcc
-LIBS := $(LIBS) -nostdlib -L$(SYSROOT)$(LIBDIR) -lc -lgcc
+LIBS := $(LIBS) -nostdlib -lc
+#LIBS := $(LIBS) -nostdlib -lc -lgcc
 
 ASM = nasm
 ASMFLAGS = -felf32

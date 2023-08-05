@@ -108,22 +108,44 @@ $ make all-gcc
 $ make install-gcc
 ```
 
+Wow! That was a lot. Now you should have the `i686-blueberryos` toolchain. 
+You should also be able to run `i686-blueberryos-gcc --version`.
+
 ### Compiling BluberryOS with its standard applications
 
-Wow! That was a lot. Now you should have the `i686-blueberryos` toolchain. The next step is to finally compile the operating system itself along with the standard applications.
+The next step is to finally compile the operating system itself along with the standard applications.
 
 ```shell
-$ cd $HOME/blueberryos/libc
+$ cd $BLUEBERRYOS_SOURCE/kernel
 $ make install
-$ cd ../ncurses
-$ make install
-$ cd ../initrd
-$ make install
-$ cd ../kernel
-$ make install
+$ cd $BLUEBERRYOS_SOURCE/libc
+$ make && make install
+$ cd $BLUEBERRYOS_SOURCE/ncurses
+$ make && make install
+$ cd $BLUEBERRYOS_SOURCE/initrd
+$ make && make install
+$ cd $BLUEBERRYOS_SOURCE/kernel
+$ make
 ```
 
-Now everything is ready!
+Now everything is compiled and ready to run!
+
+### Your own programs
+
+This is still work-in-progress. But what you can do is add your program's source (`myprogram.c`) to `initrd/src/usr/bin/`.
+Then you need to edit `initrd/Makefile` and simply add the line `    src/usr/bin/myprogram.o \`.
+When you recompile initrd and run BlueberryOS, you'll see that your program is available to run!
+
+
+**-- THIS SECTION IS NOT TRUE YET --**
+
+Developing your own programs is incredibly simple. Let's say you have a project you wan't to port to BlueberryOS, the only thing that you need to change is that you use `i686-blueberryos-gcc` instead of plain `gcc`.
+If you only want to test a simple Hello World program, then go ahead.
+
+```shell
+$ cat helloworld.c
+
+```
 
 ### Emulating
 
