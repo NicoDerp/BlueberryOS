@@ -60,35 +60,10 @@ I want BlueberryOS to be simple, small and efficient.
 
 You will need:
  - Linux (not tested on anything other)
- - Custom cross-compiler for i686 (see Cross-compiler section below)
- - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
+ - Git
  - The source code for BlueberryOS (download by using `git clone https://github.com/NicoDerp/BlueberryOS.git`)
-
-Inside BlueberryOS, head into the `kernel` folder and run:
-
-```shell
-$ make install
-```
-
-Then head into `libc` (important that this is first!), `initrd` and lastly `ncurses` (in that order) and run:
-
-```shell
-$ make
-$ make install
-```
-
-Inside the `kernel` directory you will now find a `blueberryos.iso`. 
-Now you can emulate using your favourite emulator or even run the BlueberryOS on real hardware (UEFI not supported yet)!
-If you wan't to emulate using QEMU you can just use the command:
-```shell
-$ make run
-```
-Or, if you like Bochs more (for some reason for me Bochs gets stuck at multiboot2 command in grubcfg):
-```shell
-$ make run-bochs
-```
-
-## Documentation for developers
+ - Custom cross-compiler for BlueberryOS (see Cross-compiler section below)
+ - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
 
 ### Cross-compiler
 
@@ -97,8 +72,73 @@ This is because the entire standard-library is re-written to work with Blueberry
 
 This ensures portability, so any C code can run with ease.
 
-For now, the cross-compiler is not customized for BlueberryOS, but in will be in the future.
-Download from [https://wiki.osdev.org/GCC_Cross-Compiler](https://wiki.osdev.org/GCC_Cross-Compiler), and follow their step-by-step instructions.
+Compiling the cross-compiler can be tedious and take some time. Be very careful with every command you enter and make sure the paths are correct!
+
+1. Find out where to install all source. This guide assumes that the BlueberryOS source is at $HOME/blueberryos, and that Binutils and GCC is at $HOME/crosscompiler/<binutils/gcc>.
+1. Donwload BlueberryOS source if you haven't already.
+2. Download both the latest Binutils and GCC source from [https://sourceware.org/git/binutils-gdb.git](https://sourceware.org/git/binutils-gdb.git) and [https://gcc.gnu.org/git/gcc.git](https://gcc.gnu.org/git/gcc.git) respectivly using `git clone`.
+3. Head into `blueberryos/kernel` and run `make install`. Then, also run `make install-headers` in the `blueberryos/libc` folder.
+3. Copy `$HOME/blueberryos/binutils.patch` to `$HOME/crosscompiler/binutils/binutils.patch`, and copy `$HOME/blueberryos/gcc.patch` to `$HOME/crosscompiler/gcc/gcc.patch`.
+4. Then you want to apply the changes made to the sources.
+```shell
+$ cd $HOME/crosscompiler/binutils
+$ git apply binutils.patch
+$ cd ../gcc
+$ git apply gcc.patch
+```
+5. Run these commands for configuring binutils. $PREFIX is the location where your cross-compilers will be installed. Remember to switch out location with where blueberryos source is!
+```shell
+$ cd $HOME/crosscompiler
+$ export PREFIX="$HOME/opt/cross"
+$ export PATH="$PREFIX/bin:$PATH"
+$ mkdir build-binutils
+$ cd build-binutils
+$ ../binutils/configure --target=i686-blueberryos --prefix="$PREFIX" --with-sysroot=$HOME/blueberryos/sysroot --enable-languages=c
+```
+6. If all went well then you can go ahead and compile binutils:
+```shell
+$ make
+$ make install
+```
+7. Now we configure GCC. Remember to switch out location with where blueberryos source is!
+```shell
+$ cd $HOME/crosscompiler
+$ mkdir build-gcc
+$ cd build-gcc
+$ ../gcc/configure --target=i686-blueberryos --prefix="$PREFIX" --with-sysroot=$HOME/blueberryos/sysroot --enable-languages=c
+```
+8. Then we compile
+```shell
+$ make all-gcc all-target-libgcc
+$ make install-gcc install-target-libgcc
+```
+
+### Compiling BluberryOS with its standard applications
+
+Wow! That was a lot. Now you should have the `i686-blueberryos` toolchain. The next step is to finally compile the operating system itself along with the standard applications.
+
+```shell
+$ cd $HOME/blueberryos/libc
+$ make install
+$ cd ../ncurses
+$ make install
+$ cd ../initrd
+$ make install
+$ cd ../kernel
+$ make install
+```
+
+Now everything is ready!
+
+### Emulating
+
+I personally use QEMU. If you wan't the easiest way to emulate, then also just download QEMU and inside the `kernel` directory, run
+```shell
+$ make run
+```
+Have fun in you brand-new super-cool operating system!
+
+## Documentation for developers
 
 ### Syscalls
 

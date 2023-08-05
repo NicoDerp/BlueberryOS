@@ -1,0 +1,122 @@
+diff --git a/bfd/config.bfd b/bfd/config.bfd
+index 3b39ff36c00..80429f9c31a 100644
+--- a/bfd/config.bfd
++++ b/bfd/config.bfd
+@@ -235,6 +235,10 @@ esac
+ 
+ case "${targ}" in
+ # START OF targmatch.h
++  i[3-7]86-*blueberryos*)
++    targ_defvec=i386_elf32_vec
++    targ_selvecs=
++    ;;
+ #ifdef BFD64
+   aarch64-*-darwin*)
+     targ_defvec=aarch64_mach_o_vec
+diff --git a/config.sub b/config.sub
+index f6ede1d0dc0..ee380826ee0 100755
+--- a/config.sub
++++ b/config.sub
+@@ -1732,7 +1732,7 @@ case $os in
+ 	     | hpux* | unos* | osf* | luna* | dgux* | auroraux* | solaris* \
+ 	     | sym* |  plan9* | psp* | sim* | xray* | os68k* | v88r* \
+ 	     | hiux* | abug | nacl* | netware* | windows* \
+-	     | os9* | macos* | osx* | ios* \
++	     | os9* | macos* | osx* | ios* | blueberryos* \
+ 	     | mpw* | magic* | mmixware* | mon960* | lnews* \
+ 	     | amigaos* | amigados* | msdos* | newsos* | unicos* | aof* \
+ 	     | aos* | aros* | cloudabi* | sortix* | twizzler* \
+diff --git a/gas/configure.tgt b/gas/configure.tgt
+index 3429f850d05..bb81971a584 100644
+--- a/gas/configure.tgt
++++ b/gas/configure.tgt
+@@ -173,6 +173,7 @@ case ${generic_target} in
+   bfin-*-linux-uclibc)			fmt=fdpicelf em=linux ;;
+   bfin-*-uclinux*)			fmt=elf em=linux ;;
+   bfin-*elf)				fmt=elf ;;
++  i386-*-blueberryos*)      fmt=elf ;;
+ 
+   cr16-*-elf*)				fmt=elf ;;
+ 
+diff --git a/ld/Makefile.am b/ld/Makefile.am
+index c3adbb0ccad..37a63233b2f 100644
+--- a/ld/Makefile.am
++++ b/ld/Makefile.am
+@@ -203,6 +203,7 @@ ALL_EMULATION_SOURCES = \
+ 	eavrxmega5.c \
+ 	eavrxmega6.c \
+ 	eavrxmega7.c \
++	eelf_i386_blueberryos.c \
+ 	ecrisaout.c \
+ 	ecriself.c \
+ 	ecrislinux.c \
+@@ -773,6 +774,7 @@ $(ALL_EMULATION_SOURCES) $(ALL_64_EMULATION_SOURCES): $(GEN_DEPENDS)
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32xtensa.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32z80.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386.Pc@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_blueberryos.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_be.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_fbsd.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_haiku.Pc@am__quote@
+diff --git a/ld/Makefile.in b/ld/Makefile.in
+index d1a56026437..5c408ff3640 100644
+--- a/ld/Makefile.in
++++ b/ld/Makefile.in
+@@ -533,6 +533,7 @@ pdfdir = @pdfdir@
+ prefix = @prefix@
+ program_transform_name = @program_transform_name@
+ psdir = @psdir@
++runstatedir = @runstatedir@
+ sbindir = @sbindir@
+ sharedstatedir = @sharedstatedir@
+ srcdir = @srcdir@
+@@ -704,6 +705,7 @@ ALL_EMULATION_SOURCES = \
+ 	eavrxmega5.c \
+ 	eavrxmega6.c \
+ 	eavrxmega7.c \
++	eelf_i386_blueberryos.c \
+ 	ecrisaout.c \
+ 	ecriself.c \
+ 	ecrislinux.c \
+@@ -1459,6 +1461,7 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf64tilegx_be.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_be.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_blueberryos.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_fbsd.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_haiku.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_ldso.Po@am__quote@
+@@ -2490,6 +2493,7 @@ $(ALL_EMULATION_SOURCES) $(ALL_64_EMULATION_SOURCES): $(GEN_DEPENDS)
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32xtensa.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32z80.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386.Pc@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_blueberryos.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_be.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_fbsd.Pc@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_haiku.Pc@am__quote@
+diff --git a/ld/configure.tgt b/ld/configure.tgt
+index c62b9581d9b..fe838d9285e 100644
+--- a/ld/configure.tgt
++++ b/ld/configure.tgt
+@@ -267,6 +267,10 @@ bfin-*-linux-uclibc*)	targ_emul=elf32bfinfd;
+ 			targ_extra_emuls="elf32bfin"
+ 			targ_extra_libpath=$targ_extra_emuls
+ 			;;
++i[3-7]86-*-blueberryos*)
++			targ_emul=elf_i386_blueberryos
++			targ_extra_emuls=elf_i386
++			;;
+ bpf-*-*)		targ_emul=elf64bpf
+ 			;;
+ cr16-*-elf*)		targ_emul=elf32cr16
+diff --git a/ld/emulparams/elf_i386_blueberryos.sh b/ld/emulparams/elf_i386_blueberryos.sh
+new file mode 100644
+index 00000000000..a2785a9b54c
+--- /dev/null
++++ b/ld/emulparams/elf_i386_blueberryos.sh
+@@ -0,0 +1,5 @@
++
++source_sh ${srcdir}/emulparams/elf_i386.sh
++TEXT_START_ADDR=0x08000000
++GENERATE_SHLIB_SCRIPT=yes
++
