@@ -138,15 +138,28 @@ Then you need to edit `initrd/Makefile` and simply add the line `    src/usr/bin
 When you recompile initrd and run BlueberryOS, you'll see that your program is available to run!
 
 
-**-- THIS SECTION IS NOT TRUE YET --**
-
-Developing your own programs is incredibly simple. Let's say you have a project you wan't to port to BlueberryOS, the only thing that you need to change is that you use `i686-blueberryos-gcc` instead of plain `gcc`.
-If you only want to test a simple Hello World program, then go ahead.
+Developing your own programs is incredibly simple. Let's say you have a project you wan't to port to BlueberryOS, the only thing that you need to change is that you use `i686-blueberryos-gcc` instead of plain `gcc` (probably not true at the moment).
+If you only want to test a simple Hello World program, it's as simple as this:
 
 ```shell
+$ cd blueberryos/initrd
 $ cat helloworld.c
 
+#include <stdio.h>
+
+int main(void) {
+    printf("Hello world in BlueberryOS!\n");
+    return 0;
+}
+
+$ i686-blueberryos-gcc helloworld.c -o helloworld
+$ mv helloworld initrd/usr/bin/helloworld
+$ make install
 ```
+
+Now, the next time you run BlueberryOS you'll have access to your new program!
+
+(The process of copying to initrd will be simpler in future)
 
 ### Emulating
 
