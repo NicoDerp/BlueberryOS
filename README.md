@@ -69,13 +69,14 @@ You will need:
 ### Cross-compiler
 
 It is important that you use the `i686-elf-gcc` cross-compiler when developing for this operating system.
-This is because the entire standard-library is re-written to work with BlueberryOS.
-
-This ensures portability, so any C code can run with ease.
+This is because the entire standard-library is re-written to work with BlueberryOS. This ensures portability, so any C code can run with ease.
 
 Compiling the cross-compiler can be tedious and take some time. Be very careful with every command you enter and make sure the paths are correct!
+But remember that compiling the cross-compiler will only be done once! After that you can both use BlueberryOS and code your own programs with it!
 
-Tip: For much faster compilation times, specify flag -j<n> for parallel compilation when running `make`, but only for compilation, don't do it for install! <n> is how many physical cores your CPU has, but you may want <n> to be 1 or 2 lower than that so you don't slow down your entire pc.
+Tip: For much faster compilation times, specify flag -j<n> for parallel compilation when running `make`.
+I've included `-j\`nproc --ignore=2\`` which will automatically use 2 fewer cores than what your computer has, so you can still use it without lagging.
+If you want maximum then go ahead and change it yourself. If you don't want multiprocessing, then set CORES="".
 
 1. Donwload BlueberryOS source if you haven't already.
 2. Now we will set the enviroment variables for where we will install different things. **All directories _must_ not end in `/`, and all directories _must_ be aboslute paths!** The commands under are an example. `BLUEBERRYOS_SOURCE` is where you donwloaded the BlueberryOS source. `PREFIX` is the location where your cross-compiler will be installed (don't change if you are unsure).
@@ -85,11 +86,12 @@ $ export BINUTILS=$HOME/crosscompiler/binutils
 $ export GCC=$HOME/crosscompiler/gcc
 $ export PREFIX="$HOME/opt/cross"
 $ export PATH="$PREFIX/bin:$PATH"
+$ export CORES="-j`nproc --ignore=2`"
 ```
 3. Download both the latest Binutils and GCC source from [https://sourceware.org/git/binutils-gdb.git](https://sourceware.org/git/binutils-gdb.git) and [https://gcc.gnu.org/git/gcc.git](https://gcc.gnu.org/git/gcc.git) respectivly using `git clone`.
 4. Head into `blueberryos/kernel` and run `make install`. Then, also run `make install-headers` in the `blueberryos/libc` folder.
 6. Then you want to apply the changes made to the sources.
-6. Now we configure and compile first binutils and then GCC. Keep in mind that this will take some time. So advice you to use -j<n>.
+6. Now we configure and compile first binutils and then GCC. If you set the variables correct you can just relax and copy paste the commands one-by-one. Keep in mind that this will take quite some time. Don't miss any commands!
 ```shell
 $ cd $BINUTILS
 $ git apply $BLUEBERRYOS_SOURCE/binutils.patch
@@ -99,14 +101,12 @@ $ cd $HOME/crosscompiler
 $ mkdir build-binutils
 $ cd build-binutils
 $ ../binutils/configure --target=i686-blueberryos --prefix="$PREFIX" --with-sysroot=$BLUEBERRYOS_SOURCE/sysroot --enable-languages=c
-$ make
-$ make install
+$ make $CORES && make install $CORES
 $ cd $HOME/crosscompiler
 $ mkdir build-gcc
 $ cd build-gcc
 $ ../gcc/configure --target=i686-blueberryos --prefix="$PREFIX" --with-sysroot=$BLUEBERRYOS_SOURCE/sysroot --enable-languages=c
-$ make all-gcc
-$ make install-gcc
+$ make all-gcc $CORES && make install-gcc $CORES
 ```
 
 Wow! That was a lot. Now you should have the `i686-blueberryos` toolchain. 
