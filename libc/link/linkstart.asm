@@ -1,8 +1,13 @@
 
+BITS 32
+
 extern main
 
+global _start
+
 section .text
-global _start:function (_start.end - _start)
+;global _start:function (_start.end - _start)
+_start:
 
     call main
 

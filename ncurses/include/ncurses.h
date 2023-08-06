@@ -86,17 +86,17 @@ WINDOW* newwin(unsigned int height, unsigned int width, unsigned int starty, uns
 int endwin(void);
 int delwin(WINDOW* win);
 
-inline int noecho(void) { return OK; }
+#define noecho() (OK)
 
 int init_pair(short pair, short f, short b);
-inline int has_colors(void) { return 1; };
-inline int start_color(void) { return OK; }
+#define has_colors() (1)
+#define start_color() (OK)
 
 int wattron(WINDOW* win, int attrs);
-inline int attron(int attrs) { return wattron(stdscr, attrs); }
+#define attron(attrs) (wattron(stdscr, attrs))
 
 int wattroff(WINDOW* win, int attrs);
-inline int attroff(int attrs) { return wattroff(stdscr, attrs); }
+#define attroff(attrs) (wattroff(stdscr, attrs))
 
 #define COLOR_PAIR(n) ((int) (n & 0xFF))
 
@@ -107,8 +107,8 @@ int vmvwprintw(WINDOW* win, int y, int x, const char*, va_list args);
 
 bool wputcharw(WINDOW* win, char c);
 
-inline int addch(char c) { wputcharw(stdscr, c); return OK; }
-inline int waddch(WINDOW* win, char c) { wputcharw(win, c); return OK; }
+#define addch(c) (wputcharw(stdscr, c) || OK)
+#define waddch(win, c) (wputcharw(win, c) || OK)
 
 int refresh(void);
 int wrefresh(WINDOW* win);

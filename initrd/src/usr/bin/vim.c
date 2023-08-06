@@ -318,11 +318,11 @@ extern inline unsigned int rcurxToCurx(row_t* row, unsigned int curx, unsigned i
 }
 */
 
-inline bool is_rseperator(int c) {
+extern inline bool is_rseperator(int c) {
     return strchr(",.()+-/*=~%<>[];", c) != NULL;
 }
 
-inline bool is_seperator(int c) {
+extern inline bool is_seperator(int c) {
     return c == '\0' || isspace(c) || is_rseperator(c);
 }
 

@@ -53,7 +53,7 @@ index 415e0e1ebc5..910adce6ed8 100644
  	tm_file="${tm_file} aarch64/aarch64-elf.h aarch64/aarch64-errata.h aarch64/aarch64-elf-raw.h"
 diff --git a/gcc/config/blueberryos.h b/gcc/config/blueberryos.h
 new file mode 100644
-index 00000000000..6bbb8dabce4
+index 00000000000..e6125b63432
 --- /dev/null
 +++ b/gcc/config/blueberryos.h
 @@ -0,0 +1,47 @@
@@ -74,9 +74,9 @@ index 00000000000..6bbb8dabce4
 +#undef ENDFILE_SPEC
 +#define ENDFILE_SPEC ""
 +
-+/* Tells GCC to look for linkstart.o under /lib/ in sysroot */
++/* Tells GCC to look for linkstart.o under /usr/local/lib/ in sysroot */
 +#undef STANDARD_STARTFILE_PREFIX
-+#define STANDARD_STARTFILE_PREFIX "/lib/"
++#define STANDARD_STARTFILE_PREFIX "/usr/local/lib/"
 +
 +/* Disable including libgcc */
 +#undef LIBGCC_SPEC

@@ -11,6 +11,7 @@ PREFIX = /usr
 EXEC_PREFIX = $(PREFIX)
 INCLUDEDIR = $(PREFIX)/include
 LIBDIR = $(EXEC_PREFIX)/lib
+LINKDIR = $(EXEC_PREFIX)/local/lib
 
 # Necessary
 CC = i686-blueberryos-gcc
@@ -18,7 +19,8 @@ CFLAGS := $(CFLAGS) -ffreestanding -Wall -Wextra -Iinclude -D__is_libc
 ASM_CFLAGS = -D__is_libc
 LFLAGS := $(LFLAGS) -ffreestanding
 #LIBS = -nostdlib -lk -lgcc
-LIBS := $(LIBS) -nostdlib -lgcc
+LIBS := $(LIBS) -nostdlib
+#LIBS := $(LIBS) -nostdlib -lgcc
 LIBK_CFLAGS := $(CFLAGS) -D__is_libk
 LIBK_CFLAGS_ASM := -D__is_libk
 
@@ -158,8 +160,8 @@ install-libs:
 	cp $(BINARIES) $(DESTDIR)$(LIBDIR)
 
 install-link: $(LINK_OBJS)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp $(LINK_OBJS) $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(LINKDIR)
+	cp $(LINK_OBJS) $(DESTDIR)$(LINKDIR)
 
 -include $(OBJS:.o=.d)
 -include $(LIBK_OBJS:.o=.d)
