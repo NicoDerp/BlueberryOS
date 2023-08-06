@@ -7,10 +7,12 @@ INCLUDEDIR = $(PREFIX)/include
 
 # Necessary
 CC = i686-blueberryos-gcc
-CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra
+#CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra
+CFLAGS := $(CFLAGS) -std=gnu99 -Wall -Wextra
 ASM_CFLAGS =
 LFLAGS := $(LFLAGS)
-LIBS := $(LIBS) -nostdlib -lc
+LIBS := $(LIBS)
+#LIBS := $(LIBS) -ffreestanding -nostdlib -lc
 #LIBS := $(LIBS) -nostdlib -lc -lgcc
 
 ASM = nasm
@@ -57,13 +59,13 @@ DEPS = $(OBJS:.o=.d)
 #.SUFFIXES: .o .c .asm .d
 
 all:
-	$(MAKE) -j8 build
+	$(MAKE) -j`nproc` build
 	$(MAKE) install
 
 build: $(BINS)
 
 clean:
-	rm -rf $(BINS) $(OBJS) $(DEPS) link.o link.d initrd.tar.gz initrd
+	rm -rf $(BINS) $(OBJS) $(DEPS) initrd.tar.gz initrd
 
 rebuild: clean build
 
@@ -89,7 +91,7 @@ install: initrd initrd.tar.gz
 	mkdir -p ../kernel/isodir/boot
 	cp --preserve=timestamps initrd.tar.gz ../kernel/isodir/boot/initrd.tar.gz
 
-$(BINS): $(OBJS) link.o
+$(BINS): $(OBJS)
 
 %.o: %.c
 	$(CC) -c -MD $^ -o $@ $(CFLAGS) $(LIBS)
@@ -98,7 +100,7 @@ $(BINS): $(OBJS) link.o
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
 %: %.o
-	$(CC) -o $@ $(CFLAGS) $(LFLAGS) $< link.o $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LFLAGS) $< $(LIBS)
 
 
 #link.o: link.asm

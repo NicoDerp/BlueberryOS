@@ -38,6 +38,7 @@ FREEOBJS =\
 	stdio/fopen.o \
 	stdio/fdopen.o \
 	stdio/fclose.o \
+	stdio/stdstreams.o \
 	stdio/getline.o \
 	stdlib/abort.o \
 	stdlib/itoa.o \
@@ -50,6 +51,8 @@ FREEOBJS =\
 	stdlib/malloc.o \
 	stdlib/free.o \
 	stdlib/realloc.o \
+	stdlib/calloc.o \
+	stdlib/abs.o \
 	string/memcmp.o \
 	string/memcpy.o \
 	string/memmove.o \
@@ -61,6 +64,7 @@ FREEOBJS =\
 	string/strncpy.o \
 	string/strtok.o \
 	string/strchr.o \
+	string/strcat.o \
 	string/strrchr.o \
 	string/strstr.o \
 	string/strrstr.o \
@@ -102,6 +106,7 @@ OBJS = $(FREEOBJS) $(HOSTEDOBJS)
 LIBK_OBJS = $(FREEOBJS:.o=.libk.o)
 
 BINARIES = libc.so libc.a libk.a
+LINK_OBJS = link/linkstart.o
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
@@ -109,10 +114,11 @@ BINARIES = libc.so libc.a libk.a
 .SUFFIXES: .o .libk.o .c .asm
 
 all:
-	$(MAKE) -j12 build
+	$(MAKE) -j`nproc` build
+	$(MAKE) build
 	$(MAKE) install
 
-build: $(BINARIES)
+build: $(BINARIES) $(LINK_OBJS)
 
 libc.so: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
@@ -141,7 +147,7 @@ clean:
 	rm -rf $(OBJS) $(LIBK_OBJS)	*.o */*.o */*/*.o
 	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) *.d */*.d */*/*.d
 
-install: $(BINARIES) install-headers install-libs
+install: $(BINARIES) $(LINK_OBJS) install-headers install-libs install-link
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
@@ -150,6 +156,10 @@ install-headers:
 install-libs:
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	cp $(BINARIES) $(DESTDIR)$(LIBDIR)
+
+install-link: $(LINK_OBJS)
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	cp $(LINK_OBJS) $(DESTDIR)$(LIBDIR)
 
 -include $(OBJS:.o=.d)
 -include $(LIBK_OBJS:.o=.d)

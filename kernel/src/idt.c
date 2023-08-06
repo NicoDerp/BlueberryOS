@@ -146,7 +146,7 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                     // Write to stdin?
                 
                 }
-                else if (fd == STDOUT_FILENO) {
+                else if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
                     if (count == 1 && buf < 0xFF) {
                         terminal_writechar((char) buf, true);
                     } else {
@@ -166,9 +166,6 @@ void syscall_handler(test_struct_t test_struct, unsigned int interrupt_id, stack
                         else
                             terminal_write((void*) buf, count);
                     }
-                }
-                else if (fd == STDERR_FILENO) {
-
                 }
                 else {
 

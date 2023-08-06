@@ -11,10 +11,10 @@ void test(void) {
 
     int n = 5;
     int* ptr1 = (int*) malloc(n*sizeof(int));
-    printf("Pointer at 0x%x\n", ptr1);
+    printf("Pointer at 0x%x\n", (unsigned int) ptr1);
 
     int* ptr2 = (int*) malloc(n*sizeof(int));
-    printf("Pointer at 0x%x\n", ptr2);
+    printf("Pointer at 0x%x\n", (unsigned int) ptr2);
     memset(ptr2, 12891, n*sizeof(int));
 
     printf("Freeing\n");
@@ -24,7 +24,7 @@ void test(void) {
     printf("\n");
 }
 
-void main() {
+int main() {
 
     char* ptr = (char*) malloc(64);
     memset(ptr, 0, 64);
@@ -39,6 +39,7 @@ void main() {
     test();
     test();
 
+    return 0;
 }
 
 

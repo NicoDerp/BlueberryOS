@@ -8,15 +8,16 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#define stdin  0
-#define stdout 1
-#define stderr 2
 
 #define EOF   (-1)
 
 
 struct _IO_FILE;
 typedef struct _IO_FILE FILE;
+
+extern FILE* stdin;
+extern FILE* stdout;
+extern FILE* stderr;
 
 #ifdef __cplusplus
 extern "C" {

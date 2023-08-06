@@ -82,7 +82,7 @@ void authenticateUser(void) {
     exit(1);
 }
 
-void main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 
     if (argc == 1) {
         printf("usage: sudo <command>\n");
@@ -96,6 +96,7 @@ void main(int argc, char* argv[]) {
     if (pid == -1) {
         int backup = errno;
         printf("sudo: fork error: %s\n", strerror(backup));
+        return 1;
     }
     else if (pid == 0) {
 
@@ -114,13 +115,14 @@ void main(int argc, char* argv[]) {
             printf("sudo: %s: permission denied\n", argv[1]);
         else
             printf("sudo: %s: %s\n", argv[1], strerror(backup));
-        exit(1);
+
+        return 1;
     }
     else {
         wait(NULL);
     }
 
-
+    return 0;
 }
 
 

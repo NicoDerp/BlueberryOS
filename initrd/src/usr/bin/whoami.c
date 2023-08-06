@@ -6,7 +6,7 @@
 #include <pwd.h>
 
 
-void main(int argc, char* argv) {
+int main(int argc, char* argv[]) {
 
     if (argc != 1) {
         printf("Usage: whoami\n");
@@ -27,5 +27,7 @@ void main(int argc, char* argv) {
     }
 
     printf("%s\n", pwd.pw_name);
+
+    return 0;
 }
 

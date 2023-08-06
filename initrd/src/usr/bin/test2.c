@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-void main ()
-{
+
+int main(void) {
 
     /*
     char str[] = "/bin/test ooga booga dooga";
@@ -20,6 +20,13 @@ void main ()
     }
     */
 
+    char src[100] = " kul!";
+    char dst[100] = "jeg er";
+    strcat(dst, src);
+    printf("dst is '%s'\n", dst);
+    printf("Src is '%s'\n", src);
+
+    /*
     const char* str = ".myfile";
     char c = '.';
     char* s = strrchr(str, c);
@@ -27,5 +34,6 @@ void main ()
         printf("S not found\n");
     else
         printf("S is '%s'\n", s);
+    */
 }
 

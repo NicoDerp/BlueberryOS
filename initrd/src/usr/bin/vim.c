@@ -1938,7 +1938,7 @@ mapping_t visualMapping[] = {
 
 
 
-void main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 
     initscr();
     start_color();
@@ -2244,5 +2244,7 @@ void main(int argc, char* argv[]) {
     delwin(topBar);
     delwin(cmdBar);
     endwin();
+
+    return 0;
 }
 

@@ -33,6 +33,7 @@ void memory_mark_allocated(uint32_t start, uint32_t end);
 void* kmalloc(size_t size);
 void kfree(void* ptr);
 void* krealloc(void* ptr, size_t size);
+void* kcalloc(size_t items, size_t count);
 
 pageframe_t kalloc_frame(void);
 pageframe_t kalloc_frames(unsigned int count);

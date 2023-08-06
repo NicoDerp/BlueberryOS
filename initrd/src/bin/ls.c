@@ -10,6 +10,7 @@
 #include <pwd.h>
 #include <grp.h>
 
+
 void ls(char* path, bool showHidden, bool list) {
 
     DIR* pdir = opendir(path);
@@ -49,6 +50,7 @@ void ls(char* path, bool showHidden, bool list) {
 
         if (lstat(buf, &statStruct) == -1) {
             printf("lstat failed\n");
+            free(buf);
             continue;
         }
         free(buf);
@@ -138,7 +140,7 @@ bool parseArg(char* arg, bool* showHidden, bool* list) {
     return false;
 }
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
     bool showHidden;
     bool list;
@@ -146,7 +148,7 @@ void main(int argc, char** argv) {
     if (argc == 1) {
 
         ls("./", false, false);
-        exit(0);
+        return 0;
     }
 
     if (argc == 2) {
@@ -156,19 +158,21 @@ void main(int argc, char** argv) {
         else
             ls(argv[1], false, false);
 
-        exit(0);
+        return 0;
     }
 
     if (argc > 3) {
         printf("Usage: ls [OPTION] path\n");
-        exit(1);
+        return 1;
     }
 
     if (!parseArg(argv[1], &showHidden, &list)) {
         printf("Usage: ls [OPTION] path\n");
-        exit(1);
+        return 1;
     }
 
     ls(argv[2], showHidden, list);
+
+    return 0;
 }
 

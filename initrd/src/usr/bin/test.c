@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-void main(int argc, char* argv[]) {
+
+int main(int argc, char* argv[]) {
 
     printf("argc: %d\n", argc);
 
@@ -14,5 +15,6 @@ void main(int argc, char* argv[]) {
         printf("arg %d: '%s'\n", i, argv[i]);
     }
 
+    return 0;
 }
 

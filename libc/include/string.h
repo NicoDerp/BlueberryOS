@@ -27,6 +27,8 @@ char* strtok(char*, const char*);
 char* strchr(const char*, int);
 char* strrchr(const char*, int);
 
+char* strcat(char*, const char*);
+
 char* strstr(const char*, const char*);
 char* strrstr(const char*, const char*);
 

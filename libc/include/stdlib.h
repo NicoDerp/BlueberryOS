@@ -24,6 +24,9 @@ int unsetenv(const char*);
 void* malloc(size_t);
 void free(void*);
 void* realloc(void*, size_t);
+void* calloc(size_t, size_t);
+
+int abs(int);
 
 #ifdef __cplusplus
 }

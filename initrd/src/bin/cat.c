@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
     if (argc == 1) {
 
@@ -30,26 +30,26 @@ void main(int argc, char** argv) {
             printf("%s\n", buf);
         }
 
-        exit(0);
+        return 0;
     }
 
     if (argc != 2) {
         printf("Usage: cat FILE\n");
-        exit(1);
+        return 1;
     }
 
     int fd = open(argv[1], O_RDONLY);
     if (fd == -1) {
         int backup = errno;
         printf("%s: %s: %s\n", argv[0], argv[1], strerror(backup));
-        exit(1);
+        return 1;
     }
 
     struct stat st;
     if (stat(argv[1], &st) == -1) {
         int backup = errno;
         printf("%s: %s: stat error: %s\n", argv[0], argv[1], strerror(backup));
-        exit(1);
+        return 1;
     }
 
     // TODO mmap
@@ -63,7 +63,9 @@ void main(int argc, char** argv) {
 
     if (close(fd) == -1) {
         printf("close failed\n");
-        exit(1);
+        return 1;
     }
+
+    return 0;
 }
 
