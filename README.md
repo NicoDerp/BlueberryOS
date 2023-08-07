@@ -66,13 +66,26 @@ You will need:
  - Custom cross-compiler for BlueberryOS (see Cross-compiler section below)
  - (optional) An emulator, like QEMU or Bochs (config file for Bochs is included)
 
-### Cross-compiler
+
+## Cross-compiler
 
 It is important that you use the `i686-elf-gcc` cross-compiler when developing for this operating system.
 This is because the entire standard-library is re-written to work with BlueberryOS. This ensures portability, so any C code can run with ease.
 
 Compiling the cross-compiler can be tedious and take some time. Be very careful with every command you enter and make sure the paths are correct!
 But remember that compiling the cross-compiler will only be done once! After that you can both use BlueberryOS and code your own programs with it!
+
+## Automatic cross-compiler installation
+
+Run `blueberryos/installcross.sh`. You will be promped with questions and you answer one-by-one. 
+If you are unsure what to answer just press enter and the installer will use the default answer in parenthesis (like this).
+Before everything runs you will be promped with every config that the installer uses.
+Look over and see that everything is correct, then press enter.
+Every command should run automatically run, and at the end you should see `i686-blueberryos-gcc --version` run to confirm it has been installed correctly.
+
+If everything went well then you should have the `i686-blueberryos` toolchain. 
+
+### Manual cross-compiler installation
 
 Tip: For much faster compilation times, specify flag -j<n> for parallel compilation when running `make`.
 I've included `-j\`nproc --ignore=2\`` which will automatically use 2 fewer cores than what your computer has, so you can still use it without lagging.

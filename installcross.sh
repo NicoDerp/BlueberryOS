@@ -161,5 +161,6 @@ echo $PREFIX/bin:$PATH >> $HOME/.bashrc
 echo
 echo "All done!"
 echo "BlueberryOS GCC version:"
-echo $(i686-blueberryos-gcc --version)
+echo "i686-blueberryos-gcc --version"
+i686-blueberryos-gcc --version
 
