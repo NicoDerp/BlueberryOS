@@ -376,7 +376,7 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
 
     VERBOSE("overwriteArgs: Overwriting process %d:%s with %s\n", process->id, process->name, filename);
 
-    file_t* file = getFileWEnv(process, filename);
+    file_t* file = getFileWEnv(process, "PATH", filename);
     if (!file) {
         /* The file pathname or a script or ELF interpreter does not exist. */
         *errnum = ENOENT;
@@ -1362,7 +1362,7 @@ int unsetEnvVariable(process_t* process, const char* key) {
     return 0;
 }
 
-file_t* getFileWEnv(process_t* process, char* path) {
+file_t* getFileWEnv(process_t* process, char* env, char* path) {
 
     file_t* file;
 
@@ -1370,10 +1370,10 @@ file_t* getFileWEnv(process_t* process, char* path) {
     if (file)
         return file;
 
-    env_variable_t* var = getEnvVariable(process, "PATH");
+    env_variable_t* var = getEnvVariable(process, env);
 
     if (!var) {
-        ERROR("Process %d:%s doesn't have enviroment variable PATH\n", process->id, process->name);
+        ERROR("Process %d:%s doesn't have enviroment variable %s\n", process->id, process->name, env);
         return (file_t*) 0;
     }
 

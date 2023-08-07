@@ -220,7 +220,7 @@ int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* er
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);
 int unsetEnvVariable(process_t* process, const char* key);
-file_t* getFileWEnv(process_t* process, char* path);
+file_t* getFileWEnv(process_t* process, char* env, char* path);
 
 int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd);
 int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd, int* errnum);

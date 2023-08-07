@@ -212,6 +212,11 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                     char* s = dynstr + entry->value;
                     printf("Loading dynamic library '%s'\n", s);
 
+                    file_t* lib = getFile(s);
+                    if (!lib) {
+                        ERROR("Unable to locate dynamic library %s\n", s);
+                        for(;;){}
+                    }
                 }
             }
 

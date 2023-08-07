@@ -4,7 +4,8 @@ CFLAGS ?= -O2 -g
 LFLAGS ?= -O2
 LIBS ?=
 
-SYSROOT = /home/nico/Projects/blueberryos/sysroot
+#SYSROOT = /home/nico/Projects/blueberryos/sysroot
+SYSROOT = ../sysroot
 DESTDIR = $(SYSROOT)
 PREFIX = /usr
 INCLUDEDIR = $(PREFIX)/include

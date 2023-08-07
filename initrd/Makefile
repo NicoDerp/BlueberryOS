@@ -5,7 +5,8 @@ LFLAGS ?= -O2
 LIBS ?= -lncurses
 INCLUDEDIR = $(PREFIX)/include
 
-SYSROOT = /home/nico/Projects/blueberryos/sysroot
+#SYSROOT = /home/nico/Projects/blueberryos/sysroot
+SYSROOT = ../sysroot
 
 # Necessary
 CC = i686-blueberryos-gcc
