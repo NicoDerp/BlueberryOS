@@ -101,10 +101,17 @@ int vprintf(const char* __restrict format, va_list parameters) {
             }
             else if (*format == 's') {
                 const char* s = va_arg(parameters, const char*);
-                size_t len = strlen(s);
-                print(s, len);
-                format++;
-                written += len;
+                if (s == NULL) {
+                    print("(null)", 6);
+                    format++;
+                    written += 6;
+                }
+                else {
+                    size_t len = strlen(s);
+                    print(s, len);
+                    format++;
+                    written += len;
+                }
             }
         }
         else {

@@ -83,7 +83,11 @@ int vmvwprintw(WINDOW* win, int y, int x, const char* format, va_list args) {
             else if (*format == 's') {
                 const char* s = va_arg(args, const char*);
 
-                prints(win, s);
+                if (s == NULL)
+                    print(win, "(null)", 6);
+                else
+                    prints(win, s);
+
                 format++;
             }
         }
