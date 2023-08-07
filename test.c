@@ -4,8 +4,9 @@
 
 int main() {
 
-    char* s = (char*) 0;
-    printf("Test: 0x%x\n", s);
+    unsigned char num = 255;
+    unsigned char* n = &num;
+    printf("Num: %u\n", (unsigned char) (*n));
 
     return 0;
 }

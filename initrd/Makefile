@@ -5,13 +5,15 @@ LFLAGS ?= -O2
 LIBS ?= -lncurses
 INCLUDEDIR = $(PREFIX)/include
 
+SYSROOT = /home/nico/Projects/blueberryos/sysroot
+
 # Necessary
 CC = i686-blueberryos-gcc
 #CFLAGS := $(CFLAGS) -std=gnu99 -ffreestanding -Wall -Wextra
 CFLAGS := $(CFLAGS) -std=gnu99 -Wall -Wextra
 ASM_CFLAGS =
 LFLAGS := $(LFLAGS)
-LIBS := $(LIBS)
+LIBS := $(LIBS) -Wl,-Bstatic
 #LIBS := $(LIBS) -ffreestanding -nostdlib -lc
 #LIBS := $(LIBS) -nostdlib -lc -lgcc
 
@@ -75,6 +77,7 @@ rebuild: clean build
 
 initrd: $(BINS)
 	rm -f initrd.tar.gz
+	cp -r $(SYSROOT) initrd
 	mkdir -p $(DIRS)
 	$(subst ^, ,$(join $(addprefix cp^,$(BINS)),$(patsubst %,^%;,$(OUT_BINS))))
 	chmod 755 initrd/usr/bin/*

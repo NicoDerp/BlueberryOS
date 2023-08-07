@@ -67,11 +67,15 @@ uint32_t currentLocation;
 
 
 static inline section_header_t* getSectionHeader(elf_header_t* elf_header) {
-    return (section_header_t*) ((int) elf_header + elf_header->sectionTable);
+    return (section_header_t*) ((unsigned int) elf_header + elf_header->sectionTable);
 }
 
 static inline section_header_t* getSectionEntry(elf_header_t* elf_header, size_t index) {
     return &getSectionHeader(elf_header)[index];
+}
+
+static inline char* getSectionEntryReal(elf_header_t* elf_header, section_header_t* section, size_t index) {
+    return &((char*) ((unsigned int) elf_header + elf_header->sectionTable + section->offset))[index];
 }
 
 static inline program_header_t* getProgramHeader(elf_header_t* elf_header) {
@@ -87,19 +91,29 @@ static inline char* getNamesEntry(elf_header_t* elf_header) {
         return NULL;
     }
 
-    section_header_t* section = getSectionEntry(elf_header, elf_header->sectionNamesIndex);
-    char* namesEntry = (char*) ((int)elf_header + section->offset);
-    return namesEntry;
+    section_header_t* namesSection = getSectionEntry(elf_header, elf_header->sectionNamesIndex);
+    char* namesEntry = (char*) ((unsigned int) elf_header + namesSection->offset);
+    return namesEntry + namesSection->nameOffset;
 }
 
-static inline char* getSectionName(elf_header_t* elf_header, size_t index) {
+static inline char* getSectionIndexName(elf_header_t* elf_header, size_t index) {
     if (elf_header->sectionNamesIndex == 0) {
         return NULL;
     }
 
     section_header_t* section = getSectionEntry(elf_header, index);
     section_header_t* namesSection = getSectionEntry(elf_header, elf_header->sectionNamesIndex);
-    char* namesEntry = (char*) ((int)elf_header + namesSection->offset);
+    char* namesEntry = (char*) ((unsigned int) elf_header + namesSection->offset);
+    return namesEntry + section->nameOffset;
+}
+
+static inline char* getSectionName(elf_header_t* elf_header, section_header_t* section) {
+    if (elf_header->sectionNamesIndex == 0) {
+        return NULL;
+    }
+
+    section_header_t* namesSection = getSectionEntry(elf_header, elf_header->sectionNamesIndex);
+    char* namesEntry = (char*) ((unsigned int) elf_header + namesSection->offset);
     return namesEntry + section->nameOffset;
 }
 
@@ -163,8 +177,22 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
     /*
     for (size_t i = 1; i < elf_header->sectionEntryCount; i++) {
         section_header_t* section = getSectionEntry(elf_header, i);
-        printf("Section name %d: '%s'. Type: '%d'\n", i, getSectionName(elf_header, i), section->type);
+        printf("%d: '%s'. Type: '%d'. Size %d, entrySize %d\n", i, getSectionName(elf_header, section), section->type, section->size, section->entrySize);
+
+        if (strcmp(getSectionName(elf_header, section), ".dynstr") == 0) {
+            printf("Yuuh");
+
+            char* s = (char*) ((unsigned int) elf_header + section->offset);
+            for (size_t j = 1; j < section->size; j += strlen(s + j)+1) {
+                printf(" - '%s'\n", s + j);
+            }
+
+            break;
+        }
+
     }
+
+    for(;;){}
     */
 
     VERBOSE("loadELFIntoMemory: ELF file has %d program header entries\n", elf_header->programEntryCount);
@@ -173,8 +201,12 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
         VERBOSE("loadELFIntoMemory: %d va: 0x%x, filesz: 0x%x, memsz: 0x%x, offset: 0x%x\n", i, program->vaddr, program->filesz, program->memsz, program->offset);
 
-        // Check if program header is loadable
-        if (program->type == 0x01) {
+        if (program->type == PT_NULL) {
+
+            /* Unused */
+
+        }
+        else if (program->type == PT_LOAD) {
 
             if (program->vaddr >= 0xC0000000) {
                 ERROR("Failed to load ELF becuase file goes into kernel-reserved space\n");
@@ -294,7 +326,22 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
                 map_page_wtable_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr + offset, writable, false, true, false);
             }
 
-        } else {
+        }
+        else if (program->type == PT_DYNAMIC) {
+
+
+
+        }
+        else if (program->type == PT_INTERP) {
+
+
+
+        }
+        else if (program->type == PT_PHDR) {
+
+            /* Unused for us */
+        }
+        else {
             ERROR("Non-supported program header type %d\n", program->type);
             for (;;) {}
             return pd;

@@ -15,12 +15,14 @@ void kalloc_cache();
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-char* frame_map;
+uint8_t* frame_map;
 pageframe_t cached_frame_map[MAX_FRAME_CACHE_SIZE];
 uint32_t totalFrameMapSize = 0;
 uint32_t frameMapSize = 0;
 uint32_t frame_cache_size = 0;
 
+uint32_t total;
+uint32_t frame_cache_count = 0;
 uint32_t framestart;
 size_t cachedIndex = 0;
 
@@ -52,9 +54,10 @@ void mapPageframe(pageframe_t pf) {
 }
 
 
-void memory_initialize(uint32_t total, uint32_t frames) {
+void memory_initialize(uint32_t totalMem, uint32_t frames) {
 
-    frame_map = (char*) FRAME_START;
+    total = totalMem;
+    frame_map = (uint8_t*) FRAME_START;
     totalFrameMapSize = total / FRAME_SIZE;
 
     // Minimum requirement, increase if needed
@@ -65,7 +68,12 @@ void memory_initialize(uint32_t total, uint32_t frames) {
     if (frameMapSize & 7)
         offset++;
 
+    frame_cache_count = frames;
     framestart = (FRAME_SIZE - (FRAME_START + offset) % FRAME_SIZE + (FRAME_START + offset));
+
+    for (size_t i = 0; i < frameMapSize/8; i++) {
+        frame_map[i] = 0;
+    }
 
     framesUsed = 0;
     cachedIndex = 0;
@@ -98,7 +106,7 @@ void memory_mark_allocated(uint32_t start, uint32_t end) {
 pageframe_t kalloc_frame(void) {
     if (cachedIndex >= frame_cache_size) {
         cachedIndex = 0;
-        kalloc_cache(MAX_FRAME_CACHE_SIZE);
+        kalloc_cache(frame_cache_count);
     }
 
     pageframe_t frame = cached_frame_map[cachedIndex];
@@ -153,7 +161,8 @@ pageframe_t kalloc_frames(unsigned int count) {
 
         index++;
         if (index >= frameMapSize) {
-            FATAL("Out of memory!\n");
+            printf("Memory used: %d MiB\n", get_used_memory()/FRAME_1MB);
+            FATAL("Out of memory! Total is %d MiB\n", total/FRAME_1MB);
             kabort();
             return (pageframe_t) -1;
         }
@@ -257,7 +266,8 @@ void kalloc_cache(uint32_t cacheSize) {
                 if (c != 0)
                     goto end;
 
-                FATAL("Out of memory!\n");
+                printf("Memory used: %d MiB\n", get_used_memory()/FRAME_1MB);
+                FATAL("Out of memory! Total is %d MiB\n", total/FRAME_1MB);
                 kabort();
                 return;
             }

@@ -15,6 +15,15 @@
 #define MAX_NAME_LENGTH      64
 #define MAX_FULL_PATH_LENGTH 256
 
+/* ELF program header types */
+#define PT_NULL    0
+#define PT_LOAD    1
+#define PT_DYNAMIC 2
+#define PT_INTERP  3
+#define PT_NOTE    4
+#define PT_SHLIB   5
+#define PT_PHDR    6
+
 struct directory;
 struct file;
 
