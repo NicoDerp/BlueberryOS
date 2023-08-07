@@ -13,7 +13,8 @@ CC = i686-blueberryos-gcc
 CFLAGS := $(CFLAGS) -std=gnu99 -Wall -Wextra
 ASM_CFLAGS =
 LFLAGS := $(LFLAGS)
-LIBS := $(LIBS) -Wl,-Bstatic
+LIBS := $(LIBS)
+#LIBS := $(LIBS) -Wl,-Bstatic
 #LIBS := $(LIBS) -ffreestanding -nostdlib -lc
 #LIBS := $(LIBS) -nostdlib -lc -lgcc
 

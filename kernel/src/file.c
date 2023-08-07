@@ -57,6 +57,11 @@ typedef struct {
     uint16_t sectionIndex;
 } symbol_table_t;
 
+typedef struct {
+    uint32_t type;
+    uint32_t value;
+} elf32_dynamic_entry_t;
+
 
 
 
@@ -174,17 +179,40 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
 
     elf_header_t* elf_header = (elf_header_t*) file->content;
 
-    /*
+    char* dynstr = NULL;
     for (size_t i = 1; i < elf_header->sectionEntryCount; i++) {
         section_header_t* section = getSectionEntry(elf_header, i);
         printf("%d: '%s'. Type: '%d'. Size %d, entrySize %d\n", i, getSectionName(elf_header, section), section->type, section->size, section->entrySize);
 
         if (strcmp(getSectionName(elf_header, section), ".dynstr") == 0) {
-            printf("Yuuh");
 
-            char* s = (char*) ((unsigned int) elf_header + section->offset);
-            for (size_t j = 1; j < section->size; j += strlen(s + j)+1) {
-                printf(" - '%s'\n", s + j);
+            dynstr = (char*) ((unsigned int) elf_header + section->offset);
+            for (size_t j = 1; j < section->size; j += strlen(dynstr + j)+1) {
+                printf(" - '%s'\n", dynstr + j);
+            }
+        }
+        else if (strcmp(getSectionName(elf_header, section), ".dynamic") == 0) {
+            if (section->entrySize != 8) {
+                ERROR("Can't load dynamic section of ELF file because it's entry-size isn't 8 bytes!");
+                for(;;){}
+            }
+
+            if (dynstr == NULL) {
+                ERROR("Can't load dynamic section of ELF file because '.dynstr' section isn't before! (bit lazy i know)\n");
+                for(;;){}
+            }
+
+            elf32_dynamic_entry_t* entry;
+            for (size_t j = 0; j < section->size/section->entrySize; j++) {
+                entry = &((elf32_dynamic_entry_t*) ((unsigned int) elf_header + section->offset))[j];
+                printf("Entry type is %d and value is 0x%x\n", entry->type, entry->value);
+
+                if (entry->type == DT_NEEDED) {
+
+                    char* s = dynstr + entry->value;
+                    printf("Loading dynamic library '%s'\n", s);
+
+                }
             }
 
             break;
@@ -193,7 +221,6 @@ pagedirectory_t loadELFIntoMemory(file_t* file) {
     }
 
     for(;;){}
-    */
 
     VERBOSE("loadELFIntoMemory: ELF file has %d program header entries\n", elf_header->programEntryCount);
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
