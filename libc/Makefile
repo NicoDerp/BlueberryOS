@@ -23,6 +23,8 @@ LIBS := $(LIBS) -nostdlib
 #LIBS := $(LIBS) -nostdlib -lgcc
 LIBK_CFLAGS := $(CFLAGS) -D__is_libk
 LIBK_CFLAGS_ASM := -D__is_libk
+LIBCSO_CFLAGS := $(CFLAGS) -fPIE -D__is_libso
+LIBCSO_CFLAGS_ASM := -D__is_libso
 
 ASM = nasm
 ASMFLAGS = -felf32
@@ -106,6 +108,7 @@ HOSTEDOBJS =
 OBJS = $(FREEOBJS) $(HOSTEDOBJS)
 
 LIBK_OBJS = $(FREEOBJS:.o=.libk.o)
+LIBCSO_OBJS = $(FREEOBJS:.o=.libcso.o)
 
 BINARIES = libc.so libc.a libk.a
 LINK_OBJS = link/linkstart.o
@@ -122,8 +125,7 @@ all:
 
 build: $(BINARIES) $(LINK_OBJS)
 
-libc.so: $(OBJS)
-	$(AR) rcs $@ $(OBJS)
+
 
 libc.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
@@ -131,23 +133,37 @@ libc.a: $(OBJS)
 libk.a: $(LIBK_OBJS)
 	$(AR) rcs $@ $(LIBK_OBJS)
 
+libc.so: $(LIBCSO_OBJS)
+	$(CC) -shared -o $@ $(LIBCSO_OBJS)
+
+
+
+%.libcso.o: %.c
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBCSO_CFLAGS)
+
+%.libcso.o: %.asm
+	$(ASM) $(ASMFLAGS) $< -o $@ $(LIBCSO_CFLAGS_ASM)
+
+
 .c.o:
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS)
 
 .asm.o:
 	$(ASM) $(ASMFLAGS) $< -o $@ $(ASM_CFLAGS)
 
+
 .c.libk.o:
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBK_CFLAGS)
 
 .asm.libk.o:
-	$(ASM) $(ASMFLAGS) $< -o $@	$(LIBK_CFLAGS_ASM)
+	$(ASM) $(ASMFLAGS) $< -o $@ $(LIBK_CFLAGS_ASM)
+
 
 
 clean:
 	rm -rf $(BINARIES) *.so *.a
-	rm -rf $(OBJS) $(LIBK_OBJS)	*.o */*.o */*/*.o
-	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) *.d */*.d */*/*.d
+	rm -rf $(OBJS) $(LIBK_OBJS)	$(LIBCSO_OBJS) *.o */*.o */*/*.o
+	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) $(LIBCSO_OBJS:.o=.d) *.d */*.d */*/*.d
 
 install: $(BINARIES) $(LINK_OBJS) install-headers install-libs install-link
 

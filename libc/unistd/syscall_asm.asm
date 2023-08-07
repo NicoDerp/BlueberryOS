@@ -85,7 +85,7 @@ syscalla4:
     mov ebx, [edi+0]
     mov ecx, [edi+4]
     mov edx, [edi+8]
-    mov esi, [edi+8]
+    mov esi, [edi+12]
     int 48
 
     test ecx, ecx
@@ -98,6 +98,58 @@ syscalla4:
     pop edi
     ret
 
+global syscalla5
+syscalla5:
+    push ebx
+    push esi
+    push edi
+
+    mov eax, [esp+4+3*4]
+    mov edi, [esp+8+3*4]
+    mov ebx, [edi+0]
+    mov ecx, [edi+4]
+    mov edx, [edi+8]
+    mov esi, [edi+12]
+    mov edi, [edi+16]
+    int 48
+
+    test ecx, ecx
+    jz .skip
+    mov [__errno], ecx
+.skip:
+
+    pop edi
+    pop esi
+    pop ebx
+    ret
+
+global syscalla6
+syscalla6:
+    push ebx
+    push esi
+    push edi
+    push ebp
+
+    mov eax, [esp+4+4*4]
+    mov edi, [esp+8+4*4]
+    mov ebx, [edi+0]
+    mov ecx, [edi+4]
+    mov edx, [edi+8]
+    mov esi, [edi+12]
+    mov ebp, [edi+20]
+    mov edi, [edi+16]
+    int 48
+
+    test ecx, ecx
+    jz .skip
+    mov [__errno], ecx
+.skip:
+
+    pop ebp
+    pop edi
+    pop esi
+    pop ebx
+    ret
 
 
 

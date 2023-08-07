@@ -17,6 +17,7 @@ typedef int pid_t;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 int syscall(long unsigned int number, ...);
 
 int write(int fd, const void* buf, size_t count);
