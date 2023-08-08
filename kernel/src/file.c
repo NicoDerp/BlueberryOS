@@ -179,62 +179,9 @@ pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
 
     elf_header_t* elf_header = (elf_header_t*) file->content;
 
-    char* dynstr = NULL;
-    for (size_t i = 1; i < elf_header->sectionEntryCount; i++) {
-        section_header_t* section = getSectionEntry(elf_header, i);
-        printf("%d: '%s'. Type: '%d'. Size %d, entrySize %d\n", i, getSectionName(elf_header, section), section->type, section->size, section->entrySize);
-
-        if (strcmp(getSectionName(elf_header, section), ".dynstr") == 0) {
-
-            dynstr = (char*) ((unsigned int) elf_header + section->offset);
-            for (size_t j = 1; j < section->size; j += strlen(dynstr + j)+1) {
-                printf(" - '%s'\n", dynstr + j);
-            }
-        }
-        else if (strcmp(getSectionName(elf_header, section), ".dynamic") == 0) {
-            if (section->entrySize != 8) {
-                ERROR("Can't load dynamic section of ELF file because it's entry-size isn't 8 bytes!");
-                for(;;){}
-            }
-
-            if (dynstr == NULL) {
-                ERROR("Can't load dynamic section of ELF file because '.dynstr' section isn't before! (bit lazy i know)\n");
-                for(;;){}
-            }
-
-            elf32_dynamic_entry_t* entry;
-            for (size_t j = 0; j < section->size/section->entrySize; j++) {
-                entry = &((elf32_dynamic_entry_t*) ((unsigned int) elf_header + section->offset))[j];
-                printf("Entry type is %d and value is 0x%x\n", entry->type, entry->value);
-
-                if (entry->type == DT_NEEDED) {
-
-                    char* s = dynstr + entry->value;
-                    printf("Loading dynamic library '%s'\n", s);
-
-                    file_t* lib = NULL;
-                    if (libpath)
-                        lib = getFileWEnv(libpath, s);
-
-                    lib = getFileWGlobalEnvVariable("LIBPATH", s);
-
-                    if (!lib) {
-                        ERROR("Unable to locate dynamic library %s\n", s);
-                        for(;;){}
-                    }
-
-                    printf("Located library '%s' at '%s'\n", s, lib->fullpath);
-                }
-            }
-
-            break;
-        }
-
-    }
-
-    for(;;){}
-
     VERBOSE("loadELFIntoMemory: ELF file has %d program header entries\n", elf_header->programEntryCount);
+
+    unsigned int lastPage = 0x0;
     for (size_t i = 0; i < elf_header->programEntryCount; i++) {
         program_header_t* program = getProgramEntry(elf_header, i);
 
@@ -363,6 +310,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
                 // Map page
                 // Set table to readwrite, but page can vary
                 map_page_wtable_pd(pd, v_to_p((uint32_t) pageframe), program->vaddr + offset, writable, false, true, false);
+                lastPage = program->vaddr + offset;
             }
 
         }
@@ -386,6 +334,69 @@ pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
             return pd;
         }
     }
+
+    lastPage += FRAME_4KB;
+
+    char* dynstr = NULL;
+    for (size_t i = 1; i < elf_header->sectionEntryCount; i++) {
+        section_header_t* section = getSectionEntry(elf_header, i);
+        printf("%d: '%s'. Type: '%d'. Size %d, entrySize %d\n", i, getSectionName(elf_header, section), section->type, section->size, section->entrySize);
+
+        if (strcmp(getSectionName(elf_header, section), ".dynstr") == 0) {
+
+            dynstr = (char*) ((unsigned int) elf_header + section->offset);
+            for (size_t j = 1; j < section->size; j += strlen(dynstr + j)+1) {
+                printf(" - '%s'\n", dynstr + j);
+            }
+        }
+        else if (strcmp(getSectionName(elf_header, section), ".dynamic") == 0) {
+            if (section->entrySize != 8) {
+                ERROR("Can't load dynamic section of ELF file because it's entry-size isn't 8 bytes!");
+                for(;;){}
+            }
+
+            if (dynstr == NULL) {
+                ERROR("Can't load dynamic section of ELF file because '.dynstr' section isn't before! (bit lazy i know)\n");
+                for(;;){}
+            }
+
+            elf32_dynamic_entry_t* entry;
+            for (size_t j = 0; j < section->size/section->entrySize; j++) {
+                entry = &((elf32_dynamic_entry_t*) ((unsigned int) elf_header + section->offset))[j];
+                //printf("Entry type is %d and value is 0x%x\n", entry->type, entry->value);
+
+                if (entry->type == DT_NEEDED) {
+
+                    char* s = dynstr + entry->value;
+                    printf("Loading dynamic library '%s'\n", s);
+
+                    file_t* lib = NULL;
+                    if (libpath)
+                        lib = getFileWEnv(libpath, s);
+
+                    lib = getFileWGlobalEnvVariable("LIBPATH", s);
+
+                    if (!lib) {
+                        ERROR("Unable to locate dynamic library %s\n", s);
+                        for(;;){}
+                    }
+
+                    printf("Located library '%s' at '%s'\n", s, lib->fullpath);
+
+                    for (unsigned int i = 0; i < lib->frames; i++) {
+                        VERBOSE("loadSharedLibrary: Mapping 0x%x to 0x%x\n", i+1, v_to_p((unsigned int) lib->content) + i*FRAME_4KB, lastPage);
+                        map_page_pd(pd, v_to_p((unsigned int) lib->content) + i*FRAME_4KB, lastPage, false, false);
+                        lastPage += FRAME_4KB;
+                    }
+                }
+            }
+
+            break;
+        }
+
+    }
+
+    for(;;){}
 
     return pd;
 }

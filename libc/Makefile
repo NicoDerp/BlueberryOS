@@ -174,6 +174,7 @@ install-headers:
 install-libs:
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	cp $(BINARIES) $(DESTDIR)$(LIBDIR)
+	chmod 644 $(BINARIES)
 
 install-link: $(LINK_OBJS)
 	mkdir -p $(DESTDIR)$(LINKDIR)
