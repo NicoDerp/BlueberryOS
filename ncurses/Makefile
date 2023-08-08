@@ -18,6 +18,8 @@ ASM_CFLAGS = -D__is_ncurses
 LFLAGS := $(LFLAGS)
 LIBS := $(LIBS)
 #LIBS := $(LIBS) -nostdlib -lc -lgcc
+SHARED_CFLAGS := $(CFLAGS) -fPIE -D__is_ncurses
+SHARED_CFLAGS_ASM := -D__is_ncurses
 
 ASM = nasm
 ASMFLAGS = -felf32
@@ -52,8 +54,9 @@ FREEOBJS =\
 	ncurses/wclrtoeol.o \
 
 OBJS = $(FREEOBJS)
+SHARED_OBJS = $(FREEOBJS:.o=.shared.o)
 
-BINARIES = libncurses.a
+BINARIES = libncurses.so libncurses.a
 
 # $(CC) -MMD -c $^ -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
@@ -68,6 +71,15 @@ build: $(BINARIES)
 
 libncurses.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
+
+libncurses.so: $(SHARED_OBJS)
+	$(CC) -shared -o $@ $(SHARED_OBJS)
+
+%.shared.o: %.c
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(SHARED_CFLAGS) $(LIBS)
+
+%.shared.o: %.asm
+	$(ASM) $(ASMFLAGS) $< -o $@ $(SHARED_ASM_CFLAGS)
 
 .c.o:
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(LIBS)

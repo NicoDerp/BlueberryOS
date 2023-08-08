@@ -159,6 +159,8 @@ void loadInitrd(uint32_t tar_start, uint32_t tar_end);
 
 directory_t* getDirectory(char* path);
 file_t* getFile(char* filepath);
+file_t* getFileWEnv(char* varpath, char* path);
+file_t* getFileWGlobalEnvVariable(char* key, char* path);
 
 void changeDirectoryOwner(directory_t* dir, struct user* owner, struct kgroup* group, bool recursive);
 directory_t* getDirectoryFromParent(directory_t* parent, char* name, bool redirectSymbolic);
@@ -175,7 +177,7 @@ file_t* createFile(directory_t* parent, char* name, uint32_t mode, struct user* 
 
 void displayDirectory(directory_t* dir, size_t space);
 
-pagedirectory_t loadELFIntoMemory(file_t* file);
+pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath);
 pagedirectory_t loadBinaryIntoMemory(file_t* file);
 
 #endif /* KERNEL_FILE_H */

@@ -23,8 +23,8 @@ LIBS := $(LIBS) -nostdlib
 #LIBS := $(LIBS) -nostdlib -lgcc
 LIBK_CFLAGS := $(CFLAGS) -D__is_libk
 LIBK_CFLAGS_ASM := -D__is_libk
-LIBCSO_CFLAGS := $(CFLAGS) -fPIE -D__is_libso
-LIBCSO_CFLAGS_ASM := -D__is_libso
+SHARED_CFLAGS := $(CFLAGS) -fPIE -D__is_libc
+SHARED_CFLAGS_ASM := -D__is_libc
 
 ASM = nasm
 ASMFLAGS = -felf32
@@ -108,7 +108,7 @@ HOSTEDOBJS =
 OBJS = $(FREEOBJS) $(HOSTEDOBJS)
 
 LIBK_OBJS = $(FREEOBJS:.o=.libk.o)
-LIBCSO_OBJS = $(FREEOBJS:.o=.libcso.o)
+SHARED_OBJS = $(FREEOBJS:.o=.libcso.o)
 
 BINARIES = libc.so libc.a libk.a
 LINK_OBJS = link/linkstart.o
@@ -133,16 +133,16 @@ libc.a: $(OBJS)
 libk.a: $(LIBK_OBJS)
 	$(AR) rcs $@ $(LIBK_OBJS)
 
-libc.so: $(LIBCSO_OBJS)
-	$(CC) -shared -o $@ $(LIBCSO_OBJS)
+libc.so: $(SHARED_OBJS)
+	$(CC) -shared -o $@ $(SHARED_OBJS)
 
 
 
 %.libcso.o: %.c
-	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBCSO_CFLAGS)
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(SHARED_CFLAGS)
 
 %.libcso.o: %.asm
-	$(ASM) $(ASMFLAGS) $< -o $@ $(LIBCSO_CFLAGS_ASM)
+	$(ASM) $(ASMFLAGS) $< -o $@ $(SHARED_CFLAGS_ASM)
 
 
 .c.o:
@@ -162,8 +162,8 @@ libc.so: $(LIBCSO_OBJS)
 
 clean:
 	rm -rf $(BINARIES) *.so *.a
-	rm -rf $(OBJS) $(LIBK_OBJS)	$(LIBCSO_OBJS) *.o */*.o */*/*.o
-	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) $(LIBCSO_OBJS:.o=.d) *.d */*.d */*/*.d
+	rm -rf $(OBJS) $(LIBK_OBJS)	$(SHARED_OBJS) *.o */*.o */*/*.o
+	rm -rf $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) $(SHARED_OBJS:.o=.d) *.d */*.d */*/*.d
 
 install: $(BINARIES) $(LINK_OBJS) install-headers install-libs install-link
 

@@ -31,6 +31,7 @@
 
 #define MAX_CHILDREN 32
 
+#define MAX_GLOBAL_ENVIROMENT_VARIABLES 32
 #define MAX_ENVIROMENT_VARIABLES 32
 #define MAX_VARIABLE_KEY_LENGTH 32
 #define MAX_VARIABLE_VALUE_LENGTH 64
@@ -173,6 +174,7 @@ extern void flush_tss(void);
 extern user_t* rootUser;
 extern user_t* currentUser;
 extern group_t* rootPGroup;
+extern env_variable_t globalVariables[MAX_GLOBAL_ENVIROMENT_VARIABLES];
 
 extern process_t processes[];
 
@@ -217,10 +219,13 @@ int getSpwdStructR(char* name, struct spwd* spw, char* buffer, uint32_t bufsize,
 int mmapProcess(process_t* process, uint32_t address, uint32_t length, int prot, int flags, int fd, uint32_t offset, int* errnum);
 int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* errnum);
 
+
+env_variable_t* getGlobalEnvVariable(const char* key);
+int setGlobalEnvVariable(const char* key, const char* value);
+
 env_variable_t* getEnvVariable(process_t* process, const char* key);
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite);
 int unsetEnvVariable(process_t* process, const char* key);
-file_t* getFileWEnv(process_t* process, char* env, char* path);
 
 int readProcessFd(process_t* process, char* buf, size_t count, unsigned int fd);
 int writeProcessFd(process_t* process, char* buf, size_t count, unsigned int fd, int* errnum);

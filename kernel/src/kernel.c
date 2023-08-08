@@ -298,7 +298,12 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
 
     group_t* sudoers = createGroup("sudoers");
     addUserToGroup(currentUser, sudoers);
+    printf("\e[32;46m[OK]\e[0m\n");
 
+
+    printf("Setting enviroment variables ... ");
+    setGlobalEnvVariable("PATH", "/bin;/usr/bin");
+    setGlobalEnvVariable("LIBPATH", "/lib;/usr/lib");
     printf("\e[32;46m[OK]\e[0m\n");
 
 

@@ -30,6 +30,7 @@ group_t groups[MAX_GROUPS];
 
 user_t* rootUser = &users[0];
 group_t* rootPGroup = &groups[0];
+env_variable_t globalVariables[MAX_GLOBAL_ENVIROMENT_VARIABLES];
 
 tss_t sys_tss;
 
@@ -259,7 +260,7 @@ process_t* newProcess(file_t* file, user_t* user) {
 
     bool isELF = isFileELF(file);
     if (isELF) {
-        process->pd = loadELFIntoMemory(file);
+        process->pd = loadELFIntoMemory(file, NULL);
 
         elf_header_t* elf_header = (elf_header_t*) file->content;
         process->entryPoint = elf_header->entryPoint;
@@ -302,9 +303,7 @@ process_t* newProcess(file_t* file, user_t* user) {
     process->overwritten = false;
     process->parent = (process_t*) 0;
 
-    strcpy(process->variables[0].key, "PATH");
-    strcpy(process->variables[0].value, "/bin;/usr/bin");
-    process->variables[0].active = true;
+    memset(process->variables, 0, sizeof(env_variable_t) * MAX_ENVIROMENT_VARIABLES);
 
     process->stdinIndex = 0;
     process->stdinSize = MIN_STDIN_BUFFER_SIZE;
@@ -376,7 +375,13 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
 
     VERBOSE("overwriteArgs: Overwriting process %d:%s with %s\n", process->id, process->name, filename);
 
-    file_t* file = getFileWEnv(process, "PATH", filename);
+    file_t* file = getFileFrom(process->cwdir, filename, true);
+    if (!file) {
+        env_variable_t* var = getEnvVariable(process, "PATH");
+        if (var)
+            file = getFileWEnv(var->value, filename);
+    }
+
     if (!file) {
         /* The file pathname or a script or ELF interpreter does not exist. */
         *errnum = ENOENT;
@@ -414,7 +419,11 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
 
     bool isELF = isFileELF(file);
     if (isELF) {
-        process->pd = loadELFIntoMemory(file);
+        env_variable_t* var = getEnvVariable(process, "LIBPATH");
+        if (var)
+            process->pd = loadELFIntoMemory(file, var->value);
+        else
+            process->pd = loadELFIntoMemory(file, NULL);
 
         elf_header_t* elf_header = (elf_header_t*) file->content;
         process->entryPoint = elf_header->entryPoint;
@@ -458,8 +467,6 @@ int overwriteArgs(process_t* process, char* filename, const char** args, int* er
 
     // Keep cwdir
     //process->cwdir = getDirectory("/");
-
-    // Keep enviroment variables
 
     uint32_t argCount;
     for (argCount = 0; args[argCount] != 0; argCount++) {}
@@ -1279,6 +1286,70 @@ int munmapProcess(process_t* process, uint32_t address, uint32_t length, int* er
     return 0;
 }
 
+env_variable_t* getGlobalEnvVariable(const char* key) {
+
+    for (size_t i = 0; i < MAX_GLOBAL_ENVIROMENT_VARIABLES; i++) {
+
+        env_variable_t* var = &globalVariables[i];
+        if (var->active && strcmp(var->key, key) == 0)
+            return var;
+    }
+
+    return (env_variable_t*) 0;
+}
+
+int setGlobalEnvVariable(const char* key, const char* value) {
+
+    size_t len;
+
+    len = strlen(key);
+    if (len > MAX_VARIABLE_KEY_LENGTH) {
+        ERROR("setEnvVariable: Key is over max length\n");
+        return -1;
+    }
+
+    len = strlen(value);
+    if (len > MAX_VARIABLE_VALUE_LENGTH) {
+        ERROR("setEnvVariable: Value is over max length\n");
+        return -1;
+    }
+
+    bool found = false;
+    size_t index;
+    for (index = 0; index < MAX_GLOBAL_ENVIROMENT_VARIABLES; index++) {
+
+        env_variable_t* var = &globalVariables[index];
+
+        if (var->active) {
+            if (strcmp(var->key, key) == 0) {
+                strcpy(var->value, value);
+                return 0;
+            }
+        } else {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        ERROR("Max global enviroment variables reached!\n");
+        return -1;
+    }
+
+    if (index == 99) {
+        FATAL("setGlobalEnvVariable: huuh 99??\n");
+        kabort();
+        return -1;
+    }
+
+    env_variable_t* var = &globalVariables[index];
+    strcpy(var->key, key);
+    strcpy(var->value, value);
+    var->active = true;
+
+    return 0;
+}
+
 env_variable_t* getEnvVariable(process_t* process, const char* key) {
 
     for (size_t i = 0; i < MAX_ENVIROMENT_VARIABLES; i++) {
@@ -1289,7 +1360,7 @@ env_variable_t* getEnvVariable(process_t* process, const char* key) {
             return var;
     }
 
-    return (env_variable_t*) 0;
+    return getGlobalEnvVariable(key);
 }
 
 int setEnvVariable(process_t* process, const char* key, const char* value, bool overwrite) {
@@ -1360,57 +1431,6 @@ int unsetEnvVariable(process_t* process, const char* key) {
 
     // If it is not found then it is still sucess
     return 0;
-}
-
-file_t* getFileWEnv(process_t* process, char* env, char* path) {
-
-    file_t* file;
-
-    file = getFileFrom(process->cwdir, path, true);
-    if (file)
-        return file;
-
-    env_variable_t* var = getEnvVariable(process, env);
-
-    if (!var) {
-        ERROR("Process %d:%s doesn't have enviroment variable %s\n", process->id, process->name, env);
-        return (file_t*) 0;
-    }
-
-    char* ptr;
-    char* last = var->value;
-    bool done = false;
-    while (!done) {
-
-        ptr = strchr(last, ';');
-        if (ptr == NULL) {
-            ptr = var->value + strlen(var->value);
-            done = true;
-        }
-
-        uint32_t len = ptr - last;
-        char str[len+1];
-        memcpy(str, last, len);
-        str[len] = '\0';
-
-        VERBOSE("getFileWEnv: Trying path '%s'\n", str);
-
-        directory_t* dir = getDirectory(str);
-
-        if (dir) {
-            file = getFileFrom(dir, path, true);
-            
-            if (file)
-                return file;
-        }
-
-        if (done)
-            break;
-
-        last = ptr + 1;
-    }
-
-    return (file_t*) 0;
 }
 
 int openProcessFile(process_t* process, char* pathname, uint32_t flags, uint32_t permissions, int* errnum) {

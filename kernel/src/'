@@ -214,16 +214,12 @@ pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
 
                     file_t* lib = NULL;
                     if (libpath)
-                        lib = getFileWEnv(libpath, s);
 
-                    lib = getFileWGlobalEnvVariable("LIBPATH", s);
-
+                    file_t* lib = getFileWGlobalEnv(processVariables, s);
                     if (!lib) {
                         ERROR("Unable to locate dynamic library %s\n", s);
                         for(;;){}
                     }
-
-                    printf("Located library '%s' at '%s'\n", s, lib->fullpath);
                 }
             }
 
@@ -1010,55 +1006,6 @@ file_t* getFile(char* filepath) {
     }
 
     return getFileFromParent(parent, filepath + slash, true);
-}
-
-file_t* getFileWEnv(char* varpath, char* path) {
-
-    file_t* file;
-
-    char* ptr;
-    char* last = varpath;
-    bool done = false;
-    while (!done) {
-
-        ptr = strchr(last, ';');
-        if (ptr == NULL) {
-            ptr = varpath + strlen(varpath);
-            done = true;
-        }
-
-        uint32_t len = ptr - last;
-        char str[len+1];
-        memcpy(str, last, len);
-        str[len] = '\0';
-
-        VERBOSE("getFileWEnv: Trying path '%s'\n", str);
-
-        directory_t* dir = getDirectory(str);
-
-        if (dir) {
-            file = getFileFrom(dir, path, true);
-            
-            if (file)
-                return file;
-        }
-
-        if (done)
-            break;
-
-        last = ptr + 1;
-    }
-
-    return (file_t*) 0;
-}
-
-file_t* getFileWGlobalEnvVariable(char* key, char* path) {
-
-    env_variable_t* var = getGlobalEnvVariable(key);
-    if (!var)
-        return NULL;
-
-    return getFileWEnv(var->value, path);
 }
 
 void changeDirectoryOwner(directory_t* dir, user_t* owner, group_t* group, bool recursive) {
