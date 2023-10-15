@@ -334,6 +334,7 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     char* args[] = {NULL};
 
     // TODO only run when there are no other processes
+    /*
     file = getFile("/sbin/loop");
     if (!file) {
         FATAL("Failed to load system program /sbin/loop\n");
@@ -341,8 +342,10 @@ void kernel_main(unsigned int eax, unsigned int ebx) {
     }
     process_t* loop = newProcessArgs(file, args, rootUser);
     (void) loop;
+    */
 
-    file = currentUser->program;
+    //file = currentUser->program;
+    file = getFile("/usr/bin/helloworld");
     if (!file) {
         FATAL("Failed to load initial user program %s\n", currentUser->program);
         kabort();

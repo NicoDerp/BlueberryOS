@@ -79,8 +79,8 @@ static inline section_header_t* getSectionEntry(elf_header_t* elf_header, size_t
     return &getSectionHeader(elf_header)[index];
 }
 
-static inline char* getSectionEntryReal(elf_header_t* elf_header, section_header_t* section, size_t index) {
-    return &((char*) ((unsigned int) elf_header + elf_header->sectionTable + section->offset))[index];
+static inline section_header_t* getSectionEntryReal(elf_header_t* elf_header, section_header_t* section, size_t index) {
+    return &((section_header_t*) ((unsigned int) elf_header + elf_header->sectionTable + section->offset))[index];
 }
 
 static inline program_header_t* getProgramHeader(elf_header_t* elf_header) {
@@ -173,6 +173,8 @@ bool isFileELF(file_t* file) {
 }
 
 pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
+
+    printf("loadELFIntoMemory: Loading file '%s'\n", file->fullpath);
 
     // Copy kernel's pagedirectory to this pagedirectory
     pagedirectory_t pd = copy_system_pagedirectory();
@@ -349,6 +351,28 @@ pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
                 printf(" - '%s'\n", dynstr + j);
             }
         }
+        else if (strcmp(getSectionName(elf_header, section), ".rel.plt") == 0) {
+
+            printf("PLUH\n");
+
+            if (dynstr == NULL) {
+                ERROR("Can't load dynamic section of ELF file because '.dynstr' section isn't before! (bit lazy i know)\n");
+                for(;;){}
+            }
+
+            printf("Offset 0x%x\n", section->offset);
+            /*
+            for (size_t j = 0; j < section->size/section->entrySize; j++) {
+                section_header_t* entry = getSectionEntryReal(elf_header, section, j);
+                char* name = getSectionName(elf_header, entry);
+                printf("Name is '%s'\n", name);
+
+                //char* s = dynstr + entry->value;
+                //printf("Entry '%s'\n", s);
+            }
+            */
+
+        }
         else if (strcmp(getSectionName(elf_header, section), ".dynamic") == 0) {
             if (section->entrySize != 8) {
                 ERROR("Can't load dynamic section of ELF file because it's entry-size isn't 8 bytes!");
@@ -391,7 +415,7 @@ pagedirectory_t loadELFIntoMemory(file_t* file, char* libpath) {
                 }
             }
 
-            break;
+            //break;
         }
 
     }

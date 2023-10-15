@@ -38,6 +38,7 @@ SRC_C = src/sbin/loop.c \
 		src/usr/bin/filetest.c \
 		src/usr/bin/vim.c \
 		src/usr/bin/pappatest.c \
+		src/usr/bin/helloworld.c \
 
 SRC_ASM = src/usr/bin/userfunc.asm \
 
